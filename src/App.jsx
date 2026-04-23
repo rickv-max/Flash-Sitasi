@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 
 export default function App() {
   // Mode State (Diatur oleh Bottom Nav)
-  const [inputMode, setInputMode] = useState("doi"); // "doi" | "url" | "manual"
+  const [inputMode, setInputMode] = useState("doi"); // "doi" | "url" | "manual" | "batch"
 
   // Form States
   const [doiInput, setDoiInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
+  const [batchInput, setBatchInput] = useState("");
   const [kotaInput, setKotaInput] = useState("");
   
   // Manual States
@@ -22,15 +23,22 @@ export default function App() {
   // App States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [metadata, setMetadata] = useState(null);
+  const [metadata, setMetadata] = useState(null); // Untuk Single Mode
+  const [batchResults, setBatchResults] = useState([]); // Untuk Batch Mode
+  
+  // Copy States
   const [footnoteResult, setFootnoteResult] = useState("");
   const [dafpusResult, setDafpusResult] = useState("");
   const [copiedFootnote, setCopiedFootnote] = useState(false);
   const [copiedDafpus, setCopiedDafpus] = useState(false);
 
-  // Clear error saat ganti tab
+  // Clear error & results saat ganti tab
   useEffect(() => {
     setError("");
+    setMetadata(null);
+    setBatchResults([]);
+    setFootnoteResult("");
+    setDafpusResult("");
   }, [inputMode]);
 
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
@@ -40,56 +48,159 @@ export default function App() {
     return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1));
   };
 
-  // --- LOGIC CROSSREF & OJS ---
+  // --- LOGIC CROSSREF & OJS (BUG FIX: 1-Kata & Pembalikan Nama DOI) ---
   const formatAuthorsFootnote = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
-    const firstAuthor = `${authors[0].given || ""} ${authors[0].family || ""}`.trim();
+    let given = authors[0].given || "";
+    let family = authors[0].family || "";
+    
+    // Fix: Jika DOI memberikan 1 string utuh di family
+    if (!given && family.includes(" ")) {
+      const parts = family.split(" ").filter(Boolean);
+      if (parts.length > 1) {
+        family = parts.pop();
+        given = parts.join(" ");
+      }
+    }
+    
+    family = capitalize(family);
+    given = capitalize(given);
+
+    const firstAuthor = given ? `${given} ${family}`.trim() : family.trim();
     if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`;
     return firstAuthor;
   };
 
   const formatAuthorsDafpus = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
-    const family = capitalize(authors[0].family || "");
-    const given = capitalize(authors[0].given || "");
-    let firstAuthor = family && given ? `${family}, ${given}` : family || given;
+    let given = authors[0].given || "";
+    let family = authors[0].family || "";
+    
+    // Fix: Jika DOI memberikan 1 string utuh di family
+    if (!given && family.includes(" ")) {
+      const parts = family.split(" ").filter(Boolean);
+      if (parts.length > 1) {
+        family = parts.pop();
+        given = parts.join(" ");
+      }
+    }
+
+    family = capitalize(family);
+    given = capitalize(given);
+    
+    let firstAuthor = given ? `${family}, ${given}` : family;
     if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`;
     return firstAuthor;
   };
 
-  // --- LOGIC MANUAL ---
-  const parseManualAuthor = (authorStr) => {
-    if (!authorStr.trim()) return { fn: "Penulis Tidak Diketahui", dp: "Penulis Tidak Diketahui" };
-    const authors = authorStr.split(",").map((a) => a.trim()).filter((a) => a);
-    if (authors.length === 0) return { fn: "Penulis Tidak Diketahui", dp: "Penulis Tidak Diketahui" };
-
-    const firstAuthor = authors[0];
-    const parts = firstAuthor.split(" ");
+  // FETCH CORE LOGIC
+  const processDOI = async (rawDoi) => {
+    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanDOI(rawDoi))}`);
+    if (!res.ok) throw new Error("DOI tidak ditemukan.");
+    const data = await res.json();
+    const item = data.message;
     
-    const family = parts.length > 1 ? parts.pop() : firstAuthor;
-    const given = parts.length > 0 ? parts.join(" ") : "";
+    const yearObj = item["published-print"] || item.issued;
+    const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
+    const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null;
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    const monthStr = monthNum ? monthNames[monthNum - 1] : "";
 
-    let fn = capitalize(firstAuthor);
-    let dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+    const kotaScraped = item["publisher-location"] || "";
 
-    if (authors.length > 1) {
-      fn += " <i>et al.</i>";
-      dp += " <i>et al.</i>";
-    }
-    return { fn, dp };
+    return {
+      authorFootnote: formatAuthorsFootnote(item.author),
+      authorDafpus: formatAuthorsDafpus(item.author),
+      year, month: monthStr,
+      title: item.title?.[0] ?? "Judul Artikel",
+      journal: item["container-title"]?.[0] ?? "Nama Jurnal",
+      page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
+      kotaScraped
+    };
   };
 
-  const buildFootnote = (m, kota) => {
-    const kotaTxt = capitalize(kota) ? `${capitalize(kota)}, ` : "";
+  const processURL = async (rawUrl) => {
+    let targetUrl = rawUrl.trim();
+    const ojsMatch = targetUrl.match(/(.*\/article\/(?:view|download)\/\d+)/i);
+    if (ojsMatch) {
+      targetUrl = ojsMatch[1].replace('/download/', '/view/');
+    }
+
+    let htmlContent = "";
+    try {
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+      if (!res.ok) throw new Error("Proxy 1 gagal");
+      const data = await res.json(); htmlContent = data.contents;
+    } catch (err1) {
+      const res2 = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
+      if (!res2.ok) throw new Error("Gagal mengakses URL.");
+      htmlContent = await res2.text();
+    }
+    if (!htmlContent) throw new Error("Konten tidak ditemukan.");
+
+    const parser = new DOMParser(); const doc = parser.parseFromString(htmlContent, "text/html");
+    const getMeta = (name) => {
+      const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`);
+      return el ? el.getAttribute("content") : "";
+    };
+
+    const title = getMeta("citation_title") || doc.title || "Judul Tidak Diketahui";
+    const authorNodes = doc.querySelectorAll('meta[name="citation_author"]');
+    let authors = [];
+    authorNodes.forEach(node => authors.push(node.getAttribute("content")));
+
+    let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
+    if (authors.length > 0) {
+      let firstAuthor = authors[0].trim();
+      let family = "", given = "";
+      
+      if (firstAuthor.includes(",")) {
+        const parts = firstAuthor.split(",");
+        family = parts[0].trim(); 
+        given = parts[1] ? parts[1].trim() : "";
+      } else {
+        const parts = firstAuthor.split(" ").filter(Boolean);
+        // Fix: Cegah duplikasi (Ricky, Ricky) jika nama cuma 1 kata
+        if (parts.length === 1) {
+          family = parts[0];
+          given = "";
+        } else {
+          family = parts.pop();
+          given = parts.join(" ");
+        }
+      }
+      
+      fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
+      dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+      if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
+    }
+
+    const dateStr = getMeta("citation_date") || getMeta("citation_publication_date") || "";
+    const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun";
+    const page = getMeta("citation_firstpage") ? (getMeta("citation_lastpage") ? `${getMeta("citation_firstpage")}-${getMeta("citation_lastpage")}` : getMeta("citation_firstpage")) : "";
+
+    return {
+      authorFootnote: fn, authorDafpus: dp, year, month: "", title,
+      journal: getMeta("citation_journal_title") || "", page, volume: getMeta("citation_volume") || "",
+      issue: getMeta("citation_issue") || "", publisher: getMeta("citation_publisher") || "",
+      kotaScraped: ""
+    };
+  };
+
+  // BUILDERS
+  const buildFootnote = (m, kotaManual) => {
+    const finalKota = kotaManual.trim() ? kotaManual : (m.kotaScraped || "");
+    const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
     const pageTxt = m.page ? `hal. ${m.page}.` : "";
     return `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`;
   };
 
-  const buildDafpus = (m, kota) => {
+  const buildDafpus = (m, kotaManual) => {
+    const finalKota = kotaManual.trim() ? kotaManual : (m.kotaScraped || "");
     const parts = [];
     if (m.journal) parts.push(capitalize(m.journal));
     if (m.publisher) parts.push(capitalize(m.publisher));
-    if (kota) parts.push(capitalize(kota));
+    if (finalKota) parts.push(capitalize(finalKota));
 
     let volIssue = "";
     if (m.volume) volIssue += `Vol. ${m.volume}`;
@@ -107,106 +218,65 @@ export default function App() {
     return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
 
-  const updateResults = (meta, kota) => {
-    setFootnoteResult(buildFootnote(meta, kota));
-    setDafpusResult(buildDafpus(meta, kota));
-  };
-
-  // --- HANDLERS ---
+  // --- HANDLERS SINGLE MODE ---
   const fetchDOI = async () => {
     if (!doiInput) return;
-    setLoading(true); setError(""); setFootnoteResult(""); setDafpusResult(""); setMetadata(null);
+    setLoading(true); setError(""); setMetadata(null);
     try {
-      const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanDOI(doiInput))}`);
-      if (!res.ok) throw new Error("Aduh, DOI tidak ditemukan. Coba periksa lagi ketikannya.");
-      const data = await res.json();
-      const item = data.message;
-      
-      const yearObj = item["published-print"] || item.issued;
-      const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
-      const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null;
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-      const monthStr = monthNum ? monthNames[monthNum - 1] : "";
-
-      const meta = {
-        authorFootnote: formatAuthorsFootnote(item.author),
-        authorDafpus: formatAuthorsDafpus(item.author),
-        year, month: monthStr,
-        title: item.title?.[0] ?? "Judul Artikel",
-        journal: item["container-title"]?.[0] ?? "Nama Jurnal",
-        page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
-      };
-      setMetadata(meta); updateResults(meta, kotaInput);
+      const meta = await processDOI(doiInput);
+      setMetadata(meta); 
+      setFootnoteResult(buildFootnote(meta, kotaInput));
+      setDafpusResult(buildDafpus(meta, kotaInput));
     } catch (e) {
-      if (e.message === "Failed to fetch") setError("Koneksi terputus. Pastikan ada internet atau matikan Adblock/VPN sebentar ya.");
+      if (e.message === "Failed to fetch") setError("Koneksi terputus. Matikan Adblock/VPN sebentar ya.");
       else setError(e.message);
     } finally { setLoading(false); }
   };
 
   const fetchURL = async () => {
     if (!urlInput) return;
-    setLoading(true); setError(""); setFootnoteResult(""); setDafpusResult(""); setMetadata(null);
-    let htmlContent = "";
+    setLoading(true); setError(""); setMetadata(null);
     try {
-      try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlInput)}`);
-        if (!res.ok) throw new Error("Proxy 1 gagal");
-        const data = await res.json(); htmlContent = data.contents;
-      } catch (err1) {
-        const res2 = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlInput)}`);
-        if (!res2.ok) throw new Error("Gagal mengakses URL.");
-        htmlContent = await res2.text();
+      const meta = await processURL(urlInput);
+      if (meta.authorFootnote === "Penulis Tidak Diketahui") {
+         setError("Info: Web/Link ini gagal menyediakan metadata standar, hasilnya mungkin kosong/tidak akurat.");
       }
-      if (!htmlContent) throw new Error("Konten tidak ditemukan di URL ini.");
-
-      const parser = new DOMParser(); const doc = parser.parseFromString(htmlContent, "text/html");
-      const getMeta = (name) => {
-        const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`);
-        return el ? el.getAttribute("content") : "";
-      };
-
-      const title = getMeta("citation_title") || doc.title || "Judul Tidak Diketahui";
-      const authorNodes = doc.querySelectorAll('meta[name="citation_author"]');
-      let authors = [];
-      authorNodes.forEach(node => authors.push(node.getAttribute("content")));
-
-      let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
-      if (authors.length > 0) {
-        let firstAuthor = authors[0];
-        let family = "", given = "";
-        
-        if (firstAuthor.includes(",")) {
-          const parts = firstAuthor.split(",");
-          family = parts[0].trim(); given = parts[1].trim();
-          firstAuthor = `${given} ${family}`; 
-        } else {
-          const parts = firstAuthor.split(" ");
-          family = parts.length > 1 ? parts.pop() : firstAuthor;
-          given = parts.length > 0 ? parts.join(" ") : "";
-        }
-        fn = capitalize(firstAuthor);
-        dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
-        if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
-      }
-
-      const dateStr = getMeta("citation_date") || getMeta("citation_publication_date") || "";
-      const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun";
-      const page = getMeta("citation_firstpage") ? (getMeta("citation_lastpage") ? `${getMeta("citation_firstpage")}-${getMeta("citation_lastpage")}` : getMeta("citation_firstpage")) : "";
-
-      const meta = {
-        authorFootnote: fn, authorDafpus: dp, year, month: "", title,
-        journal: getMeta("citation_journal_title") || "", page, volume: getMeta("citation_volume") || "",
-        issue: getMeta("citation_issue") || "", publisher: getMeta("citation_publisher") || "",
-      };
-
-      if (!getMeta("citation_title") && authors.length === 0) {
-         setError("Hmm, web ini sepertinya tidak punya metadata jurnal standar. Hasil mungkin kurang akurat.");
-      }
-      setMetadata(meta); updateResults(meta, kotaInput);
+      setMetadata(meta);
+      setFootnoteResult(buildFootnote(meta, kotaInput));
+      setDafpusResult(buildDafpus(meta, kotaInput));
     } catch (e) {
-      if (e.message === "Failed to fetch") setError("Koneksi gagal. Coba matikan Adblock/VPN di browser kamu.");
+      if (e.message === "Failed to fetch") setError("Koneksi gagal. Coba matikan Adblock/VPN.");
       else setError(e.message || "Terjadi kesalahan saat memproses URL.");
     } finally { setLoading(false); }
+  };
+
+  // --- HANDLER MANUAL ---
+  const parseManualAuthor = (authorStr) => {
+    if (!authorStr.trim()) return { fn: "Penulis Tidak Diketahui", dp: "Penulis Tidak Diketahui" };
+    const authors = authorStr.split(",").map((a) => a.trim()).filter(Boolean);
+    if (authors.length === 0) return { fn: "Penulis Tidak Diketahui", dp: "Penulis Tidak Diketahui" };
+
+    const firstAuthor = authors[0];
+    const parts = firstAuthor.split(" ").filter(Boolean);
+    
+    let family = "", given = "";
+    // Fix: Cegah duplikasi nama 1 kata untuk Manual Mode
+    if (parts.length === 1) {
+      family = parts[0];
+      given = "";
+    } else {
+      family = parts.pop();
+      given = parts.join(" ");
+    }
+
+    let fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
+    let dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+
+    if (authors.length > 1) {
+      fn += " <i>et al.</i>";
+      dp += " <i>et al.</i>";
+    }
+    return { fn, dp };
   };
 
   const handleGenerateManual = () => {
@@ -215,22 +285,66 @@ export default function App() {
     const { fn, dp } = parseManualAuthor(mAuthor);
     const meta = {
       authorFootnote: fn, authorDafpus: dp, title: mTitle, journal: mJournal, year: mYear,
-      month: "", volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher,
+      month: "", volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, kotaScraped: ""
     };
-    setMetadata(meta); updateResults(meta, kotaInput);
+    setMetadata(meta);
+    setFootnoteResult(buildFootnote(meta, kotaInput));
+    setDafpusResult(buildDafpus(meta, kotaInput));
   };
 
+  // --- HANDLER BATCH (ALL IN ONE) ---
+  const handleBatchGenerate = async () => {
+    if (!batchInput.trim()) return setError("Masukkan minimal 1 link atau DOI.");
+    setLoading(true); setError(""); setBatchResults([]); setMetadata(null);
+
+    const lines = batchInput.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const results = [];
+
+    for (const line of lines) {
+      const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
+      
+      try {
+        let meta;
+        if (isDoi) meta = await processDOI(line);
+        else meta = await processURL(line);
+        
+        results.push({ status: "success", line, meta });
+      } catch (err) {
+        results.push({ status: "error", line, error: err.message });
+      }
+    }
+
+    const successes = results.filter(r => r.status === "success");
+    
+    const combinedFn = successes.map((r, i) => `${i + 1}. ${buildFootnote(r.meta, kotaInput)}`).join("<br/><br/>");
+    
+    const combinedDp = successes
+      .sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus))
+      .map(r => buildDafpus(r.meta, kotaInput))
+      .join("<br/><br/>");
+
+    setFootnoteResult(combinedFn);
+    setDafpusResult(combinedDp);
+    setBatchResults(results);
+    setLoading(false);
+  };
+
+
+  // --- COPY FUNCTION ---
   const handleCopy = (htmlString, type) => {
     if (!htmlString) return;
-    const plainText = htmlString.replace(/<[^>]+>/g, "");
+    const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
+    
     const div = document.createElement("div");
     div.innerHTML = htmlString; div.style.position = "fixed"; div.style.left = "-9999px";
     document.body.appendChild(div);
     const selection = window.getSelection(); const range = document.createRange();
     range.selectNodeContents(div); selection.removeAllRanges(); selection.addRange(range);
+    
     let success = false;
     try { success = document.execCommand("copy"); } catch (err) {}
     selection.removeAllRanges(); document.body.removeChild(div);
+    
     if (!success) {
       const textarea = document.createElement("textarea");
       textarea.value = plainText; textarea.style.position = "fixed"; textarea.style.left = "-9999px";
@@ -238,6 +352,7 @@ export default function App() {
       try { success = document.execCommand("copy"); } catch(e){}
       document.body.removeChild(textarea);
     }
+    
     if (success) {
       if (type === "footnote") { setCopiedFootnote(true); setTimeout(() => setCopiedFootnote(false), 2000); } 
       else { setCopiedDafpus(true); setTimeout(() => setCopiedDafpus(false), 2000); }
@@ -248,16 +363,13 @@ export default function App() {
   const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
   const LinkIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
   const EditIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
+  const ListIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
   const MenuIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" height="24" width="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
   const BoltIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="24" width="24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
   const CheckIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg>;
   const CopyIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
-  const PlayCircleIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" height="20" width="20">
-      <circle cx="12" cy="12" r="10" fill="white" />
-      <polygon points="10 8 16 12 10 16" fill="var(--c-dark)" />
-    </svg>
-  );
+  const PlayCircleIcon = () => <svg viewBox="0 0 24 24" fill="none" height="20" width="20"><circle cx="12" cy="12" r="10" fill="white" /><polygon points="10 8 16 12 10 16" fill="var(--c-dark)" /></svg>;
+  const WarningIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="16" width="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
 
   return (
     <div className="neo-app">
@@ -286,7 +398,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* Main Content Area (Light Blue/Gray) */}
+      {/* Main Content Area */}
       <section className="neo-content-area">
         <div className="neo-container">
           
@@ -297,6 +409,7 @@ export default function App() {
               {inputMode === "doi" && "INPUT DATA: NOMOR DOI"}
               {inputMode === "url" && "INPUT DATA: LINK URL"}
               {inputMode === "manual" && "INPUT DATA: KETIK MANUAL"}
+              {inputMode === "batch" && "INPUT DATA: ALL IN ONE (BATCH)"}
             </div>
             
             <div className="neo-card-body">
@@ -308,7 +421,7 @@ export default function App() {
                     <input type="text" className="neo-input" value={doiInput} onChange={(e)=>setDoiInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchDOI()} placeholder="10.1038/s41586..." />
                   </div>
                   <div className="neo-form-group">
-                    <label className="neo-label">Kota Terbit (Opsional)</label>
+                    <label className="neo-label">Kota Terbit (Opsional - Otomatis jika ada)</label>
                     <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
                   </div>
                   <button className="neo-btn-primary neo-w-full" onClick={fetchDOI} disabled={loading || !doiInput}>
@@ -321,12 +434,12 @@ export default function App() {
               {inputMode === "url" && (
                 <div className="neo-fade-in">
                   <div className="neo-form-group">
-                    <label className="neo-label">Masukkan Link Jurnal</label>
-                    <input type="text" className="neo-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/..." />
+                    <label className="neo-label">Masukkan Link Jurnal (Support PDF URL)</label>
+                    <input type="text" className="neo-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/.../pdf" />
                   </div>
                   <div className="neo-form-group">
                     <label className="neo-label">Kota Terbit (Opsional)</label>
-                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Bandung" />
+                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Ketik manual di sini (Misal: Malang)" />
                   </div>
                   <button className="neo-btn-primary neo-w-full" onClick={fetchURL} disabled={loading || !urlInput}>
                     {loading ? "MEMPROSES..." : "TARIK DATA"}
@@ -340,7 +453,7 @@ export default function App() {
                   <div className="neo-grid">
                     <div className="neo-form-group neo-span-2">
                       <label className="neo-label">Nama Penulis *</label>
-                      <input type="text" className="neo-input" value={mAuthor} onChange={(e)=>setMAuthor(e.target.value)} placeholder="Nadiem Makarim, Budi Santoso" />
+                      <input type="text" className="neo-input" value={mAuthor} onChange={(e)=>setMAuthor(e.target.value)} placeholder="Misal: Ricky, Budi Santoso" />
                     </div>
                     <div className="neo-form-group neo-span-2">
                       <label className="neo-label">Judul Artikel *</label>
@@ -377,13 +490,37 @@ export default function App() {
                 </div>
               )}
 
-              {/* Error Box */}
+              {/* BATCH MODE (ALL IN ONE) */}
+              {inputMode === "batch" && (
+                <div className="neo-fade-in">
+                  <div className="neo-form-group">
+                    <label className="neo-label">Paste Banyak URL/PDF/DOI (1 baris = 1 Link)</label>
+                    <textarea 
+                      className="neo-input" 
+                      rows="6" 
+                      style={{ resize: "vertical", minHeight: "120px" }}
+                      value={batchInput} 
+                      onChange={(e)=>setBatchInput(e.target.value)} 
+                      placeholder="https://jurnal.kampus.ac.id/...&#10;10.1038/s41586...&#10;https://jurnal.../download/65/pdf" 
+                    />
+                  </div>
+                  <div className="neo-form-group">
+                    <label className="neo-label">Kota Terbit Pukul Rata (Jika DOI tidak memilikinya)</label>
+                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
+                  </div>
+                  <button className="neo-btn-primary neo-w-full" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                    {loading ? "MEMPROSES BATCH..." : "GENERATE SEKALIGUS"}
+                  </button>
+                </div>
+              )}
+
+              {/* Error Box (Untuk Mode Single) */}
               {error && <div className="neo-error-box">{error}</div>}
             </div>
           </div>
 
-          {/* Results Card */}
-          {metadata && (
+          {/* Results Card (Single & Manual Mode) */}
+          {metadata && inputMode !== "batch" && (
             <div className="neo-card neo-animate-up">
               <div className="neo-card-header neo-bg-teal">
                 <div className="neo-circle"></div> HASIL GENERATE
@@ -413,6 +550,56 @@ export default function App() {
                 <div className="neo-info-box neo-mt-4">
                   <strong>META:</strong> {metadata.authorFootnote.replace(/<[^>]+>/g, "")} | {metadata.year}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Results Card (Batch Mode) */}
+          {batchResults.length > 0 && inputMode === "batch" && (
+            <div className="neo-card neo-animate-up">
+              <div className="neo-card-header neo-bg-teal">
+                <div className="neo-circle"></div> HASIL BATCH ({batchResults.filter(r => r.status === 'success').length} SUKSES)
+              </div>
+              <div className="neo-card-body">
+                
+                {batchResults.filter(r => r.status === 'success').length > 0 ? (
+                  <>
+                    <div className="neo-result-box">
+                      <div className="neo-result-header">
+                        <span>CATATAN KAKI (FOOTNOTE)</span>
+                        <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(footnoteResult, "footnote")}>
+                          {copiedFootnote ? <CheckIcon /> : <CopyIcon />} {copiedFootnote ? "DISALIN" : "COPY ALL"}
+                        </button>
+                      </div>
+                      <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: footnoteResult }} />
+                    </div>
+
+                    <div className="neo-result-box neo-mt-4">
+                      <div className="neo-result-header">
+                        <span>DAFTAR PUSTAKA (URUT ABJAD)</span>
+                        <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(dafpusResult, "dafpus")}>
+                          {copiedDafpus ? <CheckIcon /> : <CopyIcon />} {copiedDafpus ? "DISALIN" : "COPY ALL"}
+                        </button>
+                      </div>
+                      <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: dafpusResult }} />
+                    </div>
+                  </>
+                ) : null}
+
+                {/* Tampilkan yang error kalau ada */}
+                {batchResults.filter(r => r.status === 'error').length > 0 && (
+                  <div className="neo-error-list neo-mt-4">
+                    <strong><WarningIcon/> Gagal Memproses:</strong>
+                    <ul>
+                      {batchResults.filter(r => r.status === 'error').map((err, i) => (
+                        <li key={i}>
+                          <span className="neo-truncate">{err.line}</span> - <i>{err.error}</i>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
               </div>
             </div>
           )}
@@ -447,6 +634,9 @@ export default function App() {
         </button>
         <button className={`neo-nav-item ${inputMode === "url" ? "active" : ""}`} onClick={() => setInputMode("url")}>
           <LinkIcon /> <span>LINK</span>
+        </button>
+        <button className={`neo-nav-item ${inputMode === "batch" ? "active" : ""}`} onClick={() => setInputMode("batch")}>
+          <ListIcon /> <span>BATCH</span>
         </button>
         <button className={`neo-nav-item ${inputMode === "manual" ? "active" : ""}`} onClick={() => setInputMode("manual")}>
           <EditIcon /> <span>MANUAL</span>
@@ -833,6 +1023,18 @@ export default function App() {
           box-shadow: 3px 3px 0px var(--c-border);
         }
 
+        .neo-error-list {
+          padding: 12px;
+          background: #FEF2F2;
+          border: 2px dashed #B91C1C;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          color: #B91C1C;
+        }
+        .neo-error-list ul { padding-left: 1rem; margin-top: 8px; margin-bottom: 0; }
+        .neo-error-list li { margin-bottom: 4px; }
+        .neo-truncate { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
         /* BOTTOM NAVIGATION - DIRAMPINGKAN */
         .neo-bottom-nav {
           position: fixed;
@@ -843,8 +1045,8 @@ export default function App() {
           border: 3px solid var(--c-border);
           border-radius: 100px;
           display: flex;
-          padding: 4px; /* Dikurangi dari 6px */
-          gap: 4px; /* Dikurangi dari 6px */
+          padding: 4px;
+          gap: 4px;
           z-index: 100;
           width: 90%;
           max-width: 450px;
@@ -853,16 +1055,16 @@ export default function App() {
 
         .neo-nav-item {
           flex: 1;
-          padding: 8px 0; /* Dikurangi dari 12px */
+          padding: 8px 0;
           border-radius: 100px;
           border: 2px solid transparent;
           background: transparent;
           font-weight: 800;
-          font-size: 0.75rem; /* Sedikit dikecilkan agar proporsional */
+          font-size: 0.75rem; 
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 6px; /* Disesuaikan */
+          gap: 6px;
           cursor: pointer;
           color: #666;
           transition: all 0.2s;
