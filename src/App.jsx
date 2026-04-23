@@ -426,7 +426,7 @@ export default function App() {
               Tool ini gratis & open-use. Donasi membantu pengembangan fitur baru dan perawatan server.
             </p>
             <a 
-              href="https://saweria.co/widgets/alert?streamKey=a182413f0d2f73816aa0abfdd6468627" 
+              href="https://saweria.co/rickpipor" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="neo-donation-btn"
