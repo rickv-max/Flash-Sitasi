@@ -436,7 +436,7 @@ export default function App() {
           </div>
 
           {/* Spacer for bottom nav */}
-          <div style={{ height: '100px' }}></div>
+          <div style={{ height: '90px' }}></div>
         </div>
       </section>
 
@@ -833,18 +833,18 @@ export default function App() {
           box-shadow: 3px 3px 0px var(--c-border);
         }
 
-        /* BOTTOM NAVIGATION */
+        /* BOTTOM NAVIGATION - DIRAMPINGKAN */
         .neo-bottom-nav {
           position: fixed;
-          bottom: 1.5rem;
+          bottom: 1.25rem;
           left: 50%;
           transform: translateX(-50%);
           background: var(--c-white);
           border: 3px solid var(--c-border);
           border-radius: 100px;
           display: flex;
-          padding: 6px;
-          gap: 6px;
+          padding: 4px; /* Dikurangi dari 6px */
+          gap: 4px; /* Dikurangi dari 6px */
           z-index: 100;
           width: 90%;
           max-width: 450px;
@@ -853,16 +853,16 @@ export default function App() {
 
         .neo-nav-item {
           flex: 1;
-          padding: 12px 0;
+          padding: 8px 0; /* Dikurangi dari 12px */
           border-radius: 100px;
           border: 2px solid transparent;
           background: transparent;
           font-weight: 800;
-          font-size: 0.8rem;
+          font-size: 0.75rem; /* Sedikit dikecilkan agar proporsional */
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 6px; /* Disesuaikan */
           cursor: pointer;
           color: #666;
           transition: all 0.2s;
@@ -897,4 +897,3 @@ export default function App() {
     </div>
   );
 }
-
