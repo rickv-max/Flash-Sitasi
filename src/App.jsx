@@ -26,11 +26,12 @@ export default function App() {
   const [metadata, setMetadata] = useState(null); // Untuk Single Mode
   const [batchResults, setBatchResults] = useState([]); // Untuk Batch Mode
   
-  // Copy States
+  // Single Results
   const [footnoteResult, setFootnoteResult] = useState("");
   const [dafpusResult, setDafpusResult] = useState("");
-  const [copiedFootnote, setCopiedFootnote] = useState(false);
-  const [copiedDafpus, setCopiedDafpus] = useState(false);
+  
+  // Unified Copy State (menyimpan ID dari elemen yang di-copy)
+  const [copiedId, setCopiedId] = useState(null);
 
   // Clear error & results saat ganti tab
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function App() {
     setBatchResults([]);
     setFootnoteResult("");
     setDafpusResult("");
+    setCopiedId(null);
   }, [inputMode]);
 
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
@@ -54,7 +56,6 @@ export default function App() {
     let given = authors[0].given || "";
     let family = authors[0].family || "";
     
-    // Fix: Jika DOI memberikan 1 string utuh di family
     if (!given && family.includes(" ")) {
       const parts = family.split(" ").filter(Boolean);
       if (parts.length > 1) {
@@ -76,7 +77,6 @@ export default function App() {
     let given = authors[0].given || "";
     let family = authors[0].family || "";
     
-    // Fix: Jika DOI memberikan 1 string utuh di family
     if (!given && family.includes(" ")) {
       const parts = family.split(" ").filter(Boolean);
       if (parts.length > 1) {
@@ -160,7 +160,6 @@ export default function App() {
         given = parts[1] ? parts[1].trim() : "";
       } else {
         const parts = firstAuthor.split(" ").filter(Boolean);
-        // Fix: Cegah duplikasi (Ricky, Ricky) jika nama cuma 1 kata
         if (parts.length === 1) {
           family = parts[0];
           given = "";
@@ -260,7 +259,6 @@ export default function App() {
     const parts = firstAuthor.split(" ").filter(Boolean);
     
     let family = "", given = "";
-    // Fix: Cegah duplikasi nama 1 kata untuk Manual Mode
     if (parts.length === 1) {
       family = parts[0];
       given = "";
@@ -314,24 +312,13 @@ export default function App() {
       }
     }
 
-    const successes = results.filter(r => r.status === "success");
-    
-    const combinedFn = successes.map((r, i) => `${i + 1}. ${buildFootnote(r.meta, kotaInput)}`).join("<br/><br/>");
-    
-    const combinedDp = successes
-      .sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus))
-      .map(r => buildDafpus(r.meta, kotaInput))
-      .join("<br/><br/>");
-
-    setFootnoteResult(combinedFn);
-    setDafpusResult(combinedDp);
     setBatchResults(results);
     setLoading(false);
   };
 
 
-  // --- COPY FUNCTION ---
-  const handleCopy = (htmlString, type) => {
+  // --- COPY FUNCTION (Menerima parameter copyId agar tombol yang aktif hanya 1 yang diklik) ---
+  const handleCopy = (htmlString, targetCopyId) => {
     if (!htmlString) return;
     const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
     
@@ -354,8 +341,8 @@ export default function App() {
     }
     
     if (success) {
-      if (type === "footnote") { setCopiedFootnote(true); setTimeout(() => setCopiedFootnote(false), 2000); } 
-      else { setCopiedDafpus(true); setTimeout(() => setCopiedDafpus(false), 2000); }
+      setCopiedId(targetCopyId);
+      setTimeout(() => setCopiedId(null), 2000);
     }
   };
 
@@ -370,6 +357,12 @@ export default function App() {
   const CopyIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
   const PlayCircleIcon = () => <svg viewBox="0 0 24 24" fill="none" height="20" width="20"><circle cx="12" cy="12" r="10" fill="white" /><polygon points="10 8 16 12 10 16" fill="var(--c-dark)" /></svg>;
   const WarningIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="16" width="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+
+  // Variabel untuk me-render data batch
+  const batchSuccesses = batchResults.filter(r => r.status === 'success');
+  const batchErrors = batchResults.filter(r => r.status === 'error');
+  // Daftar Pustaka disorting sesuai Abjad
+  const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus));
 
   return (
     <div className="neo-app">
@@ -530,8 +523,8 @@ export default function App() {
                 <div className="neo-result-box">
                   <div className="neo-result-header">
                     <span>CATATAN KAKI (FOOTNOTE)</span>
-                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(footnoteResult, "footnote")}>
-                      {copiedFootnote ? <CheckIcon /> : <CopyIcon />} {copiedFootnote ? "DISALIN" : "COPY"}
+                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(footnoteResult, "single-fn")}>
+                      {copiedId === "single-fn" ? <CheckIcon /> : <CopyIcon />} {copiedId === "single-fn" ? "DISALIN" : "COPY"}
                     </button>
                   </div>
                   <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: footnoteResult }} />
@@ -540,8 +533,8 @@ export default function App() {
                 <div className="neo-result-box neo-mt-4">
                   <div className="neo-result-header">
                     <span>DAFTAR PUSTAKA</span>
-                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(dafpusResult, "dafpus")}>
-                      {copiedDafpus ? <CheckIcon /> : <CopyIcon />} {copiedDafpus ? "DISALIN" : "COPY"}
+                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(dafpusResult, "single-dp")}>
+                      {copiedId === "single-dp" ? <CheckIcon /> : <CopyIcon />} {copiedId === "single-dp" ? "DISALIN" : "COPY"}
                     </button>
                   </div>
                   <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: dafpusResult }} />
@@ -558,40 +551,54 @@ export default function App() {
           {batchResults.length > 0 && inputMode === "batch" && (
             <div className="neo-card neo-animate-up">
               <div className="neo-card-header neo-bg-teal">
-                <div className="neo-circle"></div> HASIL BATCH ({batchResults.filter(r => r.status === 'success').length} SUKSES)
+                <div className="neo-circle"></div> HASIL BATCH ({batchSuccesses.length} SUKSES)
               </div>
               <div className="neo-card-body">
                 
-                {batchResults.filter(r => r.status === 'success').length > 0 ? (
+                {batchSuccesses.length > 0 && (
                   <>
-                    <div className="neo-result-box">
-                      <div className="neo-result-header">
-                        <span>CATATAN KAKI (FOOTNOTE)</span>
-                        <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(footnoteResult, "footnote")}>
-                          {copiedFootnote ? <CheckIcon /> : <CopyIcon />} {copiedFootnote ? "DISALIN" : "COPY ALL"}
-                        </button>
-                      </div>
-                      <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: footnoteResult }} />
-                    </div>
+                    <h4 className="neo-section-title">📌 CATATAN KAKI (FOOTNOTE)</h4>
+                    {batchSuccesses.map((r, index) => {
+                      const content = buildFootnote(r.meta, kotaInput);
+                      const copyId = `batch-fn-${index}`;
+                      return (
+                        <div className="neo-result-box neo-mb-3" key={copyId}>
+                          <div className="neo-result-header">
+                            <span className="neo-truncate" title={r.line}>{r.line}</span>
+                            <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(content, copyId)}>
+                              {copiedId === copyId ? <CheckIcon /> : <CopyIcon />} {copiedId === copyId ? "DISALIN" : "COPY"}
+                            </button>
+                          </div>
+                          <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: content }} />
+                        </div>
+                      )
+                    })}
 
-                    <div className="neo-result-box neo-mt-4">
-                      <div className="neo-result-header">
-                        <span>DAFTAR PUSTAKA (URUT ABJAD)</span>
-                        <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(dafpusResult, "dafpus")}>
-                          {copiedDafpus ? <CheckIcon /> : <CopyIcon />} {copiedDafpus ? "DISALIN" : "COPY ALL"}
-                        </button>
-                      </div>
-                      <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: dafpusResult }} />
-                    </div>
+                    <h4 className="neo-section-title" style={{ marginTop: '2rem' }}>📚 DAFTAR PUSTAKA (URUT ABJAD)</h4>
+                    {sortedBatchDafpus.map((r, index) => {
+                      const content = buildDafpus(r.meta, kotaInput);
+                      const copyId = `batch-dp-${index}`;
+                      return (
+                        <div className="neo-result-box neo-mb-3" key={copyId}>
+                          <div className="neo-result-header">
+                            <span className="neo-truncate" title={r.line}>{r.line}</span>
+                            <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(content, copyId)}>
+                              {copiedId === copyId ? <CheckIcon /> : <CopyIcon />} {copiedId === copyId ? "DISALIN" : "COPY"}
+                            </button>
+                          </div>
+                          <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: content }} />
+                        </div>
+                      )
+                    })}
                   </>
-                ) : null}
+                )}
 
                 {/* Tampilkan yang error kalau ada */}
-                {batchResults.filter(r => r.status === 'error').length > 0 && (
+                {batchErrors.length > 0 && (
                   <div className="neo-error-list neo-mt-4">
                     <strong><WarningIcon/> Gagal Memproses:</strong>
                     <ul>
-                      {batchResults.filter(r => r.status === 'error').map((err, i) => (
+                      {batchErrors.map((err, i) => (
                         <li key={i}>
                           <span className="neo-truncate">{err.line}</span> - <i>{err.error}</i>
                         </li>
@@ -973,12 +980,24 @@ export default function App() {
         .neo-btn-sm { padding: 6px 12px; }
         .neo-w-full { width: 100%; margin-top: 0.5rem; }
         .neo-mt-4 { margin-top: 1.5rem; }
+        .neo-mb-3 { margin-bottom: 1rem; }
 
         /* RESULTS AREA */
+        .neo-section-title {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: var(--c-dark);
+          margin: 0 0 1rem 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
         .neo-result-box {
           border: 2px dashed var(--c-border);
           border-radius: 8px;
           overflow: hidden;
+          background: var(--c-white);
         }
 
         .neo-result-header {
@@ -1033,7 +1052,7 @@ export default function App() {
         }
         .neo-error-list ul { padding-left: 1rem; margin-top: 8px; margin-bottom: 0; }
         .neo-error-list li { margin-bottom: 4px; }
-        .neo-truncate { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+        .neo-truncate { display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
         /* BOTTOM NAVIGATION - DIRAMPINGKAN */
         .neo-bottom-nav {
@@ -1094,6 +1113,7 @@ export default function App() {
           .neo-card, .neo-donation-card {
              margin-right: 4px; 
           }
+          .neo-truncate { max-width: 120px; }
         }
       `}</style>
     </div>
