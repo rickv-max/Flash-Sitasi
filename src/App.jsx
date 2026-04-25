@@ -373,6 +373,7 @@ export default function App() {
   const CopyIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
   const PlayCircleIcon = () => <svg viewBox="0 0 24 24" fill="none" height="20" width="20"><circle cx="12" cy="12" r="10" fill="white" /><polygon points="10 8 16 12 10 16" fill="var(--c-dark)" /></svg>;
   const WarningIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="16" width="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+  const StarIcon = () => <svg viewBox="0 0 24 24" fill="var(--c-yellow)" stroke="currentColor" strokeWidth="2" height="20" width="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
 
   // Variabel untuk me-render data batch
   const batchSuccesses = batchResults.filter(r => r.status === 'success');
@@ -627,6 +628,24 @@ export default function App() {
             </div>
           )}
 
+          {/* Promo Card: Skripsi Gen */}
+          <div className="neo-promo-card">
+            <h3 className="neo-promo-title">
+              <span role="img" aria-label="rocket">🚀</span> Cari Jurnal Makin Gampang!
+            </h3>
+            <p className="neo-promo-desc">
+              Kesulitan cari referensi yang pas? Gunakan AI untuk menemukan rekomendasi jurnal dan skripsi terbaik untuk penelitianmu.
+            </p>
+            <a 
+              href="https://skripsi-gen.vercel.app" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="neo-promo-btn"
+            >
+              <StarIcon /> Coba Skripsi Gen (Gratis)
+            </a>
+          </div>
+
           {/* Donation Card */}
           <div className="neo-donation-card">
             <h3 className="neo-donation-title">
@@ -674,6 +693,7 @@ export default function App() {
           --c-dark: #1E253A;
           --c-yellow: #FDE047;
           --c-teal: #40C4AA;
+          --c-pink: #FF90E8;
           --c-bg: #EEF2F6;
           --c-border: #111111;
           --c-white: #FFFFFF;
@@ -883,6 +903,56 @@ export default function App() {
         }
 
         .neo-donation-btn:active {
+          transform: translate(4px, 4px);
+          box-shadow: 0px 0px 0px var(--c-border);
+        }
+
+        /* PROMO CARD */
+        .neo-promo-card {
+          background: var(--c-pink);
+          border: 3px solid var(--c-border);
+          border-radius: 12px;
+          box-shadow: 6px 6px 0px var(--c-border);
+          padding: 1.5rem;
+          margin-bottom: 2rem;
+          margin-right: 6px; 
+        }
+
+        .neo-promo-title {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: var(--c-border);
+          margin: 0 0 0.5rem 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .neo-promo-desc {
+          font-size: 0.95rem;
+          color: var(--c-dark);
+          line-height: 1.5;
+          margin-bottom: 1.5rem;
+          font-weight: 600;
+        }
+
+        .neo-promo-btn {
+          background: var(--c-white);
+          color: var(--c-dark);
+          border: 3px solid var(--c-border);
+          border-radius: 8px;
+          padding: 12px 20px;
+          font-weight: 800;
+          font-size: 0.95rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          box-shadow: 4px 4px 0px var(--c-border);
+          transition: all 0.1s;
+        }
+
+        .neo-promo-btn:active {
           transform: translate(4px, 4px);
           box-shadow: 0px 0px 0px var(--c-border);
         }
@@ -1126,7 +1196,7 @@ export default function App() {
           .neo-nav-item span { display: none; }
           .neo-nav-item.active span { display: inline-block; }
           
-          .neo-card, .neo-donation-card {
+          .neo-card, .neo-donation-card, .neo-promo-card {
              margin-right: 4px; 
           }
           .neo-truncate { max-width: 120px; }
