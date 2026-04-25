@@ -95,7 +95,8 @@ export default function App() {
 
   // FETCH CORE LOGIC
   const processDOI = async (rawDoi) => {
-    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanDOI(rawDoi))}`);
+    const cleanedDoi = cleanDOI(rawDoi); // Ekstrak DOI murni terlebih dahulu
+    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
     if (!res.ok) throw new Error("DOI tidak ditemukan.");
     const data = await res.json();
     const item = data.message;
@@ -115,7 +116,8 @@ export default function App() {
       title: item.title?.[0] ?? "Judul Artikel",
       journal: item["container-title"]?.[0] ?? "Nama Jurnal",
       page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
-      kotaScraped
+      kotaScraped,
+      doiUrl: `https://doi.org/${cleanedDoi}` // Simpan DOI Url untuk dimunculkan di footnote
     };
   };
 
@@ -191,7 +193,21 @@ export default function App() {
     const finalKota = kotaManual.trim() ? kotaManual : (m.kotaScraped || "");
     const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
     const pageTxt = m.page ? `hal. ${m.page}.` : "";
-    return `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`;
+    
+    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`;
+    
+    // Pastikan tidak ada spasi sisa jika kota/page kosong dan pastikan berakhiran titik
+    baseFootnote = baseFootnote.trim();
+    if (!baseFootnote.endsWith(".")) {
+      baseFootnote += ".";
+    }
+
+    // Khusus Mode DOI: Tambahkan https://doi.org/... di akhir
+    if (m.doiUrl) {
+      baseFootnote += ` ${m.doiUrl}`;
+    }
+
+    return baseFootnote;
   };
 
   const buildDafpus = (m, kotaManual) => {
