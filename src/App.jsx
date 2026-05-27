@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 export default function App() {
-  // Mode State (Diatur oleh Bottom Nav)
+  // Mode State
   const [inputMode, setInputMode] = useState("doi"); // "doi" | "url" | "manual" | "batch"
 
   // Form States
@@ -23,17 +23,17 @@ export default function App() {
   // App States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [metadata, setMetadata] = useState(null); // Untuk Single Mode
-  const [batchResults, setBatchResults] = useState([]); // Untuk Batch Mode
+  const [metadata, setMetadata] = useState(null); 
+  const [batchResults, setBatchResults] = useState([]); 
   
   // Single Results
   const [footnoteResult, setFootnoteResult] = useState("");
   const [dafpusResult, setDafpusResult] = useState("");
   
-  // Unified Copy State (menyimpan ID dari elemen yang di-copy)
+  // Unified Copy State
   const [copiedId, setCopiedId] = useState(null);
 
-  // Clear error & results saat ganti tab
+  // Clear states on tab switch
   useEffect(() => {
     setError("");
     setMetadata(null);
@@ -50,7 +50,12 @@ export default function App() {
     return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1));
   };
 
-  // --- LOGIC CROSSREF & OJS (BUG FIX: 1-Kata & Pembalikan Nama DOI) ---
+  const extractDoiFromUrl = (url) => {
+    const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i);
+    return match ? match[1].replace(/\.pdf$/i, '') : null;
+  };
+
+  // --- LOGIC CROSSREF & OJS ---
   const formatAuthorsFootnote = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
     let given = authors[0].given || "";
@@ -93,11 +98,10 @@ export default function App() {
     return firstAuthor;
   };
 
-  // FETCH CORE LOGIC
   const processDOI = async (rawDoi) => {
-    const cleanedDoi = cleanDOI(rawDoi); // Ekstrak DOI murni terlebih dahulu
+    const cleanedDoi = cleanDOI(rawDoi); 
     const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
-    if (!res.ok) throw new Error("DOI tidak ditemukan.");
+    if (!res.ok) throw new Error("DOI tidak ditemukan atau salah format.");
     const data = await res.json();
     const item = data.message;
     
@@ -117,39 +121,68 @@ export default function App() {
       journal: item["container-title"]?.[0] ?? "Nama Jurnal",
       page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
       kotaScraped,
-      doiUrl: `https://doi.org/${cleanedDoi}` // Simpan DOI Url untuk dimunculkan di footnote
+      doiUrl: `https://doi.org/${cleanedDoi}` 
     };
   };
 
   const processURL = async (rawUrl) => {
     let targetUrl = rawUrl.trim();
-    const ojsMatch = targetUrl.match(/(.*\/article\/(?:view|download)\/\d+)/i);
+
+    // 1. OJS Normalizer: Solusi utama untuk "Link PDF tidak support" dari jurnal Indonesia (OJS).
+    // Mengubah link download PDF (galley) menjadi link abstrak agar metadatanya bisa dibaca.
+    const ojsMatch = targetUrl.match(/^(.*\/article\/(?:view|download|viewFile)\/\d+)(?:\/.*)?$/i);
     if (ojsMatch) {
-      targetUrl = ojsMatch[1].replace('/download/', '/view/');
+      targetUrl = ojsMatch[1].replace(/\/(download|viewFile)/i, '/view');
     }
 
     let htmlContent = "";
+    let contentType = "";
+
     try {
       const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
       if (!res.ok) throw new Error("Proxy 1 gagal");
-      const data = await res.json(); htmlContent = data.contents;
+      const data = await res.json(); 
+      htmlContent = data.contents;
+      contentType = data.status?.content_type || "";
     } catch (err1) {
       const res2 = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
-      if (!res2.ok) throw new Error("Gagal mengakses URL.");
+      if (!res2.ok) throw new Error("Gagal mengakses URL. Pastikan web dapat diakses publik.");
       htmlContent = await res2.text();
+      contentType = res2.headers.get("content-type") || "";
     }
+
     if (!htmlContent) throw new Error("Konten tidak ditemukan.");
 
-    const parser = new DOMParser(); const doc = parser.parseFromString(htmlContent, "text/html");
-    const getMeta = (name) => {
-      const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`);
-      return el ? el.getAttribute("content") : "";
+    // 2. PDF Fallback: Jika terdeteksi file PDF mentah (binary), coba cari DOI di URL-nya.
+    if (contentType.includes("application/pdf") || htmlContent.trim().startsWith("%PDF-")) {
+      const extractedDoi = extractDoiFromUrl(targetUrl);
+      if (extractedDoi) {
+        // Alihkan diam-diam menggunakan API CrossRef jika terdapat struktur DOI
+        return await processDOI(extractedDoi);
+      }
+      throw new Error("Tautan mengarah langsung ke file PDF biner statis. Mohon masukkan link halaman website/abstrak jurnal tersebut untuk mendapatkan metadata yang akurat.");
+    }
+
+    const parser = new DOMParser(); 
+    const doc = parser.parseFromString(htmlContent, "text/html");
+    
+    // 3. Mesin Scraper Canggih: Mendukung meta Citation standar, Dublin Core (DC), dan Open Graph (OG)
+    const getMeta = (nameList) => {
+      for (const name of nameList) {
+        const el = doc.querySelector(`meta[name="${name}" i]`) || doc.querySelector(`meta[property="${name}" i]`);
+        if (el && el.getAttribute("content")) return el.getAttribute("content").trim();
+      }
+      return "";
     };
 
-    const title = getMeta("citation_title") || doc.title || "Judul Tidak Diketahui";
-    const authorNodes = doc.querySelectorAll('meta[name="citation_author"]');
+    const title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
+    
     let authors = [];
-    authorNodes.forEach(node => authors.push(node.getAttribute("content")));
+    const authorNodes = doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]');
+    authorNodes.forEach(node => {
+      const content = node.getAttribute("content");
+      if(content && !authors.includes(content)) authors.push(content);
+    });
 
     let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
     if (authors.length > 0) {
@@ -163,11 +196,9 @@ export default function App() {
       } else {
         const parts = firstAuthor.split(" ").filter(Boolean);
         if (parts.length === 1) {
-          family = parts[0];
-          given = "";
+          family = parts[0]; given = "";
         } else {
-          family = parts.pop();
-          given = parts.join(" ");
+          family = parts.pop(); given = parts.join(" ");
         }
       }
       
@@ -176,36 +207,33 @@ export default function App() {
       if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
     }
 
-    const dateStr = getMeta("citation_date") || getMeta("citation_publication_date") || "";
+    const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || "";
     const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun";
-    const page = getMeta("citation_firstpage") ? (getMeta("citation_lastpage") ? `${getMeta("citation_firstpage")}-${getMeta("citation_lastpage")}` : getMeta("citation_firstpage")) : "";
+    
+    const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]);
+    const lastPage = getMeta(["citation_lastpage"]);
+    const page = firstPage ? (lastPage ? `${firstPage}-${lastPage}` : firstPage) : "";
 
     return {
       authorFootnote: fn, authorDafpus: dp, year, month: "", title,
-      journal: getMeta("citation_journal_title") || "", page, volume: getMeta("citation_volume") || "",
-      issue: getMeta("citation_issue") || "", publisher: getMeta("citation_publisher") || "",
+      journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", 
+      page, 
+      volume: getMeta(["citation_volume", "DC.Source.Volume"]) || "",
+      issue: getMeta(["citation_issue", "DC.Source.Issue"]) || "", 
+      publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "",
       kotaScraped: ""
     };
   };
 
-  // BUILDERS
   const buildFootnote = (m, kotaManual) => {
     const finalKota = kotaManual.trim() ? kotaManual : (m.kotaScraped || "");
     const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
     const pageTxt = m.page ? `hal. ${m.page}.` : "";
     
     let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`;
-    
-    // Pastikan tidak ada spasi sisa jika kota/page kosong dan pastikan berakhiran titik
     baseFootnote = baseFootnote.trim();
-    if (!baseFootnote.endsWith(".")) {
-      baseFootnote += ".";
-    }
-
-    // Khusus Mode DOI: Tambahkan https://doi.org/... di akhir
-    if (m.doiUrl) {
-      baseFootnote += ` ${m.doiUrl}`;
-    }
+    if (!baseFootnote.endsWith(".")) baseFootnote += ".";
+    if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`;
 
     return baseFootnote;
   };
@@ -233,7 +261,7 @@ export default function App() {
     return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
 
-  // --- HANDLERS SINGLE MODE ---
+  // --- HANDLERS ---
   const fetchDOI = async () => {
     if (!doiInput) return;
     setLoading(true); setError(""); setMetadata(null);
@@ -243,8 +271,7 @@ export default function App() {
       setFootnoteResult(buildFootnote(meta, kotaInput));
       setDafpusResult(buildDafpus(meta, kotaInput));
     } catch (e) {
-      if (e.message === "Failed to fetch") setError("Koneksi terputus. Matikan Adblock/VPN sebentar ya.");
-      else setError(e.message);
+      setError(e.message === "Failed to fetch" ? "Koneksi terputus. Pastikan koneksi internet stabil." : e.message);
     } finally { setLoading(false); }
   };
 
@@ -254,18 +281,16 @@ export default function App() {
     try {
       const meta = await processURL(urlInput);
       if (meta.authorFootnote === "Penulis Tidak Diketahui") {
-         setError("Info: Web/Link ini gagal menyediakan metadata standar, hasilnya mungkin kosong/tidak akurat.");
+         setError("Info: Tautan tidak menyediakan metadata yang cukup. Hasil mungkin tidak sempurna.");
       }
       setMetadata(meta);
       setFootnoteResult(buildFootnote(meta, kotaInput));
       setDafpusResult(buildDafpus(meta, kotaInput));
     } catch (e) {
-      if (e.message === "Failed to fetch") setError("Koneksi gagal. Coba matikan Adblock/VPN.");
-      else setError(e.message || "Terjadi kesalahan saat memproses URL.");
+      setError(e.message === "Failed to fetch" ? "Koneksi gagal." : e.message);
     } finally { setLoading(false); }
   };
 
-  // --- HANDLER MANUAL ---
   const parseManualAuthor = (authorStr) => {
     if (!authorStr.trim()) return { fn: "Penulis Tidak Diketahui", dp: "Penulis Tidak Diketahui" };
     const authors = authorStr.split(",").map((a) => a.trim()).filter(Boolean);
@@ -276,26 +301,21 @@ export default function App() {
     
     let family = "", given = "";
     if (parts.length === 1) {
-      family = parts[0];
-      given = "";
+      family = parts[0]; given = "";
     } else {
-      family = parts.pop();
-      given = parts.join(" ");
+      family = parts.pop(); given = parts.join(" ");
     }
 
     let fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
     let dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
 
-    if (authors.length > 1) {
-      fn += " <i>et al.</i>";
-      dp += " <i>et al.</i>";
-    }
+    if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
     return { fn, dp };
   };
 
   const handleGenerateManual = () => {
     setError("");
-    if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi bos!");
+    if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi.");
     const { fn, dp } = parseManualAuthor(mAuthor);
     const meta = {
       authorFootnote: fn, authorDafpus: dp, title: mTitle, journal: mJournal, year: mYear,
@@ -306,34 +326,28 @@ export default function App() {
     setDafpusResult(buildDafpus(meta, kotaInput));
   };
 
-  // --- HANDLER BATCH (ALL IN ONE) ---
   const handleBatchGenerate = async () => {
-    if (!batchInput.trim()) return setError("Masukkan minimal 1 link atau DOI.");
+    if (!batchInput.trim()) return setError("Masukkan setidaknya 1 link atau DOI.");
     setLoading(true); setError(""); setBatchResults([]); setMetadata(null);
 
     const lines = batchInput.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     const results = [];
 
     for (const line of lines) {
-      const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
-      
+      const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org") || line.includes("dx.doi.org");
       try {
         let meta;
         if (isDoi) meta = await processDOI(line);
         else meta = await processURL(line);
-        
         results.push({ status: "success", line, meta });
       } catch (err) {
         results.push({ status: "error", line, error: err.message });
       }
     }
-
     setBatchResults(results);
     setLoading(false);
   };
 
-
-  // --- COPY FUNCTION (Menerima parameter copyId agar tombol yang aktif hanya 1 yang diklik) ---
   const handleCopy = (htmlString, targetCopyId) => {
     if (!htmlString) return;
     const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
@@ -367,257 +381,292 @@ export default function App() {
   const LinkIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
   const EditIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
   const ListIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
-  const MenuIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" height="24" width="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
   const BoltIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="24" width="24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
   const CheckIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg>;
   const CopyIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
-  const PlayCircleIcon = () => <svg viewBox="0 0 24 24" fill="none" height="20" width="20"><circle cx="12" cy="12" r="10" fill="white" /><polygon points="10 8 16 12 10 16" fill="var(--c-dark)" /></svg>;
-  const WarningIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="16" width="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
-  const StarIcon = () => <svg viewBox="0 0 24 24" fill="var(--c-yellow)" stroke="currentColor" strokeWidth="2" height="20" width="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+  const WarningIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 
-  // Variabel untuk me-render data batch
+  // Constants
   const batchSuccesses = batchResults.filter(r => r.status === 'success');
   const batchErrors = batchResults.filter(r => r.status === 'error');
-  // Daftar Pustaka disorting sesuai Abjad
   const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus));
 
-  return (
-    <div className="neo-app">
-      
-      {/* Top Header (White & Sticky) */}
-      <header className="neo-header">
-        <div className="neo-logo">
-          F l <span className="neo-logo-icon"><BoltIcon /></span> s h
+  // --- SKELETON LOADER COMPONENT ---
+  const SkeletonLoader = () => (
+    <div className="card animate-fade-in mt-6">
+      <div className="card-header bg-skeleton-header border-b border-gray-100 flex items-center gap-3">
+        <div className="w-2.5 h-2.5 rounded-full skeleton-pulse" style={{ backgroundColor: '#cbd5e1' }}></div>
+        <div className="h-4 w-40 rounded skeleton-pulse" style={{ backgroundColor: '#cbd5e1' }}></div>
+      </div>
+      <div className="p-6">
+        <div className="mb-8">
+          <div className="h-3 w-48 rounded mb-4 skeleton-pulse" style={{ backgroundColor: '#e2e8f0' }}></div>
+          <div className="h-16 w-full rounded-md skeleton-pulse" style={{ backgroundColor: '#f1f5f9' }}></div>
         </div>
-        <div className="neo-menu-btn"><MenuIcon /></div>
+        <div>
+          <div className="h-3 w-48 rounded mb-4 skeleton-pulse" style={{ backgroundColor: '#e2e8f0' }}></div>
+          <div className="h-16 w-full rounded-md skeleton-pulse" style={{ backgroundColor: '#f1f5f9' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="app-container">
+      
+      {/* Header */}
+      <header className="header">
+        <div className="logo-container">
+          <span className="logo-text">Fl<span className="logo-icon"><BoltIcon /></span>sh</span>
+        </div>
       </header>
 
-      {/* Hero Section (Dark Blue + Pattern) */}
-      <section className="neo-hero">
-        <div className="neo-hero-content">
-          <div className="neo-badge">GENERATE SITASI OTOMATIS</div>
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          <div className="badge">GENERATOR SITASI CERDAS</div>
           <h1>
-            Ubah <span className="neo-highlight">DOI</span> atau URL ke<br />
-            Format <span className="neo-highlight">Sitasi Jurnal</span>
+            Solusi Pintar Ekstrak <span className="highlight-text">DOI & Link PDF</span><br />
+            ke Format Sitasi Akademik
           </h1>
-          <p>Transformasi referensi jurnalmu menjadi format Catatan Kaki & Daftar Pustaka dengan cepat dan akurat.</p>
-          
-          <button className="neo-btn-primary neo-btn-large" onClick={() => window.scrollTo({top: 450, behavior: 'smooth'})}>
-            Mulai Buat Sitasi Sekarang
-          </button>
+          <p className="hero-description">Transformasi referensi jurnalmu menjadi format Catatan Kaki (Footnote) dan Daftar Pustaka secara instan. Mendukung ekstraksi tautan PDF dan OJS.</p>
         </div>
       </section>
 
       {/* Main Content Area */}
-      <section className="neo-content-area">
-        <div className="neo-container">
+      <section className="main-content">
+        <div className="container">
           
-          {/* Input Card */}
-          <div className="neo-card">
-            <div className="neo-card-header">
-              <div className="neo-circle"></div>
-              {inputMode === "doi" && "INPUT DATA: NOMOR DOI"}
-              {inputMode === "url" && "INPUT DATA: LINK URL"}
-              {inputMode === "manual" && "INPUT DATA: KETIK MANUAL"}
-              {inputMode === "batch" && "INPUT DATA: ALL IN ONE (BATCH)"}
+          {/* Form Card */}
+          <div className="card shadow-sm">
+            <div className="card-header border-b border-gray-100">
+              <div className="circle-indicator bg-primary"></div>
+              <h2 className="card-title">
+                {inputMode === "doi" && "MODE: NOMOR DOI"}
+                {inputMode === "url" && "MODE: LINK URL & PDF"}
+                {inputMode === "manual" && "MODE: KETIK MANUAL"}
+                {inputMode === "batch" && "MODE: BATCH (BANYAK LINK)"}
+              </h2>
             </div>
             
-            <div className="neo-card-body">
+            <div className="p-6 md:p-8">
               {/* DOI MODE */}
               {inputMode === "doi" && (
-                <div className="neo-fade-in">
-                  <div className="neo-form-group">
-                    <label className="neo-label">Masukkan Nomor DOI</label>
-                    <input type="text" className="neo-input" value={doiInput} onChange={(e)=>setDoiInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchDOI()} placeholder="10.1038/s41586..." />
+                <div className="animate-fade-in">
+                  <div className="form-group">
+                    <label className="form-label">Nomor DOI Artikel</label>
+                    <input type="text" className="form-input" value={doiInput} onChange={(e)=>setDoiInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
                   </div>
-                  <div className="neo-form-group">
-                    <label className="neo-label">Kota Terbit (Opsional - Otomatis jika ada)</label>
-                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
+                  <div className="form-group mb-6">
+                    <label className="form-label">Kota Terbit <span className="label-optional">(Opsional)</span></label>
+                    <input type="text" className="form-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
                   </div>
-                  <button className="neo-btn-primary neo-w-full" onClick={fetchDOI} disabled={loading || !doiInput}>
-                    {loading ? "MEMPROSES..." : "TARIK DATA"}
+                  <button className="btn-primary w-full" onClick={fetchDOI} disabled={loading || !doiInput}>
+                    {loading ? "Menarik Data..." : "Generate Sitasi"}
                   </button>
                 </div>
               )}
 
               {/* URL MODE */}
               {inputMode === "url" && (
-                <div className="neo-fade-in">
-                  <div className="neo-form-group">
-                    <label className="neo-label">Masukkan Link Jurnal (Support PDF URL)</label>
-                    <input type="text" className="neo-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/.../pdf" />
+                <div className="animate-fade-in">
+                  <div className="form-group">
+                    <label className="form-label">Link Jurnal atau PDF</label>
+                    <input type="text" className="form-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/.../pdf" />
+                    <p className="form-helper">Mendukung otomatisasi konversi link OJS Download ke halaman Abstrak.</p>
                   </div>
-                  <div className="neo-form-group">
-                    <label className="neo-label">Kota Terbit (Opsional)</label>
-                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Ketik manual di sini (Misal: Malang)" />
+                  <div className="form-group mb-6">
+                    <label className="form-label">Kota Terbit <span className="label-optional">(Opsional)</span></label>
+                    <input type="text" className="form-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Yogyakarta" />
                   </div>
-                  <button className="neo-btn-primary neo-w-full" onClick={fetchURL} disabled={loading || !urlInput}>
-                    {loading ? "MEMPROSES..." : "TARIK DATA"}
+                  <button className="btn-primary w-full" onClick={fetchURL} disabled={loading || !urlInput}>
+                    {loading ? "Menganalisis Link..." : "Generate Sitasi"}
                   </button>
                 </div>
               )}
 
               {/* MANUAL MODE */}
               {inputMode === "manual" && (
-                <div className="neo-fade-in">
-                  <div className="neo-grid">
-                    <div className="neo-form-group neo-span-2">
-                      <label className="neo-label">Nama Penulis *</label>
-                      <input type="text" className="neo-input" value={mAuthor} onChange={(e)=>setMAuthor(e.target.value)} placeholder="Misal: Ricky, Budi Santoso" />
+                <div className="animate-fade-in">
+                  <div className="form-grid">
+                    <div className="form-group col-span-2">
+                      <label className="form-label">Nama Penulis <span className="text-red-500">*</span></label>
+                      <input type="text" className="form-input" value={mAuthor} onChange={(e)=>setMAuthor(e.target.value)} placeholder="Ricky, Budi Santoso" />
                     </div>
-                    <div className="neo-form-group neo-span-2">
-                      <label className="neo-label">Judul Artikel *</label>
-                      <input type="text" className="neo-input" value={mTitle} onChange={(e)=>setMTitle(e.target.value)} placeholder="Pengaruh Teknologi..." />
+                    <div className="form-group col-span-2">
+                      <label className="form-label">Judul Artikel <span className="text-red-500">*</span></label>
+                      <input type="text" className="form-input" value={mTitle} onChange={(e)=>setMTitle(e.target.value)} placeholder="Pengaruh Teknologi Terhadap..." />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Nama Jurnal</label>
-                      <input type="text" className="neo-input" value={mJournal} onChange={(e)=>setMJournal(e.target.value)} />
+                    <div className="form-group">
+                      <label className="form-label">Nama Jurnal</label>
+                      <input type="text" className="form-input" value={mJournal} onChange={(e)=>setMJournal(e.target.value)} />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Tahun *</label>
-                      <input type="text" className="neo-input" value={mYear} onChange={(e)=>setMYear(e.target.value)} />
+                    <div className="form-group">
+                      <label className="form-label">Tahun <span className="text-red-500">*</span></label>
+                      <input type="text" className="form-input" value={mYear} onChange={(e)=>setMYear(e.target.value)} />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Volume</label>
-                      <input type="text" className="neo-input" value={mVolume} onChange={(e)=>setMVolume(e.target.value)} />
+                    <div className="form-group">
+                      <label className="form-label">Volume</label>
+                      <input type="text" className="form-input" value={mVolume} onChange={(e)=>setMVolume(e.target.value)} />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Isu / Nomor</label>
-                      <input type="text" className="neo-input" value={mIssue} onChange={(e)=>setMIssue(e.target.value)} />
+                    <div className="form-group">
+                      <label className="form-label">Isu / Nomor</label>
+                      <input type="text" className="form-input" value={mIssue} onChange={(e)=>setMIssue(e.target.value)} />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Halaman</label>
-                      <input type="text" className="neo-input" value={mPage} onChange={(e)=>setMPage(e.target.value)} placeholder="15-25" />
+                    <div className="form-group">
+                      <label className="form-label">Halaman</label>
+                      <input type="text" className="form-input" value={mPage} onChange={(e)=>setMPage(e.target.value)} placeholder="15-25" />
                     </div>
-                    <div className="neo-form-group">
-                      <label className="neo-label">Kota Terbit</label>
-                      <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} />
+                    <div className="form-group">
+                      <label className="form-label">Kota Terbit</label>
+                      <input type="text" className="form-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} />
                     </div>
                   </div>
-                  <button className="neo-btn-primary neo-w-full" onClick={handleGenerateManual}>
-                    GENERATE SITASI
+                  <button className="btn-primary w-full mt-6" onClick={handleGenerateManual}>
+                    Generate Sitasi Manual
                   </button>
                 </div>
               )}
 
-              {/* BATCH MODE (ALL IN ONE) */}
+              {/* BATCH MODE */}
               {inputMode === "batch" && (
-                <div className="neo-fade-in">
-                  <div className="neo-form-group">
-                    <label className="neo-label">Paste Banyak URL/PDF/DOI (1 baris = 1 Link)</label>
+                <div className="animate-fade-in">
+                  <div className="form-group">
+                    <label className="form-label">Daftar Link atau DOI</label>
                     <textarea 
-                      className="neo-input" 
-                      rows="6" 
-                      style={{ resize: "vertical", minHeight: "120px" }}
+                      className="form-input textarea" 
                       value={batchInput} 
                       onChange={(e)=>setBatchInput(e.target.value)} 
-                      placeholder="https://jurnal.kampus.ac.id/...&#10;10.1038/s41586...&#10;https://jurnal.../download/65/pdf" 
+                      placeholder="Masukkan URL atau DOI di sini (Satu baris untuk setiap referensi)&#10;https://jurnal.kampus.ac.id/...&#10;10.1038/s41586..." 
                     />
                   </div>
-                  <div className="neo-form-group">
-                    <label className="neo-label">Kota Terbit Pukul Rata (Jika DOI tidak memilikinya)</label>
-                    <input type="text" className="neo-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
+                  <div className="form-group mb-6">
+                    <label className="form-label">Kota Terbit <span className="label-optional">(Opsional, berlaku untuk semua)</span></label>
+                    <input type="text" className="form-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Jakarta" />
                   </div>
-                  <button className="neo-btn-primary neo-w-full" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
-                    {loading ? "MEMPROSES BATCH..." : "GENERATE SEKALIGUS"}
+                  <button className="btn-primary w-full" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                    {loading ? "Memproses Data Secara Masal..." : "Generate Sekaligus"}
                   </button>
                 </div>
               )}
 
-              {/* Error Box (Untuk Mode Single) */}
-              {error && <div className="neo-error-box">{error}</div>}
+              {/* Error Alert */}
+              {error && (
+                <div className="alert-error mt-6 animate-fade-in">
+                  <WarningIcon />
+                  <span>{error}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Results Card (Single & Manual Mode) */}
-          {metadata && inputMode !== "batch" && (
-            <div className="neo-card neo-animate-up">
-              <div className="neo-card-header neo-bg-teal">
-                <div className="neo-circle"></div> HASIL GENERATE
+          {/* SKELETON SCREEN (Tampil Saat Memproses) */}
+          {loading && inputMode !== 'batch' && <SkeletonLoader />}
+          {loading && inputMode === 'batch' && (
+             <>
+               <SkeletonLoader />
+               <div style={{opacity: 0.5}}><SkeletonLoader /></div>
+             </>
+          )}
+
+          {/* Results Card (Single & Manual) */}
+          {!loading && metadata && inputMode !== "batch" && (
+            <div className="card shadow-sm mt-6 animate-slide-up">
+              <div className="card-header bg-success-light border-b border-success-border">
+                <div className="circle-indicator bg-success"></div>
+                <h2 className="card-title text-success-dark">HASIL EKSTRAKSI</h2>
               </div>
-              <div className="neo-card-body">
+              <div className="p-6 md:p-8">
                 
-                <div className="neo-result-box">
-                  <div className="neo-result-header">
-                    <span>CATATAN KAKI (FOOTNOTE)</span>
-                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(footnoteResult, "single-fn")}>
-                      {copiedId === "single-fn" ? <CheckIcon /> : <CopyIcon />} {copiedId === "single-fn" ? "DISALIN" : "COPY"}
+                <div className="result-container">
+                  <div className="result-header">
+                    <span className="result-label">CATATAN KAKI (FOOTNOTE)</span>
+                    <button className="btn-icon" onClick={() => handleCopy(footnoteResult, "single-fn")}>
+                      {copiedId === "single-fn" ? <><CheckIcon /> Disalin</> : <><CopyIcon /> Copy</>}
                     </button>
                   </div>
-                  <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: footnoteResult }} />
+                  <div className="result-content" dangerouslySetInnerHTML={{ __html: footnoteResult }} />
                 </div>
 
-                <div className="neo-result-box neo-mt-4">
-                  <div className="neo-result-header">
-                    <span>DAFTAR PUSTAKA</span>
-                    <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(dafpusResult, "single-dp")}>
-                      {copiedId === "single-dp" ? <CheckIcon /> : <CopyIcon />} {copiedId === "single-dp" ? "DISALIN" : "COPY"}
+                <div className="result-container mt-6">
+                  <div className="result-header">
+                    <span className="result-label">DAFTAR PUSTAKA</span>
+                    <button className="btn-icon" onClick={() => handleCopy(dafpusResult, "single-dp")}>
+                      {copiedId === "single-dp" ? <><CheckIcon /> Disalin</> : <><CopyIcon /> Copy</>}
                     </button>
                   </div>
-                  <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: dafpusResult }} />
+                  <div className="result-content" dangerouslySetInnerHTML={{ __html: dafpusResult }} />
                 </div>
 
-                <div className="neo-info-box neo-mt-4">
-                  <strong>META:</strong> {metadata.authorFootnote.replace(/<[^>]+>/g, "")} | {metadata.year}
+                <div className="meta-footer mt-6">
+                  <span className="meta-badge">Info Data</span>
+                  Ekstraksi {metadata.authorFootnote.replace(/<[^>]+>/g, "")} ({metadata.year})
                 </div>
               </div>
             </div>
           )}
 
-          {/* Results Card (Batch Mode) */}
-          {batchResults.length > 0 && inputMode === "batch" && (
-            <div className="neo-card neo-animate-up">
-              <div className="neo-card-header neo-bg-teal">
-                <div className="neo-circle"></div> HASIL BATCH ({batchSuccesses.length} SUKSES)
+          {/* Results Card (Batch) */}
+          {!loading && batchResults.length > 0 && inputMode === "batch" && (
+            <div className="card shadow-sm mt-6 animate-slide-up">
+              <div className="card-header bg-success-light border-b border-success-border">
+                <div className="circle-indicator bg-success"></div>
+                <h2 className="card-title text-success-dark">BERHASIL DIPROSES ({batchSuccesses.length})</h2>
               </div>
-              <div className="neo-card-body">
+              <div className="p-6 md:p-8">
                 
                 {batchSuccesses.length > 0 && (
                   <>
-                    <h4 className="neo-section-title">📌 CATATAN KAKI (FOOTNOTE)</h4>
-                    {batchSuccesses.map((r, index) => {
-                      const content = buildFootnote(r.meta, kotaInput);
-                      const copyId = `batch-fn-${index}`;
-                      return (
-                        <div className="neo-result-box neo-mb-3" key={copyId}>
-                          <div className="neo-result-header">
-                            <span className="neo-truncate" title={r.line}>{r.line}</span>
-                            <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(content, copyId)}>
-                              {copiedId === copyId ? <CheckIcon /> : <CopyIcon />} {copiedId === copyId ? "DISALIN" : "COPY"}
-                            </button>
+                    <h4 className="section-heading mt-0">Catatan Kaki (Footnote)</h4>
+                    <div className="batch-list">
+                      {batchSuccesses.map((r, index) => {
+                        const content = buildFootnote(r.meta, kotaInput);
+                        const copyId = `batch-fn-${index}`;
+                        return (
+                          <div className="result-container mb-4" key={copyId}>
+                            <div className="result-header">
+                              <span className="truncate-text" title={r.line}>{r.line}</span>
+                              <button className="btn-icon" onClick={() => handleCopy(content, copyId)}>
+                                {copiedId === copyId ? <><CheckIcon /> Disalin</> : <><CopyIcon /> Copy</>}
+                              </button>
+                            </div>
+                            <div className="result-content" dangerouslySetInnerHTML={{ __html: content }} />
                           </div>
-                          <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: content }} />
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
 
-                    <h4 className="neo-section-title" style={{ marginTop: '2rem' }}>📚 DAFTAR PUSTAKA (URUT ABJAD)</h4>
-                    {sortedBatchDafpus.map((r, index) => {
-                      const content = buildDafpus(r.meta, kotaInput);
-                      const copyId = `batch-dp-${index}`;
-                      return (
-                        <div className="neo-result-box neo-mb-3" key={copyId}>
-                          <div className="neo-result-header">
-                            <span className="neo-truncate" title={r.line}>{r.line}</span>
-                            <button className="neo-btn-secondary neo-btn-sm" onClick={() => handleCopy(content, copyId)}>
-                              {copiedId === copyId ? <CheckIcon /> : <CopyIcon />} {copiedId === copyId ? "DISALIN" : "COPY"}
-                            </button>
+                    <h4 className="section-heading mt-10">Daftar Pustaka (Urut Abjad)</h4>
+                    <div className="batch-list">
+                      {sortedBatchDafpus.map((r, index) => {
+                        const content = buildDafpus(r.meta, kotaInput);
+                        const copyId = `batch-dp-${index}`;
+                        return (
+                          <div className="result-container mb-4" key={copyId}>
+                            <div className="result-header">
+                              <span className="truncate-text" title={r.line}>{r.line}</span>
+                              <button className="btn-icon" onClick={() => handleCopy(content, copyId)}>
+                                {copiedId === copyId ? <><CheckIcon /> Disalin</> : <><CopyIcon /> Copy</>}
+                              </button>
+                            </div>
+                            <div className="result-content" dangerouslySetInnerHTML={{ __html: content }} />
                           </div>
-                          <div className="neo-result-content" dangerouslySetInnerHTML={{ __html: content }} />
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </>
                 )}
 
-                {/* Tampilkan yang error kalau ada */}
                 {batchErrors.length > 0 && (
-                  <div className="neo-error-list neo-mt-4">
-                    <strong><WarningIcon/> Gagal Memproses:</strong>
-                    <ul>
+                  <div className="alert-error mt-8">
+                    <div className="flex items-center gap-2 mb-2 font-semibold">
+                      <WarningIcon/> Gagal Memproses ({batchErrors.length})
+                    </div>
+                    <ul className="error-list">
                       {batchErrors.map((err, i) => (
                         <li key={i}>
-                          <span className="neo-truncate">{err.line}</span> - <i>{err.error}</i>
+                          <strong>{err.line}</strong><br/>
+                          <span className="text-sm opacity-90">{err.error}</span>
                         </li>
                       ))}
                     </ul>
@@ -628,578 +677,497 @@ export default function App() {
             </div>
           )}
 
-          {/* Promo Card: Skripsi Gen */}
-          <div className="neo-promo-card">
-            <h3 className="neo-promo-title">
-              <span role="img" aria-label="rocket">🚀</span> Cari Jurnal Makin Gampang!
-            </h3>
-            <p className="neo-promo-desc">
-              Kesulitan cari referensi yang pas? Gunakan AI untuk menemukan rekomendasi jurnal dan skripsi terbaik untuk penelitianmu.
-            </p>
-            <a 
-              href="https://skripsi-gen.vercel.app" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="neo-promo-btn"
-            >
-              <StarIcon /> Coba Skripsi Gen (Gratis)
-            </a>
-          </div>
-
-          {/* Donation Card */}
-          <div className="neo-donation-card">
-            <h3 className="neo-donation-title">
-              <span role="img" aria-label="coffee">☕</span> Dukung pengembangan tool ini!
-            </h3>
-            <p className="neo-donation-desc">
-              Tool ini gratis & open-use. Donasi membantu pengembangan fitur baru dan perawatan server.
-            </p>
-            <a 
-              href="https://saweria.co/rickpipor" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="neo-donation-btn"
-            >
-              <PlayCircleIcon /> Donasi di Saweria
-            </a>
-          </div>
-
-          {/* Spacer for bottom nav */}
-          <div style={{ height: '90px' }}></div>
+          <div className="spacer-bottom"></div>
         </div>
       </section>
 
-      {/* Floating Bottom Navigation (Neo-brutalism Style) */}
-      <nav className="neo-bottom-nav">
-        <button className={`neo-nav-item ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>
-          <SearchIcon /> <span>DOI</span>
-        </button>
-        <button className={`neo-nav-item ${inputMode === "url" ? "active" : ""}`} onClick={() => setInputMode("url")}>
-          <LinkIcon /> <span>LINK</span>
-        </button>
-        <button className={`neo-nav-item ${inputMode === "batch" ? "active" : ""}`} onClick={() => setInputMode("batch")}>
-          <ListIcon /> <span>BATCH</span>
-        </button>
-        <button className={`neo-nav-item ${inputMode === "manual" ? "active" : ""}`} onClick={() => setInputMode("manual")}>
-          <EditIcon /> <span>MANUAL</span>
-        </button>
+      {/* Floating Modern Bottom Navigation */}
+      <nav className="bottom-nav-container">
+        <div className="bottom-nav">
+          <button className={`nav-item ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>
+            <SearchIcon /> <span>DOI</span>
+          </button>
+          <button className={`nav-item ${inputMode === "url" ? "active" : ""}`} onClick={() => setInputMode("url")}>
+            <LinkIcon /> <span>Tautan</span>
+          </button>
+          <button className={`nav-item ${inputMode === "batch" ? "active" : ""}`} onClick={() => setInputMode("batch")}>
+            <ListIcon /> <span>Batch</span>
+          </button>
+          <button className={`nav-item ${inputMode === "manual" ? "active" : ""}`} onClick={() => setInputMode("manual")}>
+            <EditIcon /> <span>Manual</span>
+          </button>
+        </div>
       </nav>
 
-      {/* STYLES (NEOBRUTALISM CSS) */}
+      {/* STYLES (Clean, Modern, Enterprise UI) */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
         :root {
-          --c-dark: #1E253A;
-          --c-yellow: #FDE047;
-          --c-teal: #40C4AA;
-          --c-pink: #FF90E8;
-          --c-bg: #EEF2F6;
-          --c-border: #111111;
-          --c-white: #FFFFFF;
+          --primary: #2563eb;
+          --primary-hover: #1d4ed8;
+          --primary-light: #eff6ff;
+          
+          --bg-body: #f8fafc;
+          --bg-surface: #ffffff;
+          
+          --text-main: #0f172a;
+          --text-muted: #64748b;
+          
+          --border-color: #e2e8f0;
+          --border-focus: #93c5fd;
+          
+          --success: #10b981;
+          --success-light: #f0fdf4;
+          --success-border: #bbf7d0;
+          --success-dark: #166534;
+          
+          --error: #ef4444;
+          --error-light: #fef2f2;
+          --error-border: #fecaca;
         }
 
         html, body, #root {
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          text-align: left !important;
-          background-color: var(--c-bg);
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background-color: var(--bg-body);
+          color: var(--text-main);
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          -webkit-font-smoothing: antialiased;
         }
 
-        * {
+        *, *::before, *::after {
           box-sizing: border-box;
-          font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        .neo-app {
+        .app-container {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
         }
 
-        /* HEADER - STICKY ADDED */
-        .neo-header {
-          background: var(--c-white);
-          padding: 1rem 1.5rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 3px solid var(--c-border);
+        /* HEADER */
+        .header {
+          background: var(--bg-surface);
+          border-bottom: 1px solid var(--border-color);
           position: sticky;
           top: 0;
-          z-index: 1000;
+          z-index: 50;
+          padding: 1rem 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
         }
 
-        .neo-logo {
+        .logo-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .logo-text {
           font-size: 1.5rem;
-          font-weight: 900;
-          letter-spacing: 4px;
-          color: var(--c-dark);
+          font-weight: 800;
+          letter-spacing: -0.5px;
+          color: var(--text-main);
           display: flex;
           align-items: center;
         }
 
-        .neo-logo-icon {
-          color: var(--c-teal);
+        .logo-icon {
+          color: var(--primary);
           display: flex;
           align-items: center;
           margin: 0 2px;
         }
 
-        .neo-menu-btn {
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-        }
-
-        /* HERO SECTION */
-        .neo-hero {
-          background-color: var(--c-dark);
-          background-image: repeating-linear-gradient(
-            -45deg,
-            rgba(0, 0, 0, 0.1),
-            rgba(0, 0, 0, 0.1) 15px,
-            transparent 15px,
-            transparent 30px
-          );
-          padding: 4rem 1.5rem 5rem;
-          color: var(--c-white);
+        /* HERO */
+        .hero {
+          background-color: var(--text-main);
+          padding: 4rem 1.5rem;
+          text-align: center;
           display: flex;
           justify-content: center;
-          border-bottom: 3px solid var(--c-border);
         }
 
-        .neo-hero-content {
-          max-width: 600px;
-          text-align: center;
+        .hero-content {
+          max-width: 680px;
         }
 
-        .neo-badge {
+        .badge {
           display: inline-block;
-          border: 2px solid var(--c-teal);
-          color: var(--c-teal);
-          padding: 6px 16px;
-          border-radius: 100px;
+          background: rgba(255,255,255,0.1);
+          color: #e2e8f0;
+          padding: 0.35rem 1rem;
+          border-radius: 9999px;
           font-size: 0.75rem;
-          font-weight: 800;
-          letter-spacing: 1px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
           margin-bottom: 1.5rem;
+          border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .neo-hero h1 {
+        .hero h1 {
+          color: #ffffff;
           font-size: 2.25rem;
           font-weight: 800;
-          line-height: 1.3;
-          margin-bottom: 1rem;
+          line-height: 1.25;
+          margin: 0 0 1.25rem 0;
+          letter-spacing: -0.5px;
         }
 
-        .neo-highlight {
-          color: var(--c-yellow);
+        .highlight-text {
+          color: #60a5fa;
         }
 
-        .neo-hero p {
-          color: #A3B1C6;
-          font-size: 0.95rem;
+        .hero-description {
+          color: #94a3b8;
+          font-size: 1.05rem;
           line-height: 1.6;
-          margin-bottom: 2.5rem;
+          margin: 0;
+          font-weight: 400;
         }
 
-        /* MAIN CONTENT AREA */
-        .neo-content-area {
-          background-color: var(--c-bg);
-          padding: 2.5rem 1rem;
+        /* MAIN CONTENT & CONTAINERS */
+        .main-content {
+          padding: 2rem 1.5rem;
           flex: 1;
         }
 
-        .neo-container {
-          width: 90%;
-          max-width: 600px;
+        .container {
+          max-width: 680px;
           margin: 0 auto;
+          position: relative;
+          top: -3.5rem; /* Overlap hero */
         }
 
-        /* NEOBRUTALISM CARD */
-        .neo-card {
-          background: var(--c-white);
-          border: 3px solid var(--c-border);
-          border-radius: 12px;
-          box-shadow: 6px 6px 0px var(--c-border);
-          margin-bottom: 2rem;
-          margin-right: 6px; 
+        /* CARDS */
+        .card {
+          background: var(--bg-surface);
+          border-radius: 16px;
+          border: 1px solid var(--border-color);
           overflow: hidden;
         }
 
-        .neo-card-header {
-          background: var(--c-yellow);
-          border-bottom: 3px solid var(--c-border);
-          padding: 14px 16px;
-          font-weight: 800;
-          font-size: 0.85rem;
-          letter-spacing: 1px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        
-        .neo-bg-teal {
-          background: var(--c-teal);
-          color: var(--c-dark);
+        .shadow-sm {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .neo-circle {
-          width: 12px; height: 12px;
-          border: 2px solid var(--c-border);
+        .card-header {
+          padding: 1.25rem 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: #fcfcfd;
+        }
+
+        .bg-success-light { background: var(--success-light); }
+        .border-success-border { border-color: var(--success-border); }
+
+        .circle-indicator {
+          width: 10px; height: 10px;
           border-radius: 50%;
-          background: var(--c-white);
         }
+        .bg-primary { background: var(--primary); }
+        .bg-success { background: var(--success); }
 
-        .neo-card-body {
-          padding: 1.5rem;
-        }
-
-        /* DONATION CARD */
-        .neo-donation-card {
-          background: var(--c-yellow);
-          border: 3px solid var(--c-border);
-          border-radius: 12px;
-          box-shadow: 6px 6px 0px var(--c-border);
-          padding: 1.5rem;
-          margin-bottom: 2rem;
-          margin-right: 6px; 
-        }
-
-        .neo-donation-title {
-          font-size: 1.25rem;
-          font-weight: 800;
-          color: var(--c-border);
-          margin: 0 0 0.5rem 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .neo-donation-desc {
-          font-size: 0.95rem;
-          color: #333;
-          line-height: 1.5;
-          margin-bottom: 1.5rem;
-          font-weight: 600;
-        }
-
-        .neo-donation-btn {
-          background: var(--c-dark);
-          color: var(--c-white);
-          border: 3px solid var(--c-border);
-          border-radius: 8px;
-          padding: 12px 20px;
-          font-weight: 800;
-          font-size: 0.95rem;
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          box-shadow: 4px 4px 0px var(--c-border);
-          transition: all 0.1s;
-        }
-
-        .neo-donation-btn:active {
-          transform: translate(4px, 4px);
-          box-shadow: 0px 0px 0px var(--c-border);
-        }
-
-        /* PROMO CARD */
-        .neo-promo-card {
-          background: var(--c-pink);
-          border: 3px solid var(--c-border);
-          border-radius: 12px;
-          box-shadow: 6px 6px 0px var(--c-border);
-          padding: 1.5rem;
-          margin-bottom: 2rem;
-          margin-right: 6px; 
-        }
-
-        .neo-promo-title {
-          font-size: 1.25rem;
-          font-weight: 800;
-          color: var(--c-border);
-          margin: 0 0 0.5rem 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .neo-promo-desc {
-          font-size: 0.95rem;
-          color: var(--c-dark);
-          line-height: 1.5;
-          margin-bottom: 1.5rem;
-          font-weight: 600;
-        }
-
-        .neo-promo-btn {
-          background: var(--c-white);
-          color: var(--c-dark);
-          border: 3px solid var(--c-border);
-          border-radius: 8px;
-          padding: 12px 20px;
-          font-weight: 800;
-          font-size: 0.95rem;
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          box-shadow: 4px 4px 0px var(--c-border);
-          transition: all 0.1s;
-        }
-
-        .neo-promo-btn:active {
-          transform: translate(4px, 4px);
-          box-shadow: 0px 0px 0px var(--c-border);
-        }
-
-        /* FORMS */
-        .neo-form-group {
-          margin-bottom: 1.25rem;
-        }
-
-        .neo-label {
-          display: block;
-          font-size: 0.75rem;
-          font-weight: 800;
-          color: #555;
-          margin-bottom: 8px;
-          letter-spacing: 1px;
+        .card-title {
+          font-size: 0.85rem;
+          font-weight: 700;
+          margin: 0;
+          letter-spacing: 0.05em;
+          color: var(--text-muted);
           text-transform: uppercase;
         }
+        .text-success-dark { color: var(--success-dark); }
 
-        .neo-input {
-          width: 100%;
-          padding: 14px 16px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          border: 2px solid var(--c-border);
-          border-radius: 8px;
-          background: var(--c-white);
-          box-shadow: 3px 3px 0px var(--c-border);
-          outline: none;
-          transition: all 0.2s ease;
-        }
-
-        .neo-input:focus {
-          transform: translate(-2px, -2px);
-          box-shadow: 5px 5px 0px var(--c-border);
-          background: #FAFAFA;
-        }
-
-        .neo-grid {
+        .p-6 { padding: 1.5rem; }
+        .md\\:p-8 { padding: 2rem; }
+        
+        /* FORMS */
+        .form-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 1rem;
+          gap: 1.25rem;
         }
 
-        .neo-span-2 {
-          grid-column: span 2;
+        .form-group { margin-bottom: 1.25rem; }
+        .col-span-2 { grid-column: span 2; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-10 { margin-top: 2.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+
+        .form-label {
+          display: block;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-main);
+          margin-bottom: 0.5rem;
+        }
+
+        .label-optional {
+          color: var(--text-muted);
+          font-weight: 400;
+          font-size: 0.8rem;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 0.875rem 1rem;
+          font-size: 0.95rem;
+          color: var(--text-main);
+          background-color: var(--bg-surface);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          outline: none;
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.01);
+        }
+
+        .form-input::placeholder { color: #94a3b8; }
+        .form-input:focus {
+          border-color: var(--border-focus);
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .textarea {
+          resize: vertical;
+          min-height: 120px;
+          line-height: 1.5;
+        }
+
+        .form-helper {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin: 0.5rem 0 0 0;
         }
 
         /* BUTTONS */
-        .neo-btn-primary {
-          background: var(--c-yellow);
-          color: var(--c-border);
-          border: 2px solid var(--c-border);
+        .btn-primary {
+          background-color: var(--primary);
+          color: #ffffff;
+          border: none;
           border-radius: 8px;
-          padding: 14px 24px;
-          font-weight: 800;
-          font-size: 0.9rem;
-          letter-spacing: 1px;
-          box-shadow: 4px 4px 0px var(--c-border);
+          padding: 0.875rem 1.5rem;
+          font-size: 0.95rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.1s;
+          transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          text-transform: uppercase;
+          box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
 
-        .neo-btn-primary:active:not(:disabled) {
-          transform: translate(4px, 4px);
-          box-shadow: 0px 0px 0px var(--c-border);
+        .btn-primary:hover:not(:disabled) {
+          background-color: var(--primary-hover);
+          transform: translateY(-1px);
         }
 
-        .neo-btn-primary:disabled {
-          background: #E5E7EB;
-          color: #9CA3AF;
+        .btn-primary:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+          background-color: #94a3b8;
           cursor: not-allowed;
+          box-shadow: none;
         }
 
-        .neo-btn-large {
-          font-size: 1rem;
-          padding: 16px 32px;
-          border: 3px solid var(--c-border);
-          box-shadow: 6px 6px 0px var(--c-border);
-        }
-        
-        .neo-btn-large:active {
-          transform: translate(6px, 6px);
-        }
+        .w-full { width: 100%; }
 
-        .neo-btn-secondary {
-          background: var(--c-white);
-          color: var(--c-border);
-          border: 2px solid var(--c-border);
-          border-radius: 6px;
-          padding: 8px 16px;
-          font-weight: 800;
-          font-size: 0.75rem;
-          box-shadow: 2px 2px 0px var(--c-border);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.1s;
-        }
-
-        .neo-btn-secondary:active {
-          transform: translate(2px, 2px);
-          box-shadow: 0px 0px 0px var(--c-border);
-        }
-
-        .neo-btn-sm { padding: 6px 12px; }
-        .neo-w-full { width: 100%; margin-top: 0.5rem; }
-        .neo-mt-4 { margin-top: 1.5rem; }
-        .neo-mb-3 { margin-bottom: 1rem; }
-
-        /* RESULTS AREA */
-        .neo-section-title {
-          font-size: 1.05rem;
-          font-weight: 800;
-          color: var(--c-dark);
-          margin: 0 0 1rem 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .neo-result-box {
-          border: 2px dashed var(--c-border);
-          border-radius: 8px;
+        /* RESULTS UI */
+        .result-container {
+          background: #f8fafc;
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
           overflow: hidden;
-          background: var(--c-white);
         }
 
-        .neo-result-header {
-          background: var(--c-bg);
-          padding: 10px 14px;
-          border-bottom: 2px dashed var(--c-border);
+        .result-header {
+          padding: 0.75rem 1.25rem;
+          background: var(--bg-surface);
+          border-bottom: 1px solid var(--border-color);
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-weight: 800;
-          font-size: 0.75rem;
-          color: var(--c-dark);
         }
 
-        .neo-result-content {
-          padding: 14px;
+        .result-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          letter-spacing: 0.05em;
+        }
+
+        .btn-icon {
+          background: transparent;
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          padding: 0.4rem 0.75rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-main);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          transition: all 0.15s;
+        }
+
+        .btn-icon:hover {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+        }
+
+        .result-content {
+          padding: 1.25rem;
           font-size: 0.95rem;
           line-height: 1.6;
-          color: var(--c-dark);
+          color: var(--text-main);
+          word-break: break-word;
         }
 
-        .neo-info-box {
-          background: var(--c-bg);
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 0.8rem;
-          color: #555;
-          text-align: center;
-          border: 2px solid var(--c-border);
-        }
-
-        .neo-error-box {
-          margin-top: 1.5rem;
-          padding: 12px;
-          background: #FECACA;
-          border: 2px solid var(--c-border);
-          border-radius: 8px;
-          color: #B91C1C;
+        .section-heading {
+          font-size: 1.05rem;
           font-weight: 700;
+          color: var(--text-main);
+          margin-bottom: 1rem;
+        }
+
+        .truncate-text {
+          max-width: 280px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          font-family: monospace;
+        }
+
+        .meta-footer {
           font-size: 0.85rem;
-          text-align: center;
-          box-shadow: 3px 3px 0px var(--c-border);
-        }
-
-        .neo-error-list {
-          padding: 12px;
-          background: #FEF2F2;
-          border: 2px dashed #B91C1C;
-          border-radius: 8px;
-          font-size: 0.85rem;
-          color: #B91C1C;
-        }
-        .neo-error-list ul { padding-left: 1rem; margin-top: 8px; margin-bottom: 0; }
-        .neo-error-list li { margin-bottom: 4px; }
-        .neo-truncate { display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-
-        /* BOTTOM NAVIGATION - DIRAMPINGKAN */
-        .neo-bottom-nav {
-          position: fixed;
-          bottom: 1.25rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: var(--c-white);
-          border: 3px solid var(--c-border);
-          border-radius: 100px;
-          display: flex;
-          padding: 4px;
-          gap: 4px;
-          z-index: 100;
-          width: 90%;
-          max-width: 450px;
-          box-shadow: 4px 4px 0px var(--c-border);
-        }
-
-        .neo-nav-item {
-          flex: 1;
-          padding: 8px 0;
-          border-radius: 100px;
-          border: 2px solid transparent;
-          background: transparent;
-          font-weight: 800;
-          font-size: 0.75rem; 
+          color: var(--text-muted);
           display: flex;
           align-items: center;
+          gap: 0.75rem;
+          padding-top: 1.5rem;
+          border-top: 1px dashed var(--border-color);
+        }
+
+        .meta-badge {
+          background: var(--border-color);
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--text-main);
+        }
+
+        /* ALERTS */
+        .alert-error {
+          background: var(--error-light);
+          border: 1px solid var(--error-border);
+          color: var(--error);
+          padding: 1rem;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          line-height: 1.5;
+        }
+
+        .error-list {
+          margin: 0;
+          padding-left: 1.5rem;
+          font-size: 0.85rem;
+        }
+
+        .error-list li { margin-bottom: 0.5rem; }
+
+        /* SKELETON LOADER ANIMATIONS */
+        .bg-skeleton-header { background: #f8fafc; }
+        .skeleton-pulse {
+          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .4; }
+        }
+
+        /* BOTTOM NAVIGATION */
+        .spacer-bottom { height: 100px; }
+
+        .bottom-nav-container {
+          position: fixed;
+          bottom: 1.5rem;
+          left: 0;
+          right: 0;
+          display: flex;
           justify-content: center;
-          gap: 6px;
+          z-index: 100;
+          pointer-events: none;
+        }
+
+        .bottom-nav {
+          background: var(--bg-surface);
+          border: 1px solid var(--border-color);
+          border-radius: 9999px;
+          display: flex;
+          padding: 0.35rem;
+          gap: 0.25rem;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          pointer-events: auto;
+          backdrop-filter: blur(8px);
+          background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .nav-item {
+          background: transparent;
+          border: none;
+          padding: 0.65rem 1.25rem;
+          border-radius: 9999px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-muted);
           cursor: pointer;
-          color: #666;
-          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.2s ease;
         }
 
-        .neo-nav-item.active {
-          background: var(--c-dark);
-          color: var(--c-white);
-          border-color: var(--c-border);
+        .nav-item:hover { color: var(--text-main); }
+        .nav-item.active {
+          background: var(--primary);
+          color: #ffffff;
+          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
         }
 
-        /* UTILS & ANIMATIONS */
-        .neo-fade-in { animation: fadeIn 0.3s ease-out; }
+        /* UTILS */
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        .neo-animate-up { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* RESPONSIVE */
-        @media (max-width: 600px) {
-          .neo-grid { grid-template-columns: 1fr; }
-          .neo-span-2 { grid-column: span 1; }
-          .neo-hero h1 { font-size: 1.75rem; }
-          .neo-nav-item span { display: none; }
-          .neo-nav-item.active span { display: inline-block; }
+        @media (max-width: 640px) {
+          .hero h1 { font-size: 1.75rem; }
+          .hero { padding: 3rem 1.25rem 4rem 1.25rem; }
+          .container { top: -2rem; }
+          .form-grid { grid-template-columns: 1fr; }
+          .col-span-2 { grid-column: span 1; }
+          .truncate-text { max-width: 140px; }
           
-          .neo-card, .neo-donation-card, .neo-promo-card {
-             margin-right: 4px; 
-          }
-          .neo-truncate { max-width: 120px; }
+          .bottom-nav { width: 92%; max-width: 400px; justify-content: space-between; }
+          .nav-item { padding: 0.65rem; flex: 1; justify-content: center; }
+          .nav-item span { display: none; }
+          .nav-item.active span { display: inline-block; }
         }
       `}</style>
     </div>
