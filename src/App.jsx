@@ -55,7 +55,32 @@ export default function App() {
     return match ? match[1].replace(/\.pdf$/i, '') : null;
   };
 
-  // --- LOGIC CROSSREF & OJS ---
+  // --- LOGIC CROSSREF & URL NORMALIZER ---
+  
+  const normalizeUrl = (url) => {
+    let u = url.trim();
+    
+    // 1. Academia.edu (Ubah link PDF download ke halaman dokumen inti)
+    const acaMatch = u.match(/academia\.edu\/download\/(\d+)/i) || u.match(/academia\.edu\/(\d+)/i);
+    if (acaMatch) {
+      return `https://www.academia.edu/${acaMatch[1]}`;
+    }
+    
+    // 2. OJS (Ubah link PDF download ke halaman abstrak/view)
+    const ojsMatch = u.match(/^(.*\/article\/(?:view|download|viewFile)\/\d+)(?:\/.*)?$/i);
+    if (ojsMatch) {
+      return ojsMatch[1].replace(/\/(download|viewFile)/i, '/view');
+    }
+
+    // 3. ResearchGate (Ubah link PDF/profile aneh ke halaman rilis publik)
+    const rgMatch = u.match(/researchgate\.net\/.*publication\/(\d+)/i);
+    if (rgMatch) {
+      return `https://www.researchgate.net/publication/${rgMatch[1]}`;
+    }
+
+    return u;
+  };
+
   const formatAuthorsFootnote = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
     let given = authors[0].given || "";
@@ -98,6 +123,36 @@ export default function App() {
     return firstAuthor;
   };
 
+  // --- SEMANTIC SCHOLAR AI FALLBACK (Self-Healing Metadata) ---
+  const formatFromSS = (paper) => {
+    const year = paper.year?.toString() || "Tahun";
+    const title = paper.title || "Judul Artikel";
+    const journal = paper.venue || paper.journal?.name || "Nama Jurnal";
+    
+    let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
+    if (paper.authors && paper.authors.length > 0) {
+      let firstAuthor = paper.authors[0].name.trim();
+      const parts = firstAuthor.split(" ").filter(Boolean);
+      let family = "", given = "";
+      
+      if (parts.length === 1) {
+        family = parts[0]; given = "";
+      } else {
+        family = parts.pop(); given = parts.join(" ");
+      }
+      
+      fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
+      dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+      if (paper.authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
+    }
+
+    return {
+      authorFootnote: fn, authorDafpus: dp, year, month: "", title,
+      journal, page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: ""
+    };
+  };
+
+  // --- CORE FETCHING ---
   const processDOI = async (rawDoi) => {
     const cleanedDoi = cleanDOI(rawDoi); 
     const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
@@ -126,15 +181,20 @@ export default function App() {
   };
 
   const processURL = async (rawUrl) => {
-    let targetUrl = rawUrl.trim();
+    const targetUrl = normalizeUrl(rawUrl);
 
-    // 1. OJS Normalizer: Solusi utama untuk "Link PDF tidak support" dari jurnal Indonesia (OJS).
-    // Mengubah link download PDF (galley) menjadi link abstrak agar metadatanya bisa dibaca.
-    const ojsMatch = targetUrl.match(/^(.*\/article\/(?:view|download|viewFile)\/\d+)(?:\/.*)?$/i);
-    if (ojsMatch) {
-      targetUrl = ojsMatch[1].replace(/\/(download|viewFile)/i, '/view');
-    }
+    // 1. QUICK WIN: Uji coba URL lookup di Semantic Scholar
+    try {
+      const ssUrlRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/URL:${encodeURIComponent(targetUrl)}?fields=title,authors,year,venue,journal`);
+      if (ssUrlRes.ok) {
+        const ssData = await ssUrlRes.json();
+        if (ssData.title && ssData.authors && ssData.authors.length > 0) {
+          return formatFromSS(ssData); // Jika sukses, langsung lewati semua proses scrapping
+        }
+      }
+    } catch (e) { /* Lanjut jika gagal */ }
 
+    // 2. SCRAPING HTML VIA PROXY
     let htmlContent = "";
     let contentType = "";
 
@@ -153,20 +213,22 @@ export default function App() {
 
     if (!htmlContent) throw new Error("Konten tidak ditemukan.");
 
-    // 2. PDF Fallback: Jika terdeteksi file PDF mentah (binary), coba cari DOI di URL-nya.
-    if (contentType.includes("application/pdf") || htmlContent.trim().startsWith("%PDF-")) {
+    // 3. FALLBACK PDF BINER
+    const isBase64Pdf = htmlContent.startsWith("JVBERi");
+    const isRawPdf = htmlContent.trim().startsWith("%PDF-");
+    const isPdfContentType = contentType.toLowerCase().includes("pdf") || contentType.toLowerCase().includes("octet-stream");
+    const isPdfUrl = targetUrl.toLowerCase().split('?')[0].endsWith(".pdf");
+
+    if (isPdfContentType || isRawPdf || isBase64Pdf || isPdfUrl) {
       const extractedDoi = extractDoiFromUrl(targetUrl);
-      if (extractedDoi) {
-        // Alihkan diam-diam menggunakan API CrossRef jika terdapat struktur DOI
-        return await processDOI(extractedDoi);
-      }
-      throw new Error("Tautan mengarah langsung ke file PDF biner statis. Mohon masukkan link halaman website/abstrak jurnal tersebut untuk mendapatkan metadata yang akurat.");
+      if (extractedDoi) return await processDOI(extractedDoi);
+      throw new Error("Tautan ini mengarah persis ke file PDF statis, sehingga struktur penulis tidak bisa dibaca otomatis. Mohon gunakan fitur KETIK MANUAL.");
     }
 
+    // 4. PARSING DOM METADATA
     const parser = new DOMParser(); 
     const doc = parser.parseFromString(htmlContent, "text/html");
     
-    // 3. Mesin Scraper Canggih: Mendukung meta Citation standar, Dublin Core (DC), dan Open Graph (OG)
     const getMeta = (nameList) => {
       for (const name of nameList) {
         const el = doc.querySelector(`meta[name="${name}" i]`) || doc.querySelector(`meta[property="${name}" i]`);
@@ -175,14 +237,35 @@ export default function App() {
       return "";
     };
 
-    const title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
-    
+    let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
+    title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, '').trim(); // Bersihkan imbuhan
+
+    const isBlocked = title.toLowerCase().includes("just a moment") || title.toLowerCase().includes("cloudflare") || title.toLowerCase().includes("attention required");
+
     let authors = [];
     const authorNodes = doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]');
     authorNodes.forEach(node => {
       const content = node.getAttribute("content");
       if(content && !authors.includes(content)) authors.push(content);
     });
+
+    // 5. SELF-HEALING: Jika terblokir Cloudflare / Data Penulis Kosong, lacak Judul via AI
+    if ((authors.length === 0 || isBlocked) && title !== "Judul Tidak Diketahui") {
+      try {
+        const cleanTitleSearch = title.replace(/\|.*/, '').trim(); 
+        const ssSearchRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(cleanTitleSearch)}&limit=1&fields=title,authors,year,venue,journal`);
+        if (ssSearchRes.ok) {
+          const ssData = await ssSearchRes.json();
+          if (ssData.data && ssData.data.length > 0 && ssData.data[0].authors?.length > 0) {
+            return formatFromSS(ssData.data[0]); // Berhasil diselamatkan oleh AI
+          }
+        }
+      } catch (e) { /* Skip jika gagal */ }
+    }
+
+    if (isBlocked) {
+      throw new Error("Sistem kami diblokir oleh anti-bot (Cloudflare/Captcha) dari website tersebut. Mohon gunakan input DOI atau ketik manual.");
+    }
 
     let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
     if (authors.length > 0) {
@@ -473,7 +556,7 @@ export default function App() {
                   <div className="form-group">
                     <label className="form-label">Link Jurnal atau PDF</label>
                     <input type="text" className="form-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/.../pdf" />
-                    <p className="form-helper">Mendukung otomatisasi konversi link OJS Download ke halaman Abstrak.</p>
+                    <p className="form-helper">Otomatis mereparasi link PDF dari Academia.edu, OJS, dan ResearchGate.</p>
                   </div>
                   <div className="form-group mb-6">
                     <label className="form-label">Kota Terbit <span className="label-optional">(Opsional)</span></label>
