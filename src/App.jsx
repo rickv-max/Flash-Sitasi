@@ -152,6 +152,50 @@ export default function App() {
     };
   };
 
+  // --- ENGINE AI PENCARIAN BERDASARKAN JUDUL ---
+  const searchByTitleAI = async (rawTitle) => {
+    const cleanTitle = rawTitle.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar|\.pdf)/gi, '').trim();
+    if (cleanTitle.length < 10) return null;
+
+    try {
+        // 1. Semantic Scholar (Ultra Akurat)
+        const ssRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(cleanTitle)}&limit=1&fields=title,authors,year,venue,journal`);
+        if (ssRes.ok) {
+            const ssData = await ssRes.json();
+            if (ssData.data?.[0]?.authors?.length > 0) return formatFromSS(ssData.data[0]);
+        }
+
+        // 2. CrossRef (Database Global Utama)
+        const crRes = await fetch(`https://api.crossref.org/works?query.title=${encodeURIComponent(cleanTitle)}&rows=1`);
+        if (crRes.ok) {
+            const crData = await crRes.json();
+            if (crData.message.items.length > 0) {
+                const item = crData.message.items[0];
+                const itemTitle = (item.title?.[0] || "").toLowerCase();
+                const searchWords = cleanTitle.toLowerCase().split(' ').filter(w => w.length > 4);
+                const matches = searchWords.filter(w => itemTitle.includes(w));
+                
+                // Validasi agar tidak menampilkan jurnal acak
+                if (matches.length >= Math.min(2, searchWords.length)) {
+                    const yearObj = item["published-print"] || item.issued;
+                    const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
+                    return {
+                        authorFootnote: formatAuthorsFootnote(item.author),
+                        authorDafpus: formatAuthorsDafpus(item.author),
+                        year: year.toString(), month: "",
+                        title: item.title?.[0] ?? "Judul Artikel",
+                        journal: item["container-title"]?.[0] ?? "Nama Jurnal",
+                        page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
+                        kotaScraped: item["publisher-location"] || "",
+                        doiUrl: item.DOI ? `https://doi.org/${item.DOI}` : ""
+                    };
+                }
+            }
+        }
+    } catch (e) {}
+    return null;
+  };
+
   // --- CORE FETCHING ---
   const processDOI = async (rawDoi) => {
     const cleanedDoi = cleanDOI(rawDoi); 
@@ -192,14 +236,44 @@ export default function App() {
                 const ssData = await ssUrlRes.json();
                 if (ssData.title && ssData.authors && ssData.authors.length > 0) return formatFromSS(ssData);
             }
-        } catch(e) {} // Abaikan jika gagal dan lanjut proses
+        } catch(e) {} 
     }
 
-    // Engine Pengekstrak HTML
+    // 2. HEADLESS SCRAPER (Microlink API) - BYPASS CLOUDFLARE ACADEMIA
+    // Menggunakan virtual browser untuk menembus Captcha/Cloudflare secara otomatis
+    try {
+        const mlRes = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(targetUrl)}`);
+        if (mlRes.ok) {
+            const mlData = await mlRes.json();
+            const mlTitle = mlData.data?.title || "";
+            
+            // Jika berhasil mendapatkan judul asli dan bukan error Cloudflare
+            if (mlTitle && !mlTitle.toLowerCase().includes("just a moment") && !mlTitle.toLowerCase().includes("cloudflare")) {
+                
+                // Teroboskan judul asli ke mesin AI untuk ditarik jurnal, volume, halaman (Super Akurat)
+                const aiResult = await searchByTitleAI(mlTitle);
+                if (aiResult) return aiResult;
+
+                // Jika AI tidak ketemu jurnalnya, pakai data dasar dari Microlink
+                let rawAuthor = mlData.data?.author || mlData.data?.publisher || "";
+                return {
+                    authorFootnote: rawAuthor ? formatAuthorsFootnote([{family: rawAuthor}]) : "Penulis Tidak Diketahui",
+                    authorDafpus: rawAuthor ? formatAuthorsDafpus([{family: rawAuthor}]) : "Penulis Tidak Diketahui",
+                    year: mlData.data?.date ? new Date(mlData.data.date).getFullYear().toString() : "Tahun",
+                    month: "", 
+                    title: mlTitle.replace(/(\s*[-|]\s*Academia\.edu)/i, '').trim(),
+                    journal: mlData.data?.publisher || "Nama Jurnal",
+                    page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: ""
+                };
+            }
+        }
+    } catch(e) {}
+
+    // Engine Pengekstrak HTML Lapis Ketiga
     const parseHTML = (html, contentType) => {
         const isBase64Pdf = html.startsWith("JVBERi");
         const isRawPdf = html.trim().startsWith("%PDF-");
-        const isPdfType = contentType.toLowerCase().includes("pdf") || contentType.toLowerCase().includes("octet-stream");
+        const isPdfType = (contentType||"").toLowerCase().includes("pdf") || (contentType||"").toLowerCase().includes("octet-stream");
         const isPdfUrl = targetUrl.toLowerCase().split('?')[0].endsWith(".pdf");
 
         if (isPdfType || isRawPdf || isBase64Pdf || isPdfUrl) {
@@ -220,7 +294,6 @@ export default function App() {
         let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
         title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, '').trim();
 
-        // Deteksi Blokir Anti-Bot/Cloudflare
         const blockedKeywords = ["just a moment", "cloudflare", "attention required", "security check", "robot or human"];
         const isBlocked = blockedKeywords.some(kw => title.toLowerCase().includes(kw));
 
@@ -276,63 +349,59 @@ export default function App() {
         };
     };
 
-    // 2. LIVE FETCH
+    // 3. LIVE FETCH DENGAN MULTIPLE PROXY FALLBACK
     let htmlContent = "", contentType = "", finalUrl = targetUrl;
-    try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json(); 
-        htmlContent = data.contents;
-        contentType = data.status?.content_type || "";
-        if (data.status?.url) finalUrl = data.status.url; // Tangkap URL redirect
-    } catch (err1) {
+    const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+    ];
+
+    for (let proxy of proxies) {
         try {
-            const res2 = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
-            if (!res2.ok) throw new Error();
-            htmlContent = await res2.text();
-            contentType = res2.headers.get("content-type") || "";
-        } catch (err2) {
-            throw new Error("Gagal mengakses URL. Pastikan web dapat diakses publik.");
-        }
+            const res = await fetch(proxy);
+            if (!res.ok) continue;
+            htmlContent = await res.text();
+            contentType = res.headers.get("content-type") || "";
+            // Jika berhasil dan tidak terblokir cloudflare, berhenti looping proxy
+            if (!htmlContent.toLowerCase().includes("just a moment") && htmlContent.trim() !== "") {
+                break;
+            }
+        } catch (e) {}
     }
+
+    if (!htmlContent) throw new Error("Gagal mengakses URL. Pastikan web jurnal bersifat publik/Open Access.");
 
     let parsed = parseHTML(htmlContent, contentType);
 
-    // Stop jika ini file PDF biner murni
     if (parsed.isPdfFile) {
         const extractedDoi = extractDoiFromUrl(targetUrl);
         if (extractedDoi) return await processDOI(extractedDoi);
-        throw new Error("Tautan ini mengarah persis ke file PDF statis. Mohon salin judul artikel dari PDF tersebut lalu gunakan mode KETIK MANUAL.");
+        throw new Error("Tautan PDF mentah tidak memiliki data. Kami sarankan menggunakan link Abstrak/Web Jurnal, atau silakan gunakan mode KETIK MANUAL.");
     }
 
-    // 3. WAYBACK MACHINE FALLBACK (Solusi Utama Melewati Cloudflare Academia)
-    // Internet Archive memiliki snapshot miliaran halaman tanpa perlindungan Cloudflare
+    // 4. WAYBACK MACHINE FALLBACK (Solusi Utama Melewati Cloudflare Ekstrim)
     if (parsed.blocked || parsed.incomplete) {
         try {
             const wbRes = await fetch(`https://archive.org/wayback/available?url=${encodeURIComponent(targetUrl)}`);
             const wbData = await wbRes.json();
             if (wbData.archived_snapshots?.closest?.url) {
-                let snapUrl = wbData.archived_snapshots.closest.url;
-                snapUrl = snapUrl.replace(/^http:/, 'https:'); 
-                
+                let snapUrl = wbData.archived_snapshots.closest.url.replace(/^http:/, 'https:'); 
                 const snapFetch = await fetch(snapUrl);
                 if (snapFetch.ok) {
                     const snapHtml = await snapFetch.text();
                     const snapParsed = parseHTML(snapHtml, "text/html");
                     if (snapParsed.success || (snapParsed.incomplete && parsed.blocked)) {
-                        parsed = snapParsed; // Timpa dengan data arsip
+                        parsed = snapParsed; 
                     }
                 }
             }
-        } catch(e) { console.log("Wayback fallback failed", e); }
+        } catch(e) {}
     }
 
-    // 4. AI TITLE SEARCH FALLBACK (Taktik terakhir menggunakan judul)
-    let searchTitle = "";
-    if (parsed.incomplete) {
-        searchTitle = parsed.title;
-    } else if (parsed.blocked) {
-        // Jika masih di-blokir, ekstrak judul dari struktur URL redirect
+    // 5. TANK TITLE SEARCH AI (Kesempatan Terakhir jika hanya dapat judul)
+    let searchTitle = parsed.incomplete ? parsed.title : "";
+    if (parsed.blocked) {
         try {
             const segments = new URL(finalUrl).pathname.split('/').filter(Boolean);
             const last = segments[segments.length - 1];
@@ -342,51 +411,14 @@ export default function App() {
         } catch(e) {}
     }
 
-    if (searchTitle && searchTitle.length > 5) {
-        searchTitle = searchTitle.replace(/\|.*/, '').trim();
-        try {
-            // Tembak Semantic Scholar dengan judul temuan
-            const ssSearchRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(searchTitle)}&limit=1&fields=title,authors,year,venue,journal`);
-            if (ssSearchRes.ok) {
-                const ssData = await ssSearchRes.json();
-                if (ssData.data?.[0]?.authors?.length > 0) return formatFromSS(ssData.data[0]);
-            }
-            
-            // Jika gagal, tembak CrossRef dengan judul temuan
-            const crRes = await fetch(`https://api.crossref.org/works?query.title=${encodeURIComponent(searchTitle)}&rows=1`);
-            if (crRes.ok) {
-               const crData = await crRes.json();
-               if (crData.message.items.length > 0) {
-                  const item = crData.message.items[0];
-                  const itemTitle = (item.title?.[0] || "").toLowerCase();
-                  const searchLower = searchTitle.toLowerCase();
-                  
-                  // Validasi relevansi sederhana (cegah return data acak)
-                  const searchWords = searchLower.split(' ').filter(w => w.length > 3);
-                  const matches = searchWords.filter(w => itemTitle.includes(w));
-                  
-                  if (matches.length >= Math.min(2, searchWords.length)) {
-                      const yearObj = item["published-print"] || item.issued;
-                      const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
-                      return {
-                          authorFootnote: formatAuthorsFootnote(item.author),
-                          authorDafpus: formatAuthorsDafpus(item.author),
-                          year: year.toString(), month: "",
-                          title: item.title?.[0] ?? "Judul Artikel",
-                          journal: item["container-title"]?.[0] ?? "Nama Jurnal",
-                          page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "",
-                          kotaScraped: item["publisher-location"] || "",
-                          doiUrl: item.DOI ? `https://doi.org/${item.DOI}` : ""
-                      };
-                  }
-               }
-            }
-        } catch (e) {}
+    if (searchTitle) {
+        const aiResult = await searchByTitleAI(searchTitle);
+        if (aiResult) return aiResult;
     }
 
     // Keputusan Final Pipeline
     if (parsed.success) return parsed.data;
-    if (parsed.blocked) throw new Error("Akses diblokir kuat oleh Cloudflare Academia/website tersebut. Sistem arsip AI publik kami juga tidak dapat menemukan file dokumen ini. Mohon gunakan fitur KETIK MANUAL untuk saat ini.");
+    if (parsed.blocked) throw new Error("Akses situs ini secara agresif diblokir oleh anti-bot Cloudflare. Kami gagal menembusnya. Mohon salin nama penulis/judul dari PDF dan gunakan fitur KETIK MANUAL.");
     if (parsed.incomplete) {
         parsed.data = {
             authorFootnote: "Penulis Tidak Diketahui", authorDafpus: "Penulis Tidak Diketahui",
@@ -396,7 +428,7 @@ export default function App() {
         return parsed.data;
     }
 
-    throw new Error("Gagal mengekstrak metadata dari tautan ini.");
+    throw new Error("Gagal mengekstrak metadata dari tautan ini. Format web tidak didukung.");
   };
 
   const buildFootnote = (m, kotaManual) => {
@@ -647,14 +679,14 @@ export default function App() {
                   <div className="form-group">
                     <label className="form-label">Link Jurnal atau PDF</label>
                     <input type="text" className="form-input" value={urlInput} onChange={(e)=>setUrlInput(e.target.value)} onKeyDown={(e)=>e.key==="Enter"&&fetchURL()} placeholder="https://jurnal.kampus.ac.id/.../pdf" />
-                    <p className="form-helper">Mendukung otomatisasi ekstrak dari link Academia.edu, OJS, dan ResearchGate.</p>
+                    <p className="form-helper">Mendukung terobosan proteksi ekstrak otomatis via Headless Browser API untuk Academia.edu & ResearchGate.</p>
                   </div>
                   <div className="form-group mb-6">
                     <label className="form-label">Kota Terbit <span className="label-optional">(Opsional)</span></label>
                     <input type="text" className="form-input" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Contoh: Yogyakarta" />
                   </div>
                   <button className="btn-primary w-full" onClick={fetchURL} disabled={loading || !urlInput}>
-                    {loading ? "Menganalisis Link..." : "Generate Sitasi"}
+                    {loading ? "Menganalisis Link Cerdas..." : "Generate Sitasi"}
                   </button>
                 </div>
               )}
