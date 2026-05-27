@@ -1010,6 +1010,8 @@ export default function App() {
           border: none; border-radius: var(--radius-sm); font-weight: 600;
           cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
           transition: all 0.2s ease;
+          padding: 0.875rem 1.5rem; /* Tambahkan padding dasar di sini */
+          font-size: 1rem;
         }
         .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -1019,11 +1021,13 @@ export default function App() {
           border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; text-decoration: none;
           display: inline-flex; align-items: center; justify-content: center;
           transition: all 0.2s ease;
+          padding: 0.875rem 1.5rem; /* Tambahkan padding dasar di sini */
+          font-size: 1rem;
         }
         .btn-secondary:hover { background: var(--bg-surface-hover); }
 
         .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
-        .btn-lg { padding: 0.875rem 1.5rem; font-size: 1rem; border-radius: var(--radius-md); }
+        .btn-lg { padding: 1rem 2rem; font-size: 1.1rem; border-radius: var(--radius-md); }
 
         /* SECTIONS & TYPOGRAPHY */
         .section-title { font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem; color: var(--text-main); }
