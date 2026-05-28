@@ -2012,7 +2012,6 @@ export default function App() {
           display: flex;
           flex-direction: column;
           position: relative;
-          overflow-x: hidden;
         }
 
         /* DARK MODE VARIABLES */
@@ -2134,19 +2133,27 @@ export default function App() {
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
 
-        /* NAVBAR FLOATING PILL */
+                /* NAVBAR FLOATING PILL */
         .navbar-wrapper {
-          position: sticky; top: 1.5rem; z-index: 100;
-          padding: 0 1.5rem; display: flex; justify-content: center;
+          position: sticky; /* Ini yang menahan navbar di atas */
+          top: 1.5rem;      /* Jarak dari ujung atas layar */
+          z-index: 100;
+          padding: 0 1.5rem; 
+          display: flex; 
+          justify-content: center;
         }
         .navbar {
-          width: 100%; max-width: 800px; background: var(--nav-bg);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border: 1px solid var(--border-color); border-radius: 100px;
+          width: 100%; max-width: 800px; 
+          background: var(--nav-bg); /* Menggunakan warna tembus pandang (rgba) */
+          backdrop-filter: blur(20px); /* Ini efek kaca / blur-nya */
+          -webkit-backdrop-filter: blur(20px); /* Dukungan untuk browser Safari/iOS */
+          border: 1px solid var(--border-color); 
+          border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
           box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
+
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { font-weight: 800; font-size: 1.125rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.5px; }
         .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; padding: 4px; }
