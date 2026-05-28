@@ -205,45 +205,52 @@ export default function App() {
 
   // --- PAYMENT HANDLER (BAYAR.GG INTEGRATION) ---
   const processPayment = async () => {
-    if (topupAmount < 1) return showNotification("Minimal pembelian 1 kredit.");
-    if (!BAYAR_GG_API_KEY)
-      return showNotification(
-        "API Key Bayar.gg belum disetting di file env lokal Anda!",
-      );
-
-    setIsPaying(true);
-    const price = topupAmount * 750;
-
-    try {
-      // ⚠️ Peringatan: API Call ini idealnya dilakukan dari backend agar key benar-benar aman.
-      const response = await fetch(
-  "https://www.bayar.gg/api/create-payment.php",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": BAYAR_GG_API_KEY,
-    },
-    body: JSON.stringify({
-      amount: price,
-      description: `Top Up ${topupAmount} Kredit FlashCite`,
-      customer_name: user.displayName || "Pengguna FlashCite",
-      customer_email: user.email || "",
-      payment_method: "qris",
-
-      redirect_url: window.location.href,
-      callback_url: "https://domainkamu.com/webhook",
-    }),
+  if (topupAmount < 1) {
+    return showNotification("Minimal pembelian 1 kredit.");
   }
-);
 
-const data = await response.json();
+  if (!BAYAR_GG_API_KEY) {
+    return showNotification("API Key Bayar.gg belum disetting!");
+  }
 
-if (data.success) {
-  window.location.href = data.data.payment_url;
-} else {
-  throw new Error("Gagal membuat pembayaran");
-}
+  setIsPaying(true);
+
+  const price = topupAmount * 750;
+
+  try {
+    const response = await fetch(
+      "https://www.bayar.gg/api/create-payment.php",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": BAYAR_GG_API_KEY,
+        },
+        body: JSON.stringify({
+          amount: price,
+          description: `Top Up ${topupAmount} Kredit FlashCite`,
+          customer_name: user.displayName || "Pengguna FlashCite",
+          customer_email: user.email || "",
+          payment_method: "qris",
+          redirect_url: window.location.href,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success && data.data?.payment_url) {
+      window.location.href = data.data.payment_url;
+    } else {
+      throw new Error(data.message || "Gagal membuat pembayaran");
+    }
+  } catch (err) {
+    console.warn("Bayar.gg error:", err);
+    showNotification(err.message || "Error payment.");
+  } finally {
+    setIsPaying(false);
+  }
+};
 
   // --- CREDIT & HISTORY HELPERS ---
   const deductCredit = async (amount = 1) => {
