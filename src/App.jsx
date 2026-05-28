@@ -216,41 +216,34 @@ export default function App() {
 
     try {
       // ⚠️ Peringatan: API Call ini idealnya dilakukan dari backend agar key benar-benar aman.
-      const response = await fetch("https://api.bayar.gg/v1/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${BAYAR_GG_API_KEY}`,
-        },
-        body: JSON.stringify({
-          amount: price,
-          customer_name: user.displayName || "Pengguna FlashCite",
-          customer_email: user.email || "",
-          reference_id: `TOPUP_${user.uid}_${Date.now()}`,
-          description: `Top Up ${topupAmount} Kredit FlashCite`,
-          return_url: window.location.href,
-        }),
-      });
+      const response = await fetch(
+  "https://www.bayar.gg/api/create-payment.php",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": BAYAR_GG_API_KEY,
+    },
+    body: JSON.stringify({
+      amount: price,
+      description: `Top Up ${topupAmount} Kredit FlashCite`,
+      customer_name: user.displayName || "Pengguna FlashCite",
+      customer_email: user.email || "",
+      payment_method: "qris",
 
-      const data = await response.json();
+      redirect_url: window.location.href,
+      callback_url: "https://domainkamu.com/webhook",
+    }),
+  }
+);
 
-      if (response.ok && data.data && data.data.checkout_url) {
-        // Simulasi tambah kredit langsung (di produksi, ganti ini dengan webhook Bayar.gg)
-        const profileRef = doc(db, "users", user.uid);
-        await updateDoc(profileRef, {
-          credits: (userData.credits || 0) + topupAmount,
-        });
-        window.location.href = data.data.checkout_url;
-      } else {
-        throw new Error(data.message || "Gagal membuat sesi pembayaran.");
-      }
-    } catch (err) {
-      console.warn("Bayar.gg error:", err);
-      showNotification(err.message || "Error menghubungkan ke Bayar.gg.");
-    } finally {
-      setIsPaying(false);
-    }
-  };
+const data = await response.json();
+
+if (data.success) {
+  window.location.href = data.data.payment_url;
+} else {
+  throw new Error("Gagal membuat pembayaran");
+}
 
   // --- CREDIT & HISTORY HELPERS ---
   const deductCredit = async (amount = 1) => {
