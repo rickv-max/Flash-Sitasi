@@ -2015,7 +2015,7 @@ export default function App() {
           --text-main: #fafafa;
           --text-muted: #a1a1aa;
           
-          --border-color: rgba(255, 255, 255, 0.4);
+          --border-color: rgba(255, 255, 255, 0.5);
           --border-focus: rgba(255, 255, 255, 0.9);
           
           --primary: #fafafa;
