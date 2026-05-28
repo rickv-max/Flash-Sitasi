@@ -2015,7 +2015,7 @@ export default function App() {
           --text-main: #fafafa;
           --text-muted: #a1a1aa;
           
-          --border-color: rgba(255, 255, 255, 0.1);
+          --border-color: rgba(255, 255, 255, 0.4);
           --border-focus: rgba(255, 255, 255, 0.9);
           
           --primary: #fafafa;
@@ -2066,11 +2066,8 @@ export default function App() {
 
         /* GLASSMORPHISM & SHADOWS */
         .glass-panel {
-          background: var(--bg-surface);
-          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-        }
+  border: 1px solid rgba(255,255,255,0.03);
+}
         .shadow-premium {
           box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.03), 0 1px 4px -1px rgba(0, 0, 0, 0.02);
         }
@@ -2129,13 +2126,8 @@ export default function App() {
           padding: 0 1.5rem; display: flex; justify-content: center;
         }
         .navbar {
-          width: 100%; max-width: 800px; background: var(--nav-bg);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border: 1px solid var(--border-color); border-radius: 100px;
-          padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
-          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-          transition: all 0.3s ease;
-        }
+  border: 1px solid rgba(255,255,255,0.04);
+}
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { font-weight: 800; font-size: 1.125rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.5px; }
         .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; padding: 4px; }
