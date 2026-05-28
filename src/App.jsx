@@ -22,30 +22,16 @@ import {
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
 // ============================================================================
 
-// Fungsi pembantu agar tidak crash di lingkungan pratinjau (Canvas).
-// SAAT DI VS CODE (VITE): Anda bisa langsung mengganti getEnv(key) dengan import.meta.env[key]
-const getEnv = (key) => {
-  try {
-    return typeof process !== "undefined" && process.env
-      ? process.env[key]
-      : "";
-  } catch (e) {
-    return "";
-  }
-};
-
-// 1. FIREBASE CONFIGURATION
 const firebaseConfig = {
-  apiKey: getEnv("VITE_FIREBASE_API_KEY"),
-  authDomain: getEnv("VITE_FIREBASE_AUTH_DOMAIN"),
-  projectId: getEnv("VITE_FIREBASE_PROJECT_ID"),
-  storageBucket: getEnv("VITE_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: getEnv("VITE_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: getEnv("VITE_FIREBASE_APP_ID"),
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// 2. BAYAR.GG CONFIGURATION
-const BAYAR_GG_API_KEY = getEnv("VITE_BAYAR_GG_API_KEY");
+const BAYAR_GG_API_KEY = import.meta.env.VITE_BAYAR_GG_API_KEY;
 
 // Initialize Firebase (Safeguard untuk environment lokal yang belum diisi env)
 let app, auth, db;
