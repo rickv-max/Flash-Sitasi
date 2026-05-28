@@ -1961,6 +1961,16 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
+        html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  min-height: 100vh;
+  /* Memaksa background body mengikuti warna tema dari app-wrapper */
+  background-color: var(--bg-body); 
+}
+
+        
         .app-wrapper {
           /* LIGHT MODE VARIABLES */
           --bg-body: #fbfbfc;
