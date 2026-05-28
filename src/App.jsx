@@ -1437,11 +1437,13 @@ export default function App() {
                 </p>
 
                 <div className="price-huge relative z-10">
-                  <span className="currency text-xl font-semibold mr-1">Rp</span>750
-                  <span className="text-sm font-medium text-muted ml-2">
+                  <span className="currency font-semibold">Rp</span>
+                  750
+                  <span className="suffix font-medium text-muted">
                     / Sitasi Sukses
                   </span>
                 </div>
+
 
                 <ul className="pricing-list mt-8 mb-8 relative z-10">
                   <li>
@@ -2230,7 +2232,9 @@ export default function App() {
         .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); }
         .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
         [data-theme="dark"] .absolute-glow { background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.05), transparent 70%); }
-        .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; }
+        .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
+        .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
+        .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
         .currency { margin-top: 0.5rem; }
         .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
         .pricing-list li { font-size: 0.95rem; display: flex; gap: 12px; align-items: flex-start; color: var(--text-main); }
