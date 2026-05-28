@@ -204,13 +204,9 @@ export default function App() {
   };
 
   // --- PAYMENT HANDLER (BAYAR.GG INTEGRATION) ---
-  const processPayment = async () => {
+const processPayment = async () => {
   if (topupAmount < 1) {
     return showNotification("Minimal pembelian 1 kredit.");
-  }
-
-  if (!BAYAR_GG_API_KEY) {
-    return showNotification("API Key Bayar.gg belum disetting!");
   }
 
   setIsPaying(true);
@@ -218,24 +214,20 @@ export default function App() {
   const price = topupAmount * 750;
 
   try {
-    const response = await fetch(
-      "https://www.bayar.gg/api/create-payment.php",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": BAYAR_GG_API_KEY,
-        },
-        body: JSON.stringify({
-          amount: price,
-          description: `Top Up ${topupAmount} Kredit FlashCite`,
-          customer_name: user.displayName || "Pengguna FlashCite",
-          customer_email: user.email || "",
-          payment_method: "qris",
-          redirect_url: window.location.href,
-        }),
-      }
-    );
+    const response = await fetch("/api/create-payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: price,
+        description: `Top Up ${topupAmount} Kredit FlashCite`,
+        customer_name: user.displayName || "Pengguna FlashCite",
+        customer_email: user.email || "",
+        payment_method: "qris",
+        redirect_url: window.location.href,
+      }),
+    });
 
     const data = await response.json();
 
@@ -251,7 +243,6 @@ export default function App() {
     setIsPaying(false);
   }
 };
-
   // --- CREDIT & HISTORY HELPERS ---
   const deductCredit = async (amount = 1) => {
     if (!user || !db) return false;
