@@ -1190,16 +1190,16 @@ export default function App() {
         </div>
       )}
 
-      {/* TOPUP MODAL */}
+            {/* TOPUP MODAL */}
       {showTopupModal && (
         <div className="modal-overlay">
           <div className="modal-box animate-scale-in">
             <div className="modal-header">
-              <h3 className="m-0 flex items-center gap-2 text-lg">
+              <h3 className="m-0 flex items-center gap-2 text-lg font-bold">
                 <CoinIcon /> Top Up Kredit
               </h3>
               <button
-                className="btn-icon border-none"
+                className="btn-close-modal"
                 onClick={() => setShowTopupModal(false)}
               >
                 <CloseIcon />
@@ -1210,7 +1210,7 @@ export default function App() {
                 Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750. Bebas hambatan, bebas stres.
               </p>
 
-              <div className="grid-2 gap-3 mb-5">
+              <div className="grid-packages mb-5">
                 {[50, 75, 100, 125].map((amt) => (
                   <button
                     key={amt}
@@ -1229,7 +1229,7 @@ export default function App() {
                 <input
                   type="number"
                   min="1"
-                  className="input-field"
+                  className="input-field-modern"
                   value={topupAmount}
                   onChange={(e) =>
                     setTopupAmount(parseInt(e.target.value) || 0)
@@ -1238,14 +1238,14 @@ export default function App() {
               </div>
 
               <div className="price-tag mt-6">
-                <span className="text-muted font-medium">Total Pembayaran</span>
+                <span className="text-muted font-medium text-sm">Total Pembayaran</span>
                 <span className="font-extrabold text-xl text-main">
                   Rp {(topupAmount * 750).toLocaleString("id-ID")}
                 </span>
               </div>
 
               <button
-                className="btn-primary w-full mt-6 py-4"
+                className="btn-primary w-full mt-6 py-3.5 shadow-glow"
                 onClick={processPayment}
                 disabled={isPaying}
               >
@@ -1258,6 +1258,7 @@ export default function App() {
           </div>
         </div>
       )}
+
 
       {/* NAVBAR (Kapsul Melayang) */}
       <div className="navbar-wrapper">
@@ -2261,14 +2262,21 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+                /* MODALS & ALERTS */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .btn-package { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        .btn-package:hover { border-color: var(--text-main); color: var(--text-main); }
-        .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); }
-        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-body); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        
+        .btn-close-modal { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
+        .btn-close-modal:hover { background: var(--bg-surface-hover); color: var(--text-main); }
+        
+        .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        
+        .btn-package { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.875rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+        .btn-package:hover { border-color: var(--border-focus); color: var(--text-main); }
+        .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        
+        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
 
         .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
         
