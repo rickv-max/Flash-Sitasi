@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
+import { increment } from "firebase/firestore";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -258,37 +259,49 @@ const processPayment = async () => {
   }
 };
   // --- CREDIT & HISTORY HELPERS ---
-  const deductCredit = async (amount = 1) => {
-    if (!user || !db) return false;
-    const currentCredits = userData.credits || 0;
-    if (currentCredits < amount) {
-      setShowTopupModal(true);
-      return false;
-    }
-    const profileRef = doc(db, "users", user.uid);
-    await updateDoc(profileRef, { credits: currentCredits - amount });
-    return true;
-  };
+const deductCredit = async (amount = 1) => {
+  if (!user || !db) return false;
 
-  const refundCredit = async (amount = 1) => {
-    if (!user || !db) return;
-    const currentCredits = userData.credits || 0;
-    const profileRef = doc(db, "users", user.uid);
-    await updateDoc(profileRef, { credits: currentCredits + amount });
-  };
+  const currentCredits = userData.credits || 0;
 
-  const saveToHistory = async (meta, fn, dp, inputVal, type) => {
-    if (!user || !db) return;
-    const historyRef = collection(db, "users", user.uid, "history");
-    await addDoc(historyRef, {
-      type,
-      input: inputVal,
-      title: meta.title,
-      footnote: fn,
-      dafpus: dp,
-      timestamp: Date.now(),
-    });
-  };
+  if (currentCredits < amount) {
+    setShowTopupModal(true);
+    return false;
+  }
+
+  const profileRef = doc(db, "users", user.uid);
+
+  await updateDoc(profileRef, {
+    credits: increment(-amount),
+  });
+
+  return true;
+};
+
+const refundCredit = async (amount = 1) => {
+  if (!user || !db) return;
+
+  const profileRef = doc(db, "users", user.uid);
+
+  await updateDoc(profileRef, {
+    credits: increment(amount),
+  });
+};
+
+const saveToHistory = async (meta, fn, dp, inputVal, type) => {
+  if (!user || !db) return;
+
+  const historyRef = collection(db, "users", user.uid, "history");
+
+  await addDoc(historyRef, {
+    type,
+    input: inputVal,
+    title: meta.title,
+    footnote: fn,
+    dafpus: dp,
+    timestamp: Date.now(),
+  });
+};
 
   // --- DATA PARSING & SCRAPING ENGINE ---
   const cleanDOI = (input) =>
