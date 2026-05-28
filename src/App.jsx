@@ -181,28 +181,28 @@ export default function App() {
       const profileRef = doc(db, "users", loggedUser.uid);
       const profileSnap = await getDoc(profileRef);
       if (!profileSnap.exists()) {
-  await setDoc(profileRef, {
-    credits: 5,
-    createdAt: Date.now(),
-    email: loggedUser.email,
-    name: loggedUser.displayName,
-  });
+        await setDoc(profileRef, {
+          credits: 5,
+          createdAt: Date.now(),
+          email: loggedUser.email,
+          name: loggedUser.displayName,
+        });
 
-  showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
-} else {
-  const existingData = profileSnap.data();
+        showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
+      } else {
+        const existingData = profileSnap.data();
 
-  if (
-    existingData.credits === undefined ||
-    existingData.credits === null
-  ) {
-    await updateDoc(profileRef, {
-      credits: 5,
-    });
+        if (
+          existingData.credits === undefined ||
+          existingData.credits === null
+        ) {
+          await updateDoc(profileRef, {
+            credits: 5,
+          });
 
-    showNotification("Bonus 5 Kredit berhasil ditambahkan.");
-  }
-}
+          showNotification("Bonus 5 Kredit berhasil ditambahkan.");
+        }
+      }
 
       setCurrentView("tool");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -219,89 +219,90 @@ export default function App() {
   };
 
   // --- PAYMENT HANDLER (BAYAR.GG INTEGRATION) ---
-const processPayment = async () => {
-  if (topupAmount < 1) {
-    return showNotification("Minimal pembelian 1 kredit.");
-  }
+  const processPayment = async () => {
+    if (topupAmount < 1) {
+      return showNotification("Minimal pembelian 1 kredit.");
+    }
 
-  setIsPaying(true);
+    setIsPaying(true);
 
-  const price = topupAmount * 750;
+    const price = topupAmount * 750;
 
-  try {
-    const response = await fetch("/api/create-payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: price,
-        description: `Top Up ${topupAmount} Kredit FlashCite`,
-        customer_name: user.displayName || "Pengguna FlashCite",
-        customer_email: user.email || "",
-        payment_method: "qris",
-        redirect_url: window.location.href,
-      }),
+    try {
+      const response = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: price,
+          description: `Top Up ${topupAmount} Kredit FlashCite`,
+          customer_name: user.displayName || "Pengguna FlashCite",
+          customer_email: user.email || "",
+          payment_method: "qris",
+          redirect_url: window.location.href,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.payment_url) {
+        window.location.href = data.data.payment_url;
+      } else {
+        throw new Error(data.message || "Gagal membuat pembayaran");
+      }
+    } catch (err) {
+      console.warn("Bayar.gg error:", err);
+      showNotification(err.message || "Error payment.");
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  // --- CREDIT & HISTORY HELPERS ---
+  const deductCredit = async (amount = 1) => {
+    if (!user || !db) return false;
+
+    const currentCredits = userData.credits || 0;
+
+    if (currentCredits < amount) {
+      setShowTopupModal(true);
+      return false;
+    }
+
+    const profileRef = doc(db, "users", user.uid);
+
+    await updateDoc(profileRef, {
+      credits: increment(-amount),
     });
 
-    const data = await response.json();
+    return true;
+  };
 
-    if (data.success && data.data?.payment_url) {
-      window.location.href = data.data.payment_url;
-    } else {
-      throw new Error(data.message || "Gagal membuat pembayaran");
-    }
-  } catch (err) {
-    console.warn("Bayar.gg error:", err);
-    showNotification(err.message || "Error payment.");
-  } finally {
-    setIsPaying(false);
-  }
-};
-  // --- CREDIT & HISTORY HELPERS ---
-const deductCredit = async (amount = 1) => {
-  if (!user || !db) return false;
+  const refundCredit = async (amount = 1) => {
+    if (!user || !db) return;
 
-  const currentCredits = userData.credits || 0;
+    const profileRef = doc(db, "users", user.uid);
 
-  if (currentCredits < amount) {
-    setShowTopupModal(true);
-    return false;
-  }
+    await updateDoc(profileRef, {
+      credits: increment(amount),
+    });
+  };
 
-  const profileRef = doc(db, "users", user.uid);
+  const saveToHistory = async (meta, fn, dp, inputVal, type) => {
+    if (!user || !db) return;
 
-  await updateDoc(profileRef, {
-    credits: increment(-amount),
-  });
+    const historyRef = collection(db, "users", user.uid, "history");
 
-  return true;
-};
-
-const refundCredit = async (amount = 1) => {
-  if (!user || !db) return;
-
-  const profileRef = doc(db, "users", user.uid);
-
-  await updateDoc(profileRef, {
-    credits: increment(amount),
-  });
-};
-
-const saveToHistory = async (meta, fn, dp, inputVal, type) => {
-  if (!user || !db) return;
-
-  const historyRef = collection(db, "users", user.uid, "history");
-
-  await addDoc(historyRef, {
-    type,
-    input: inputVal,
-    title: meta.title,
-    footnote: fn,
-    dafpus: dp,
-    timestamp: Date.now(),
-  });
-};
+    await addDoc(historyRef, {
+      type,
+      input: inputVal,
+      title: meta.title,
+      footnote: fn,
+      dafpus: dp,
+      timestamp: Date.now(),
+    });
+  };
 
   // --- DATA PARSING & SCRAPING ENGINE ---
   const cleanDOI = (input) =>
@@ -1157,29 +1158,26 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
   );
 
   const SkeletonLoader = () => (
-    <div className="card mt-6">
-      <div className="p-6 skeleton-pulse">
-        <div className="h-4 w-48 rounded bg-skeleton mb-6"></div>
-        <div className="h-16 w-full rounded bg-skeleton mb-6"></div>
-        <div className="h-4 w-48 rounded bg-skeleton mb-6"></div>
-        <div className="h-16 w-full rounded bg-skeleton"></div>
+    <div className="card mt-6 glass-panel animate-fade-in">
+      <div className="p-6">
+        <div className="skeleton-line w-40 mb-6"></div>
+        <div className="skeleton-box h-24 mb-6"></div>
+        <div className="skeleton-line w-48 mb-6"></div>
+        <div className="skeleton-box h-20"></div>
       </div>
     </div>
   );
 
   return (
     <div className="app-wrapper">
+      <div className="ambient-background">
+        <div className="ambient-blob blob-1"></div>
+        <div className="ambient-blob blob-2"></div>
+      </div>
+
       {/* Peringatan ketika dibuka di Canvas/Tanpa Env */}
       {!firebaseConfig.apiKey && (
-        <div
-          style={{
-            padding: "0.5rem",
-            textAlign: "center",
-            background: "#fef2f2",
-            color: "#b91c1c",
-            fontSize: "0.85rem",
-          }}
-        >
+        <div className="env-warning">
           ⚠️ Peringatan: Konfigurasi API Key di file .env belum diset. Pastikan
           Anda mengaturnya di environment lokal.
         </div>
@@ -1187,15 +1185,17 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
 
       {/* NOTIFICATION TOAST */}
       {notification && (
-        <div className="notification-toast animate-fade">{notification}</div>
+        <div className="notification-toast animate-slide-up-fade">
+          {notification}
+        </div>
       )}
 
       {/* TOPUP MODAL */}
       {showTopupModal && (
         <div className="modal-overlay">
-          <div className="modal-box animate-slide-up">
+          <div className="modal-box animate-scale-in">
             <div className="modal-header">
-              <h3 className="m-0 flex items-center gap-2">
+              <h3 className="m-0 flex items-center gap-2 text-lg">
                 <CoinIcon /> Top Up Kredit
               </h3>
               <button
@@ -1206,11 +1206,11 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
               </button>
             </div>
             <div className="modal-body">
-              <p className="text-muted mb-4 mt-0 text-sm">
-                Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750.
+              <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">
+                Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750. Bebas hambatan, bebas stres.
               </p>
 
-              <div className="grid-2 gap-2 mb-4">
+              <div className="grid-2 gap-3 mb-5">
                 {[50, 75, 100, 125].map((amt) => (
                   <button
                     key={amt}
@@ -1223,7 +1223,7 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
               </div>
 
               <div className="form-group">
-                <label className="text-sm font-semibold mb-2 block">
+                <label className="text-xs font-bold text-muted uppercase tracking-wide mb-2 block">
                   Nominal Custom:
                 </label>
                 <input
@@ -1238,20 +1238,20 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
               </div>
 
               <div className="price-tag mt-6">
-                <span>Total Bayar:</span>
-                <span className="font-bold text-lg text-primary">
+                <span className="text-muted font-medium">Total Pembayaran</span>
+                <span className="font-extrabold text-xl text-main">
                   Rp {(topupAmount * 750).toLocaleString("id-ID")}
                 </span>
               </div>
 
               <button
-                className="btn-primary w-full mt-4"
+                className="btn-primary w-full mt-6 py-4"
                 onClick={processPayment}
                 disabled={isPaying}
               >
-                {isPaying ? "Menghubungkan API..." : "Bayar via Bayar.gg"}
+                {isPaying ? "Menghubungkan..." : "Bayar via Bayar.gg"}
               </button>
-              <p className="text-xs text-muted text-center mt-3">
+              <p className="text-xs text-muted text-center mt-4">
                 Pembayaran Anda aman dan diproses otomatis.
               </p>
             </div>
@@ -1270,7 +1270,8 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                 window.scrollTo(0, 0);
               }}
             >
-              <BoltIcon /> FlashCite
+              <div className="logo-icon-wrap"><BoltIcon /></div>
+              <span>FlashCite</span>
             </div>
 
             <div className="nav-actions">
@@ -1278,6 +1279,7 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                 <div
                   className="credit-badge"
                   onClick={() => setShowTopupModal(true)}
+                  title="Top Up Kredit"
                 >
                   <CoinIcon /> {userData.credits || 0}
                 </div>
@@ -1286,6 +1288,7 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
               <button
                 className="theme-toggle"
                 onClick={() => setIsDarkMode(!isDarkMode)}
+                title="Toggle Theme"
               >
                 {isDarkMode ? <SunIcon /> : <MoonIcon />}
               </button>
@@ -1303,7 +1306,7 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                   onClick={handleLogout}
                   className="btn-secondary btn-sm hidden-mobile"
                 >
-                  Logout
+                  Keluar
                 </button>
               )}
             </div>
@@ -1313,76 +1316,73 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
 
       {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
       {currentView === "landing" && (
-        <>
+        <main className="main-content z-10 relative">
           {/* Hero Section */}
-          <section id="hero" className="hero-section animate-fade">
+          <section id="hero" className="hero-section animate-slide-up">
             <div className="container text-center">
-              <div className="badge-pill mx-auto mb-4">
-                🚀 Tools Sitasi Jurnal AI Terbaik di Indonesia
+              <div className="badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
+                <span className="pulse-dot"></span> Tools Sitasi Jurnal Cerdas
               </div>
               <h1 className="hero-title">
-                Ubah Link PDF dan DOI Menjadi <br />
-                <span className="text-gradient">Sitasi Sempurna</span> Seketika.
+                Ekstrak Referensi Jurnal <br className="hidden-mobile" />
+                <span className="text-gradient">Dalam Hitungan Detik.</span>
               </h1>
-              <p className="hero-subtitle mx-auto">
+              <p className="hero-subtitle mx-auto mt-6">
                 Berhenti menyusun daftar pustaka secara manual. Ekstrak metadata
-                dari Academia, ResearchGate, dan sistem OJS hanya dalam hitungan
-                detik.
+                dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan tingkat presisi tinggi.
               </p>
-              <div className="hero-cta mt-8">
+              <div className="hero-cta mt-10">
                 <button
                   onClick={handleLoginAndEnter}
-                  className="btn-primary btn-lg"
+                  className="btn-primary btn-lg shadow-glow"
                   disabled={loading}
                 >
                   {loading
                     ? "Memuat Workspace..."
-                    : "Mulai Gratis Sekarang (Dapat 5 Kredit)"}
+                    : "Mulai Gratis Sekarang"}
                 </button>
+                <p className="text-xs text-muted mt-4 font-medium">✨ Dapatkan 5 Kredit Gratis Tanpa Kartu Kredit</p>
               </div>
             </div>
           </section>
 
           {/* Live Preview Section */}
-          <section className="preview-section animate-fade mt-8">
+          <section className="preview-section animate-slide-up-delayed mt-10">
             <div className="container">
-              <div className="preview-card">
+              <div className="preview-card glass-panel">
                 <div className="preview-header">
                   <div className="preview-dots">
                     <span></span>
                     <span></span>
                     <span></span>
                   </div>
-                  <span className="text-xs font-semibold text-muted">
-                    Contoh Hasil Otomatis (Demo)
+                  <span className="text-xs font-semibold text-muted font-mono">
+                    demo_output.js
                   </span>
                 </div>
-                <div className="preview-body grid-2 gap-4">
-                  <div className="preview-col border-r">
+                <div className="preview-body grid-2 gap-6">
+                  <div className="preview-col border-r pr-4">
                     <span className="text-xs font-bold text-muted uppercase tracking-wide">
-                      Input: Link Jurnal/PDF
+                      Input URL / DOI
                     </span>
-                    <div className="preview-mock-input mt-2">
+                    <div className="preview-mock-input mt-3 font-mono text-sm">
                       https://www.academia.edu/download/111297711/214.pdf
                     </div>
-                    <div className="mt-4 flex items-center justify-center gap-2 text-sm text-primary font-semibold">
-                      <span className="loading-spinner"></span> AI Membedah
-                      PDF...
+                    <div className="mt-6 flex items-center justify-center gap-3 text-sm text-primary font-semibold">
+                      <span className="loading-spinner"></span> AI Mengekstrak Metadata...
                     </div>
                   </div>
-                  <div className="preview-col">
-                    <span className="text-xs font-bold text-success uppercase tracking-wide flex items-center gap-1">
-                      <CheckIcon /> Output: Berhasil
+                  <div className="preview-col pl-2">
+                    <span className="text-xs font-bold text-success uppercase tracking-wide flex items-center gap-2">
+                      <CheckIcon /> Ekstraksi Berhasil
                     </span>
-                    <div className="preview-mock-output mt-2">
-                      <strong>Catatan Kaki:</strong>
-                      <br />
+                    <div className="preview-mock-output mt-3">
+                      <strong className="text-xs uppercase text-muted tracking-wide block mb-1">Catatan Kaki:</strong>
                       Budi Santoso (2024) Analisis Pajak PPh 21 Terhadap UMKM.
                       Jurnal Ekonomi Terapan. Jakarta, hal. 12-25.
                     </div>
-                    <div className="preview-mock-output mt-2">
-                      <strong>Daftar Pustaka:</strong>
-                      <br />
+                    <div className="preview-mock-output mt-3">
+                      <strong className="text-xs uppercase text-muted tracking-wide block mb-1">Daftar Pustaka:</strong>
                       Santoso, Budi. (2024) "Analisis Pajak PPh 21 Terhadap
                       UMKM". Jurnal Ekonomi Terapan, Jakarta.
                     </div>
@@ -1392,69 +1392,32 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
             </div>
           </section>
 
-          {/* How It Works (Langkah) */}
-          <section className="steps-section animate-fade">
-            <div className="container text-center">
-              <h2 className="section-title">Semudah Copy & Paste</h2>
-              <p className="section-subtitle mx-auto mb-8">
-                Hemat berjam-jam waktu penulisan skripsi atau jurnal Anda dengan
-                3 langkah sederhana.
-              </p>
-
-              <div className="grid-3">
-                <div className="step-card">
-                  <div className="step-number">1</div>
-                  <h3>Salin Tautan</h3>
-                  <p>
-                    Salin URL jurnal, link PDF, atau nomor DOI artikel yang
-                    ingin Anda sitasi.
-                  </p>
-                </div>
-                <div className="step-card">
-                  <div className="step-number">2</div>
-                  <h3>AI Bekerja</h3>
-                  <p>
-                    Mesin Bypass kami akan menembus proteksi web dan mengekstrak
-                    Penulis, Judul, serta Tahun otomatis.
-                  </p>
-                </div>
-                <div className="step-card">
-                  <div className="step-number">3</div>
-                  <h3>Selesai</h3>
-                  <p>
-                    Dapatkan format Catatan Kaki (Footnote) dan Daftar Pustaka
-                    yang siap disalin ke Word.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* Features Detail */}
-          <section id="features" className="features-section animate-fade">
-            <div className="container">
+          <section id="features" className="features-section animate-slide-up">
+            <div className="container text-center">
+              <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card">
-                  <div className="feature-icon">🛡️</div>
-                  <h3>Anti-Cloudflare Bypass</h3>
-                  <p>
+                <div className="feature-card glass-panel">
+                  <div className="feature-icon-box">🛡️</div>
+                  <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">
                     Mengekstrak data otomatis meski web sumber diproteksi sistem
                     keamanan Cloudflare (seperti Academia & ResearchGate).
                   </p>
                 </div>
-                <div className="feature-card">
-                  <div className="feature-icon">🤖</div>
-                  <h3>AI Self-Healing</h3>
-                  <p>
-                    Jika jurnal PDF rusak/tidak terbaca, AI Semantic Scholar
-                    kami otomatis menyembuhkan dan melacak metadata aslinya.
+                <div className="feature-card glass-panel">
+                  <div className="feature-icon-box">🤖</div>
+                  <h3 className="text-lg font-bold">AI Self-Healing</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">
+                    Jika jurnal PDF rusak, AI Semantic Scholar
+                    kami otomatis melacak dan merekonstruksi metadata aslinya.
                   </p>
                 </div>
-                <div className="feature-card">
-                  <div className="feature-icon">⚡</div>
-                  <h3>Sistem Batch Super</h3>
-                  <p>
-                    Punya 50 daftar referensi jurnal? Paste semua URL sekaligus
+                <div className="feature-card glass-panel">
+                  <div className="feature-icon-box">⚡</div>
+                  <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">
+                    Punya 50 referensi? Paste semua URL sekaligus
                     dan dapatkan daftar pustaka urut abjad seketika.
                   </p>
                 </div>
@@ -1463,296 +1426,268 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
           </section>
 
           {/* Pricing & Transparency */}
-          <section className="pricing-section animate-fade">
+          <section className="pricing-section animate-slide-up">
             <div className="container text-center">
-              <div className="pricing-card">
-                <h2 className="m-0 mb-2">Harga yang Sangat Transparan</h2>
-                <p className="text-muted m-0 mb-6">
-                  Kami tidak menggunakan sistem langganan bulanan. Anda hanya
-                  membayar apa yang Anda gunakan (Pay-As-You-Go).
+              <div className="pricing-card glass-panel relative overflow-hidden">
+                <div className="absolute-glow"></div>
+                <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
+                <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
+                  Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.
                 </p>
 
-                <div className="price-huge">
-                  Rp 750{" "}
-                  <span className="text-sm font-normal text-muted">
+                <div className="price-huge relative z-10">
+                  <span className="currency text-xl font-semibold mr-1">Rp</span>750
+                  <span className="text-sm font-medium text-muted ml-2 relative -top-1">
                     / Sitasi Sukses
                   </span>
                 </div>
 
-                <ul className="pricing-list mt-6 mb-6">
+                <ul className="pricing-list mt-8 mb-8 relative z-10">
                   <li>
-                    <CheckIcon /> Gratis 5 Kredit untuk pengguna baru.
+                    <div className="icon-wrap"><CheckIcon /></div> Gratis 5 Kredit untuk pengguna baru.
                   </li>
                   <li>
-                    <CheckIcon /> Kredit <strong>TIDAK AKAN HANGUS</strong> /
-                    berkurang jika link rusak atau gagal diekstrak.
+                    <div className="icon-wrap"><CheckIcon /></div> Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.
                   </li>
                   <li>
-                    <CheckIcon /> Riwayat sitasi tersimpan selamanya di Cloud.
+                    <div className="icon-wrap"><CheckIcon /></div> Riwayat tersimpan selamanya di Cloud.
                   </li>
                   <li>
-                    <CheckIcon /> Pembayaran instan via QRIS, GoPay, OVO, dll.
+                    <div className="icon-wrap"><CheckIcon /></div> Dukungan QRIS, e-Wallet, & Virtual Account.
                   </li>
                 </ul>
 
                 <button
                   onClick={handleLoginAndEnter}
-                  className="btn-primary w-full flex justify-center gap-2"
+                  className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 text-base"
                 >
-                  Mulai Pengalaman Bebas Stres <ArrowRightIcon />
+                  Mulai Ruang Kerja Anda <ArrowRightIcon />
                 </button>
-              </div>
-            </div>
-          </section>
-
-          {/* FAQ */}
-          <section className="faq-section animate-fade mb-8">
-            <div className="container">
-              <h2 className="text-center mb-6">Pertanyaan Umum (FAQ)</h2>
-              <div className="grid-2 gap-4">
-                <div className="faq-item">
-                  <h4>Apakah semua link PDF bisa terbaca?</h4>
-                  <p className="text-sm text-muted">
-                    Sebagian besar PDF jurnal modern (OJS) bisa. Namun jika PDF
-                    tersebut adalah hasil *scan* gambar fisik tanpa OCR, AI kami
-                    akan mencoba melacak judulnya via database global.
-                  </p>
-                </div>
-                <div className="faq-item">
-                  <h4>Bagaimana jika gagal, apakah saldo terpotong?</h4>
-                  <p className="text-sm text-muted">
-                    Tidak. Jika sistem mendeteksi kegagalan ekstraksi atau link
-                    rusak, sistem akan otomatis melakukan *Refund* 1 Kredit ke
-                    akun Anda dalam hitungan detik.
-                  </p>
-                </div>
-                <div className="faq-item">
-                  <h4>Metode pembayaran apa saja yang didukung?</h4>
-                  <p className="text-sm text-muted">
-                    Kami terintegrasi dengan Bayar.gg yang mendukung pembayaran
-                    QRIS, e-Wallet (OVO, Dana, ShopeePay), dan Virtual Account
-                    berbagai bank.
-                  </p>
-                </div>
-                <div className="faq-item">
-                  <h4>Apakah saya bisa mengedit hasil sitasi?</h4>
-                  <p className="text-sm text-muted">
-                    Bisa. Jika ada detail kecil yang meleset, Anda bisa
-                    meng-copy hasilnya ke Word dan menyesuaikannya secara
-                    manual, atau gunakan mode 'Manual' di aplikasi kami.
-                  </p>
-                </div>
               </div>
             </div>
           </section>
 
           <footer className="footer animate-fade">
             <div className="container footer-content">
-              <div className="footer-brand">
-                <BoltIcon /> FlashCite
-                <p className="mt-2 text-sm max-w-sm mx-auto">
-                  Automasi sitasi akademik pintar untuk penulisan karya ilmiah
-                  instan. Hemat waktu Anda untuk penelitian, bukan untuk format
-                  referensi.
-                </p>
+              <div className="footer-brand flex items-center justify-center gap-2 mb-4">
+                <BoltIcon /> <span className="font-bold text-lg text-main">FlashCite</span>
+              </div>
+              <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
+                Automasi sitasi akademik pintar untuk penulisan karya ilmiah
+                instan. Desain eksklusif. Performa maksimal.
+              </p>
+              <div className="mt-8 text-xs font-medium text-muted opacity-60">
+                © {new Date().getFullYear()} FlashCite. All rights reserved.
               </div>
             </div>
           </footer>
-        </>
+        </main>
       )}
 
       {/* --- VIEW 2: WORKSPACE APP --- */}
       {currentView === "tool" && user && (
-        <section className="tool-section animate-slide-up">
+        <section className="tool-section animate-fade-in z-10 relative">
           <div className="container tool-container">
-            <div className="tool-header flex items-center justify-between mb-6">
-              <div>
-                <h2 className="section-title text-left m-0">Ruang Kerja</h2>
-                <p className="section-subtitle text-left m-0">
-                  Ekstrak metadata instan dengan presisi tinggi.
-                </p>
-              </div>
+            <div className="tool-header mb-8 text-center sm:text-left">
+              <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
+              <p className="text-muted text-sm mt-2 font-medium">
+                Sistem ekstraksi metadata aktif. Masukkan referensi Anda.
+              </p>
             </div>
 
-            <div className="card shadow-md">
-              <div className="card-tabs scrollable-tabs">
-                <button
-                  className={`tab-btn ${inputMode === "doi" ? "active" : ""}`}
-                  onClick={() => setInputMode("doi")}
-                >
-                  Nomor DOI
-                </button>
-                <button
-                  className={`tab-btn ${inputMode === "url" ? "active" : ""}`}
-                  onClick={() => setInputMode("url")}
-                >
-                  Link Web/PDF
-                </button>
-                <button
-                  className={`tab-btn ${inputMode === "batch" ? "active" : ""}`}
-                  onClick={() => setInputMode("batch")}
-                >
-                  Mode Batch
-                </button>
-                <button
-                  className={`tab-btn ${inputMode === "manual" ? "active" : ""}`}
-                  onClick={() => setInputMode("manual")}
-                >
-                  Manual
-                </button>
-                <button
-                  className={`tab-btn ${inputMode === "history" ? "active" : ""}`}
-                  onClick={() => setInputMode("history")}
-                >
-                  Riwayat
-                </button>
+            <div className="card glass-panel shadow-premium">
+              <div className="segmented-control-wrapper p-2 border-b border-color">
+                <div className="segmented-control scrollable-tabs">
+                  <button
+                    className={`segmented-btn ${inputMode === "doi" ? "active" : ""}`}
+                    onClick={() => setInputMode("doi")}
+                  >
+                    Nomor DOI
+                  </button>
+                  <button
+                    className={`segmented-btn ${inputMode === "url" ? "active" : ""}`}
+                    onClick={() => setInputMode("url")}
+                  >
+                    Link Web/PDF
+                  </button>
+                  <button
+                    className={`segmented-btn ${inputMode === "batch" ? "active" : ""}`}
+                    onClick={() => setInputMode("batch")}
+                  >
+                    Mode Batch
+                  </button>
+                  <button
+                    className={`segmented-btn ${inputMode === "manual" ? "active" : ""}`}
+                    onClick={() => setInputMode("manual")}
+                  >
+                    Manual
+                  </button>
+                  <button
+                    className={`segmented-btn ${inputMode === "history" ? "active" : ""}`}
+                    onClick={() => setInputMode("history")}
+                  >
+                    Riwayat
+                  </button>
+                </div>
               </div>
 
-              <div className="card-body">
+              <div className="card-body p-6 sm:p-8">
                 {inputMode === "doi" && (
-                  <div className="animate-fade">
-                    <div className="form-group">
+                  <div className="animate-fade-in">
+                    <div className="form-group mb-5 relative">
+                      <label className="input-label">Nomor DOI Referensi</label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field-modern"
                         value={doiInput}
                         onChange={(e) => setDoiInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && fetchDOI()}
-                        placeholder="Paste Nomor DOI (Misal: 10.1038/s41586...)"
+                        placeholder="Contoh: 10.1038/s41586..."
                       />
                     </div>
-                    <div className="form-group mb-6">
+                    <div className="form-group mb-8 relative">
+                      <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field-modern"
                         value={kotaInput}
                         onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Kota Terbit (Opsional)"
+                        placeholder="Masukkan kota terbit jurnal"
                       />
                     </div>
                     <button
-                      className="btn-primary w-full"
+                      className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={fetchDOI}
                       disabled={loading || !doiInput}
                     >
                       {loading
-                        ? "Memproses (1 Kredit)..."
+                        ? "Mengeksekusi Proses..."
                         : "Generate Sitasi (1 Kredit)"}
                     </button>
                   </div>
                 )}
 
                 {inputMode === "url" && (
-                  <div className="animate-fade">
-                    <div className="form-group">
+                  <div className="animate-fade-in">
+                    <div className="form-group mb-5 relative">
+                      <label className="input-label">Tautan Artikel / PDF</label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field-modern"
                         value={urlInput}
                         onChange={(e) => setUrlInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && fetchURL()}
-                        placeholder="Paste Link Artikel / URL PDF Jurnal"
+                        placeholder="Paste link Academia, ResearchGate, OJS, dll"
                       />
                     </div>
-                    <div className="form-group mb-6">
+                    <div className="form-group mb-8 relative">
+                      <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field-modern"
                         value={kotaInput}
                         onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Kota Terbit (Opsional)"
+                        placeholder="Masukkan kota terbit jurnal"
                       />
                     </div>
                     <button
-                      className="btn-primary w-full"
+                      className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={fetchURL}
                       disabled={loading || !urlInput}
                     >
                       {loading
-                        ? "Menganalisis Tautan (1 Kredit)..."
+                        ? "Menganalisis Tautan..."
                         : "Generate Sitasi (1 Kredit)"}
                     </button>
                   </div>
                 )}
 
                 {inputMode === "manual" && (
-                  <div className="animate-fade">
-                    <div className="grid-2 gap-4">
-                      <div className="col-span-2">
+                  <div className="animate-fade-in">
+                    <div className="grid-2 gap-5">
+                      <div className="col-span-2 form-group">
+                        <label className="input-label">Nama Penulis Lengkap *</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mAuthor}
                           onChange={(e) => setMAuthor(e.target.value)}
-                          placeholder="Nama Penulis Lengkap *"
+                          placeholder="John Doe, Jane Smith"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-2 form-group">
+                        <label className="input-label">Judul Artikel *</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mTitle}
                           onChange={(e) => setMTitle(e.target.value)}
-                          placeholder="Judul Artikel *"
+                          placeholder="Masukkan judul artikel"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Nama Jurnal</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mJournal}
                           onChange={(e) => setMJournal(e.target.value)}
-                          placeholder="Nama Jurnal"
+                          placeholder="Jurnal Internasional"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Tahun Terbit *</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mYear}
                           onChange={(e) => setMYear(e.target.value)}
-                          placeholder="Tahun Terbit *"
+                          placeholder="2024"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Volume</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mVolume}
                           onChange={(e) => setMVolume(e.target.value)}
-                          placeholder="Volume"
+                          placeholder="Misal: 5"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Isu / Nomor</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mIssue}
                           onChange={(e) => setMIssue(e.target.value)}
-                          placeholder="Isu / Nomor"
+                          placeholder="Misal: 2"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Halaman</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={mPage}
                           onChange={(e) => setMPage(e.target.value)}
-                          placeholder="Halaman"
+                          placeholder="Misal: 10-25"
                         />
                       </div>
-                      <div>
+                      <div className="form-group">
+                        <label className="input-label">Kota Terbit</label>
                         <input
                           type="text"
-                          className="input-field"
+                          className="input-field-modern"
                           value={kotaInput}
                           onChange={(e) => setKotaInput(e.target.value)}
-                          placeholder="Kota Terbit"
+                          placeholder="Jakarta"
                         />
                       </div>
                     </div>
                     <button
-                      className="btn-primary w-full mt-6"
+                      className="btn-primary w-full mt-8 py-3.5 shadow-glow"
                       onClick={handleGenerateManual}
                     >
                       Generate Manual (1 Kredit)
@@ -1761,26 +1696,28 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                 )}
 
                 {inputMode === "batch" && (
-                  <div className="animate-fade">
-                    <div className="form-group">
+                  <div className="animate-fade-in">
+                    <div className="form-group mb-5">
+                      <label className="input-label">Daftar Link / DOI</label>
                       <textarea
-                        className="input-field textarea-field"
+                        className="input-field-modern textarea-field"
                         value={batchInput}
                         onChange={(e) => setBatchInput(e.target.value)}
-                        placeholder="Paste banyak URL atau DOI di sini (1 Baris = 1 Link/DOI)"
+                        placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses"
                       />
                     </div>
-                    <div className="form-group mb-6">
+                    <div className="form-group mb-8">
+                      <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
                       <input
                         type="text"
-                        className="input-field"
+                        className="input-field-modern"
                         value={kotaInput}
                         onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Kota Terbit Global (Opsional)"
+                        placeholder="Diaplikasikan ke semua referensi"
                       />
                     </div>
                     <button
-                      className="btn-primary w-full"
+                      className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={handleBatchGenerate}
                       disabled={loading || !batchInput}
                     >
@@ -1793,56 +1730,53 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
 
                 {/* TAB HISTORY */}
                 {inputMode === "history" && (
-                  <div className="animate-fade history-container">
+                  <div className="animate-fade-in history-container custom-scrollbar pr-3">
                     {history.length === 0 ? (
-                      <div className="text-center text-muted p-6">
-                        Riwayat sitasi masih kosong.
+                      <div className="text-center text-muted p-10 flex flex-col items-center">
+                        <span className="text-4xl mb-3 opacity-20">🗂️</span>
+                        Ruang riwayat Anda masih kosong.
                       </div>
                     ) : (
                       history.map((item) => (
                         <div
                           key={item.id}
-                          className="history-item mb-4 border-b pb-4"
+                          className="history-item mb-5 pb-5 border-b border-color last-no-border"
                         >
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="badge-pill text-xs">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="badge-pill text-xs px-2 py-0.5">
                               {item.type}
                             </span>
-                            <span className="text-xs text-muted">
-                              {new Date(item.timestamp).toLocaleDateString(
-                                "id-ID",
-                              )}
+                            <span className="text-xs font-mono text-muted">
+                              {new Date(item.timestamp).toLocaleString("id-ID")}
                             </span>
                           </div>
-                          <h4 className="m-0 mb-2 font-semibold text-sm truncate-2">
+                          <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">
                             {item.title}
                           </h4>
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex gap-2 mt-4">
                             <button
-                              className="btn-secondary btn-sm"
+                              className="btn-secondary btn-sm flex-1 justify-center"
                               onClick={() =>
                                 handleCopy(item.footnote, `hist-fn-${item.id}`)
                               }
                             >
                               {copiedId === `hist-fn-${item.id}` ? (
-                                <CheckIcon />
+                                <><CheckIcon /> Disalin</>
                               ) : (
-                                <CopyIcon />
-                              )}{" "}
-                              Footnote
+                                <><CopyIcon /> Footnote</>
+                              )}
                             </button>
                             <button
-                              className="btn-secondary btn-sm"
+                              className="btn-secondary btn-sm flex-1 justify-center"
                               onClick={() =>
                                 handleCopy(item.dafpus, `hist-dp-${item.id}`)
                               }
                             >
                               {copiedId === `hist-dp-${item.id}` ? (
-                                <CheckIcon />
+                                <><CheckIcon /> Disalin</>
                               ) : (
-                                <CopyIcon />
-                              )}{" "}
-                              Dafpus
+                                <><CopyIcon /> Dafpus</>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -1852,8 +1786,9 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                 )}
 
                 {error && (
-                  <div className="error-alert mt-6 animate-fade">
-                    <WarningIcon /> {error}
+                  <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
+                    <div className="mt-0.5"><WarningIcon /></div> 
+                    <span className="leading-relaxed font-medium">{error}</span>
                   </div>
                 )}
               </div>
@@ -1863,7 +1798,7 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
             {loading && inputMode === "batch" && (
               <>
                 <SkeletonLoader />
-                <div style={{ opacity: 0.5 }}>
+                <div style={{ opacity: 0.5, transform: "scale(0.98)" }}>
                   <SkeletonLoader />
                 </div>
               </>
@@ -1874,20 +1809,23 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
               metadata &&
               inputMode !== "batch" &&
               inputMode !== "history" && (
-                <div className="card shadow-md mt-6 animate-slide-up border-success">
-                  <div className="card-body">
+                <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <CheckIcon />
+                  </div>
+                  <div className="card-body p-6 sm:p-8">
                     <div className="result-block">
                       <div className="result-header">
                         <span>CATATAN KAKI (FOOTNOTE)</span>
                         <button
-                          className="btn-icon"
+                          className="btn-copy-modern"
                           onClick={() =>
                             handleCopy(footnoteResult, "single-fn")
                           }
                         >
                           {copiedId === "single-fn" ? (
                             <>
-                              <CheckIcon /> Disalin
+                              <span className="text-success"><CheckIcon /></span> Disalin
                             </>
                           ) : (
                             <>
@@ -1901,16 +1839,16 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                         dangerouslySetInnerHTML={{ __html: footnoteResult }}
                       />
                     </div>
-                    <div className="result-block mt-6">
+                    <div className="result-block mt-8">
                       <div className="result-header">
                         <span>DAFTAR PUSTAKA</span>
                         <button
-                          className="btn-icon"
+                          className="btn-copy-modern"
                           onClick={() => handleCopy(dafpusResult, "single-dp")}
                         >
                           {copiedId === "single-dp" ? (
                             <>
-                              <CheckIcon /> Disalin
+                              <span className="text-success"><CheckIcon /></span> Disalin
                             </>
                           ) : (
                             <>
@@ -1930,61 +1868,66 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
 
             {/* RESULTS AREA: BATCH */}
             {!loading && batchResults.length > 0 && inputMode === "batch" && (
-              <div className="card shadow-md mt-6 animate-slide-up border-success">
-                <div className="card-body">
+              <div className="card glass-panel mt-8 animate-slide-up border-t-success">
+                <div className="card-body p-6 sm:p-8">
                   {batchSuccesses.length > 0 && (
                     <>
-                      <h3 className="batch-title">
-                        Catatan Kaki ({batchSuccesses.length})
-                      </h3>
+                      <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
+                        <h3 className="text-base font-bold m-0 text-main">
+                          Catatan Kaki ({batchSuccesses.length})
+                        </h3>
+                      </div>
                       {batchSuccesses.map((r, index) => {
                         const content = buildFootnote(r.meta, kotaInput);
                         const copyId = `batch-fn-${index}`;
                         return (
-                          <div className="result-block mb-4" key={copyId}>
-                            <div className="result-header">
-                              <span className="truncate">{r.line}</span>
+                          <div className="result-block mb-5" key={copyId}>
+                            <div className="result-header bg-subtle">
+                              <span className="truncate font-mono text-xs">{r.line}</span>
                               <button
-                                className="btn-icon"
+                                className="btn-copy-modern btn-sm-padding"
                                 onClick={() => handleCopy(content, copyId)}
                               >
                                 {copiedId === copyId ? (
-                                  <CheckIcon />
+                                  <span className="text-success"><CheckIcon /></span>
                                 ) : (
                                   <CopyIcon />
                                 )}
                               </button>
                             </div>
                             <div
-                              className="result-html"
+                              className="result-html text-sm"
                               dangerouslySetInnerHTML={{ __html: content }}
                             />
                           </div>
                         );
                       })}
-                      <h3 className="batch-title mt-8">
-                        Daftar Pustaka A-Z ({sortedBatchDafpus.length})
-                      </h3>
+                      
+                      <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
+                        <h3 className="text-base font-bold m-0 text-main">
+                          Daftar Pustaka A-Z ({sortedBatchDafpus.length})
+                        </h3>
+                      </div>
                       {sortedBatchDafpus.map((r, index) => {
                         const content = buildDafpus(r.meta, kotaInput);
                         const copyId = `batch-dp-${index}`;
                         return (
-                          <div className="result-block mb-4" key={copyId}>
-                            <div className="result-header">
-                              <span className="truncate">{r.line}</span>
+                          <div className="result-block mb-5" key={copyId}>
+                            <div className="result-header bg-subtle">
+                              <span className="truncate font-mono text-xs">{r.line}</span>
                               <button
-                                className="btn-icon"
+                                className="btn-copy-modern btn-sm-padding"
                                 onClick={() => handleCopy(content, copyId)}
                               >
                                 {copiedId === copyId ? (
-                                  <CheckIcon />
+                                  <span className="text-success"><CheckIcon /></span>
                                 ) : (
                                   <CopyIcon />
                                 )}
                               </button>
                             </div>
                             <div
-                              className="result-html"
+                              className="result-html text-sm"
                               dangerouslySetInnerHTML={{ __html: content }}
                             />
                           </div>
@@ -1993,12 +1936,14 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
                     </>
                   )}
                   {batchErrors.length > 0 && (
-                    <div className="error-alert mt-8">
-                      <strong>Gagal (Otomatis Di-Refund):</strong>
-                      <ul className="mt-2 pl-4 list-disc">
+                    <div className="error-alert mt-8 p-5 bg-error-subtle border-error border rounded-lg">
+                      <strong className="flex items-center gap-2 mb-3 text-error"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
+                      <ul className="m-0 pl-5 text-error text-sm space-y-2 opacity-90">
                         {batchErrors.map((err, i) => (
-                          <li key={i} className="text-sm">
-                            {err.line} - {err.error}
+                          <li key={i} className="break-all">
+                            <span className="font-mono text-xs font-semibold mr-2">{err.line}</span>
+                            <br className="sm:hidden" />
+                            {err.error}
                           </li>
                         ))}
                       </ul>
@@ -2012,251 +1957,342 @@ const saveToHistory = async (meta, fn, dp, inputVal, type) => {
         </section>
       )}
 
-      {/* --- CSS STYLING & VARIABLES ISOLATION --- */}
+      {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         .app-wrapper {
-          --bg-body: #f8fafc;
-          --bg-surface: #ffffff;
-          --bg-surface-hover: #f1f5f9;
+          /* LIGHT MODE VARIABLES */
+          --bg-body: #fbfbfc;
+          --bg-surface: rgba(255, 255, 255, 0.7);
+          --bg-surface-hover: rgba(243, 244, 246, 0.6);
+          --bg-surface-solid: #ffffff;
           
-          --text-main: #0f172a;
-          --text-muted: #64748b;
+          --text-main: #09090b;
+          --text-muted: #71717a;
           
-          --border-color: #e2e8f0;
-          --border-focus: #3b82f6;
+          --border-color: rgba(0, 0, 0, 0.08);
+          --border-focus: rgba(24, 24, 27, 0.9);
           
-          --primary: #2563eb;
-          --primary-hover: #1d4ed8;
-          --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          --primary: #09090b;
+          --primary-hover: #27272a;
+          --primary-light: #f4f4f5;
+          --primary-gradient: linear-gradient(135deg, #09090b 0%, #3f3f46 100%);
           
           --success-light: #f0fdf4;
-          --success: #22c55e;
+          --success: #16a34a;
           --success-border: #22c55e;
           --error-bg: #fef2f2;
-          --error-text: #b91c1c;
+          --error-text: #dc2626;
 
-          --nav-bg: rgba(255, 255, 255, 0.85);
-          --skeleton-bg: #e2e8f0;
+          --nav-bg: rgba(255, 255, 255, 0.75);
+          --skeleton-bg: #e4e4e7;
+          --skeleton-hl: #f4f4f5;
 
           --radius-sm: 8px;
-          --radius-md: 12px;
+          --radius-md: 16px;
+          --radius-lg: 24px;
           
           min-height: 100vh;
           background-color: var(--bg-body);
           color: var(--text-main);
-          font-family: 'Inter', system-ui, sans-serif;
-          transition: background-color 0.3s ease, color 0.3s ease;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          transition: background-color 0.4s ease, color 0.4s ease;
           display: flex;
           flex-direction: column;
+          position: relative;
+          overflow-x: hidden;
         }
 
+        /* DARK MODE VARIABLES */
         html[data-theme="dark"] .app-wrapper,
         [data-theme="dark"] .app-wrapper {
-          --bg-body: #0b1120;
-          --bg-surface: #1e293b;
-          --bg-surface-hover: #334155;
-          --text-main: #f8fafc;
-          --text-muted: #94a3b8;
-          --border-color: #334155;
-          --border-focus: #60a5fa;
-          --primary: #3b82f6;
-          --primary-hover: #60a5fa;
-          --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #818cf8 100%);
+          --bg-body: #09090b;
+          --bg-surface: rgba(24, 24, 27, 0.6);
+          --bg-surface-hover: rgba(39, 39, 42, 0.5);
+          --bg-surface-solid: #18181b;
+          
+          --text-main: #fafafa;
+          --text-muted: #a1a1aa;
+          
+          --border-color: rgba(255, 255, 255, 0.1);
+          --border-focus: rgba(255, 255, 255, 0.9);
+          
+          --primary: #fafafa;
+          --primary-hover: #e4e4e7;
+          --primary-light: #27272a;
+          --primary-gradient: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+          
           --success-light: rgba(34, 197, 94, 0.1);
           --success: #4ade80;
           --success-border: #22c55e;
           --error-bg: rgba(239, 68, 68, 0.1);
-          --error-text: #fca5a5;
-          --nav-bg: rgba(30, 41, 59, 0.85);
-          --skeleton-bg: #334155;
+          --error-text: #f87171;
+          
+          --nav-bg: rgba(9, 9, 11, 0.75);
+          --skeleton-bg: #27272a;
+          --skeleton-hl: #3f3f46;
         }
 
         * { box-sizing: border-box; }
-        .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* AMBIENT BACKGROUND GLOW */
+        .ambient-background {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          overflow: hidden; z-index: 0; pointer-events: none;
+        }
+        .ambient-blob {
+          position: absolute; filter: blur(100px); opacity: 0.4;
+          border-radius: 50%; animation: floatBlob 20s infinite alternate;
+        }
+        .blob-1 {
+          top: -10%; left: -10%; width: 50vw; height: 50vw;
+          background: radial-gradient(circle, rgba(161, 161, 170, 0.2) 0%, transparent 70%);
+        }
+        .blob-2 {
+          bottom: -20%; right: -10%; width: 60vw; height: 60vw;
+          background: radial-gradient(circle, rgba(113, 113, 122, 0.15) 0%, transparent 70%);
+          animation-delay: -10s;
+        }
+        [data-theme="dark"] .blob-1 { background: radial-gradient(circle, rgba(63, 63, 70, 0.3) 0%, transparent 70%); }
+        [data-theme="dark"] .blob-2 { background: radial-gradient(circle, rgba(82, 82, 91, 0.2) 0%, transparent 70%); }
+        
+        @keyframes floatBlob {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(5%, 10%) scale(1.1); }
+          100% { transform: translate(-5%, -10%) scale(0.9); }
+        }
+
+        /* GLASSMORPHISM & SHADOWS */
+        .glass-panel {
+          background: var(--bg-surface);
+          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+        }
+        .shadow-premium {
+          box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.03), 0 1px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+        [data-theme="dark"] .shadow-premium {
+          box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.2);
+        }
+        .shadow-glow {
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="dark"] .shadow-glow {
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+        }
 
         /* UTILS */
         .text-center { text-align: center; } .text-left { text-align: left; }
         .text-gradient { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .flex { display: flex; } .items-center { align-items: center; } .justify-between { justify-content: space-between; }
-        .justify-center { justify-content: center; }
-        .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-4 { gap: 1rem; }
+        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
+        .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
-        .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
-        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; }
-        .mb-2 { margin-bottom: 0.5rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; }
-        .pb-4 { padding-bottom: 1rem; } 
+        .mt-0 { margin-top: 0; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
+        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; }
+        .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } 
+        .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
+        .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
+        .pb-3 { padding-bottom: 0.75rem; } .pb-5 { padding-bottom: 1.25rem; } .pt-5 { padding-top: 1.25rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
+        .w-full { width: 100%; } .w-max { width: max-content; }
         .border-b { border-bottom: 1px solid var(--border-color); }
         .border-r { border-right: 1px solid var(--border-color); }
-        .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-muted { color: var(--text-muted); }
-        .text-success { color: var(--success); }
-        .font-normal { font-weight: 400; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } 
-        .text-primary { color: var(--primary); }
-        .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; }
-        .max-w-sm { max-width: 24rem; }
-        
+        .border-color { border-color: var(--border-color); }
+        .border-none { border: none; } .rounded-lg { border-radius: var(--radius-sm); }
+        .bg-subtle { background: var(--bg-surface-hover); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-4xl { font-size: 2.25rem; }
+        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); }
+        .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
+        .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
+        .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
+        .z-10 { z-index: 10; }
+        .opacity-5 { opacity: 0.05; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-90 { opacity: 0.9; }
+        .pointer-events-none { pointer-events: none; }
+        .break-all { word-break: break-all; }
+        .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; }
+        .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .border-t-success { border-top: 3px solid var(--success-border); }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
 
-        /* NAVBAR KAPSUL */
+        /* NAVBAR FLOATING PILL */
         .navbar-wrapper {
-          position: sticky; top: 16px; z-index: 100;
+          position: sticky; top: 1.5rem; z-index: 100;
           padding: 0 1.5rem; display: flex; justify-content: center;
         }
         .navbar {
-          width: 100%; max-width: 900px; background: var(--nav-bg);
-          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          width: 100%; max-width: 800px; background: var(--nav-bg);
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           border: 1px solid var(--border-color); border-radius: 100px;
-          padding: 0.75rem 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
-        .nav-logo { font-weight: 800; font-size: 1.25rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
-        .theme-toggle { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: var(--radius-sm); transition: 0.2s; }
-        .theme-toggle:hover { background: var(--bg-surface-hover); color: var(--text-main); }
+        .nav-logo { font-weight: 800; font-size: 1.125rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.5px; }
+        .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .logo-icon-wrap svg { width: 16px; height: 16px; }
+        [data-theme="dark"] .logo-icon-wrap { color: var(--bg-surface-solid); }
+        
+        .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
+        .theme-toggle { background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: 0.2s; }
+        .theme-toggle:hover { background: var(--bg-surface-hover); color: var(--text-main); border-color: var(--border-color); }
         
         .credit-badge {
-          display: flex; align-items: center; gap: 4px;
+          display: flex; align-items: center; gap: 6px;
           background: var(--bg-surface-hover); color: var(--text-main);
-          padding: 6px 12px; border-radius: 50px; font-size: 0.85rem; font-weight: 600;
-          cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s;
+          padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
+          cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
         }
-        .credit-badge:hover { border-color: var(--primary); }
+        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-solid); }
 
         /* BUTTONS */
         .btn-primary {
-          background: var(--primary); color: #fff;
-          border: none; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.95rem;
-          padding: 0.875rem 1.5rem !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+          background: var(--primary); color: var(--bg-body);
+          border: 1px solid transparent; border-radius: 100px; font-weight: 600; font-size: 0.95rem;
+          padding: 0.875rem 1.75rem !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
         }
-        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        [data-theme="dark"] .btn-primary { color: var(--bg-surface-solid); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: scale(1.02); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .btn-secondary {
-          background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color);
-          border-radius: var(--radius-sm); font-weight: 600; font-size: 0.85rem;
-          padding: 0.6rem 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;
+          background: var(--bg-surface-solid); color: var(--text-main); border: 1px solid var(--border-color);
+          border-radius: 100px; font-weight: 600; font-size: 0.85rem;
+          padding: 0.6rem 1.25rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn-secondary:hover { background: var(--bg-surface-hover); }
+        .btn-secondary:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
 
-        .btn-sm { padding: 0.5rem 1rem !important; font-size: 0.85rem; }
-        .btn-lg { padding: 1rem 2rem !important; font-size: 1rem; border-radius: var(--radius-md); }
-        .w-full { width: 100%; }
+        .btn-sm { height: 36px; padding: 0 1.25rem !important; font-size: 0.85rem; }
+        .btn-lg { padding: 1.125rem 2.5rem !important; font-size: 1.05rem; }
 
-        /* HERO & FEATURES (ENHANCED SAAS) */
-        .hero-section { padding: 5rem 0 4rem; }
-        .badge-pill { display: inline-block; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50px; transition: 0.3s; }
-        .hero-title { font-size: 2.75rem; font-weight: 800; line-height: 1.2; margin: 0 0 1.25rem; }
-        .hero-subtitle { font-size: 1.1rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; }
+        /* HERO & FEATURES (ENTERPRISE SAAS) */
+        .hero-section { padding: 6rem 0 5rem; }
+        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; backdrop-filter: blur(12px); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
+        @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        
+        .hero-title { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.03em; }
+        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; }
 
-        .preview-section { margin-top: 1rem; }
-        .preview-card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .preview-header { background: var(--bg-surface-hover); padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
-        .preview-dots span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); margin-right: 6px; }
-        .preview-body { padding: 1.5rem; text-align: left; }
-        .preview-mock-input { background: var(--bg-body); border: 1px solid var(--border-color); padding: 0.875rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.85rem; color: var(--text-main); word-break: break-all; }
-        .preview-mock-output { background: var(--success-light); border: 1px solid var(--success-border); padding: 1rem; border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-main); line-height: 1.6; }
-        .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--primary); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
+        .preview-card { overflow: hidden; border-radius: var(--radius-lg); }
+        .preview-header { background: var(--bg-surface-solid); padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
+        .preview-dots span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); margin-right: 8px; }
+        .preview-dots span:nth-child(1) { background: #ff5f56; } .preview-dots span:nth-child(2) { background: #ffbd2e; } .preview-dots span:nth-child(3) { background: #27c93f; }
+        .preview-body { padding: 2rem; text-align: left; }
+        .preview-mock-input { background: var(--bg-surface-solid); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-muted); word-break: break-all; }
+        .preview-mock-output { background: var(--bg-surface-solid); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-main); line-height: 1.6; border-left: 3px solid var(--success-border); }
+        
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .steps-section { padding: 5rem 0; background: var(--bg-surface-hover); margin-top: 4rem; }
-        .step-card { padding: 1.5rem; text-align: center; }
-        .step-number { width: 40px; height: 40px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1rem; }
-        .step-card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
-        .step-card p { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+        .features-section { padding: 6rem 0; }
+        .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .feature-card { padding: 2rem; text-align: left; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); }
+        .feature-card:hover { transform: translateY(-4px); border-color: var(--text-muted); }
+        .feature-icon-box { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 
-        .features-section { padding: 4rem 0; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
-        .feature-card { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: var(--radius-md); text-align: left; transition: transform 0.2s; }
-        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
-        .feature-card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
-        .feature-card p { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
-
-        .pricing-section { padding: 4rem 0; }
-        .pricing-card { max-width: 500px; margin: 0 auto; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 2rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
-        .price-huge { font-size: 3rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
-        .pricing-list { list-style: none; padding: 0; margin: 0; text-align: left; }
-        .pricing-list li { margin-bottom: 0.75rem; font-size: 0.95rem; display: flex; gap: 8px; align-items: flex-start; }
-        .pricing-list li svg { color: var(--success-border); flex-shrink: 0; margin-top: 2px; }
-
-        .faq-section { padding: 3rem 0; }
-        .faq-item { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: var(--radius-sm); }
-        .faq-item h4 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--text-main); }
+        .pricing-section { padding: 5rem 0 6rem; }
+        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); }
+        .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
+        [data-theme="dark"] .absolute-glow { background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.05), transparent 70%); }
+        .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: flex-start; letter-spacing: -0.04em; }
+        .currency { margin-top: 0.5rem; }
+        .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
+        .pricing-list li { font-size: 0.95rem; display: flex; gap: 12px; align-items: flex-start; color: var(--text-main); }
+        .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .icon-wrap svg { width: 12px; height: 12px; stroke-width: 4; }
 
         /* WORKSPACE & CARDS */
         .tool-section { padding: 2rem 0 6rem; flex: 1; }
-        .tool-container { max-width: 700px; }
-        .section-title { font-size: 1.75rem; font-weight: 800; margin: 0 0 0.5rem; }
-        .section-subtitle { color: var(--text-muted); margin: 0; }
-
-        .card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; transition: background-color 0.3s ease, border-color 0.3s ease; }
-        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .border-success { border-top: 4px solid var(--success-border); }
+        .tool-container { max-width: 720px; }
         
-        .card-tabs { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-surface-hover); }
-        .scrollable-tabs { overflow-x: auto; white-space: nowrap; }
+        /* IOS STYLE SEGMENTED CONTROL */
+        .segmented-control-wrapper { background: var(--bg-surface-hover); }
+        .segmented-control { display: flex; gap: 4px; padding: 4px; background: var(--border-color); border-radius: 12px; }
+        .scrollable-tabs { overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
         .scrollable-tabs::-webkit-scrollbar { display: none; }
-        .tab-btn { flex: 1; min-width: 100px; background: transparent; border: none; padding: 1rem 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
-        .tab-btn:hover { color: var(--text-main); background: var(--bg-surface); }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--bg-surface); }
-        
-        .card-body { padding: 1.5rem; }
+        .segmented-btn { flex: 1; min-width: 110px; background: transparent; border: none; padding: 0.6rem 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; border-radius: 8px; transition: all 0.2s ease; }
+        .segmented-btn:hover:not(.active) { color: var(--text-main); }
+        .segmented-btn.active { background: var(--bg-surface-solid); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        /* FORMS */
-        .form-group { margin-bottom: 1rem; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
-        .input-field { width: 100%; padding: 0.875rem 1rem; font-size: 0.95rem; color: var(--text-main); background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: 0.2s; }
-        .input-field::placeholder { color: var(--text-muted); opacity: 0.7; }
-        .input-field:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        .textarea-field { min-height: 120px; resize: vertical; line-height: 1.5; }
+        /* FORMS MODERN */
+        .input-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
+        .input-field-modern { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; color: var(--text-main); background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: all 0.2s; font-family: inherit; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .input-field-modern::placeholder { color: var(--text-muted); opacity: 0.6; }
+        .input-field-modern:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
+        .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
 
         /* RESULTS AREA & HISTORY */
-        .result-block { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; }
-        .result-header { padding: 0.75rem 1rem; background: var(--bg-surface-hover); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
-        .result-html { padding: 1.25rem; font-size: 0.95rem; line-height: 1.6; word-break: break-word; }
-        .batch-title { font-size: 1rem; font-weight: 700; margin: 0 0 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-        .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-block { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; }
+        .result-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+        .result-html { padding: 1.25rem; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
+        
+        .btn-copy-modern { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; }
+        .btn-copy-modern:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
+        .btn-sm-padding { padding: 4px; }
 
-        .btn-icon { background: transparent; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; }
-        .btn-icon:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
-
-        .history-container { max-height: 400px; overflow-y: auto; padding-right: 0.5rem; }
+        .history-container { max-height: 480px; overflow-y: auto; }
+        
+        /* CUSTOM SCROLLBAR */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(4px); }
-        .modal-box { background: var(--bg-surface); width: 100%; max-width: 400px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
-        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface-hover); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 1.5rem; }
-        .btn-package { background: var(--bg-body); border: 2px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; transition: 0.2s; }
-        .btn-package:hover { border-color: var(--border-focus); }
-        .btn-package.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
-        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-body); border-radius: var(--radius-sm); }
-        .border-none { border: none; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .btn-package { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        .btn-package:hover { border-color: var(--text-main); color: var(--text-main); }
+        .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); }
+        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-body); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
 
-        .error-alert { background: var(--error-bg); border: 1px solid var(--error-text); color: var(--error-text); padding: 1rem; border-radius: var(--radius-sm); font-size: 0.9rem; display: flex; gap: 10px; align-items: flex-start; }
-        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface); padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
         
-        .bg-skeleton { background: var(--skeleton-bg); transition: 0.3s; }
-        .skeleton-pulse { animation: pulse 1.5s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        /* TRUE SHIMMER SKELETON */
+        .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+        .skeleton-box { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); width: 100%; }
+        .w-40 { width: 10rem; } .w-48 { width: 12rem; } .h-24 { height: 6rem; } .h-20 { height: 5rem; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* FOOTER */
-        .footer { padding: 3rem 0; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+        .footer { padding: 4rem 0; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; }
 
         /* ANIMATIONS */
-        .animate-fade { animation: fadeIn 0.3s ease; } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-slide-up { animation: slideUp 0.4s ease; } @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease; } 
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up-delayed { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards; opacity: 0; }
+        .animate-slide-up-fade { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
         /* RESPONSIVE */
         @media (max-width: 640px) {
           .hidden-mobile { display: none !important; }
-          .hero-title { font-size: 2rem; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
-          .card-body { padding: 1.25rem; } .truncate { max-width: 150px; }
-          .nav-logo { font-size: 1.1rem; } .credit-badge { padding: 6px 10px; font-size: 0.75rem; }
-          .preview-body { grid-template-columns: 1fr; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+          .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
+          .navbar { border-radius: var(--radius-md); padding: 0.6rem 0.6rem 0.6rem 1rem; }
+          .nav-logo span { display: none; }
+          .pricing-card { padding: 2rem 1.5rem; border-radius: var(--radius-md); border-left: none; border-right: none; }
+          .price-huge { font-size: 3rem; }
         }
       `}</style>
     </div>
