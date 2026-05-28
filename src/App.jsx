@@ -180,14 +180,28 @@ export default function App() {
       const profileRef = doc(db, "users", loggedUser.uid);
       const profileSnap = await getDoc(profileRef);
       if (!profileSnap.exists()) {
-        await setDoc(profileRef, {
-          credits: 5,
-          createdAt: Date.now(),
-          email: loggedUser.email,
-          name: loggedUser.displayName,
-        });
-        showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
-      }
+  await setDoc(profileRef, {
+    credits: 5,
+    createdAt: Date.now(),
+    email: loggedUser.email,
+    name: loggedUser.displayName,
+  });
+
+  showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
+} else {
+  const existingData = profileSnap.data();
+
+  if (
+    existingData.credits === undefined ||
+    existingData.credits === null
+  ) {
+    await updateDoc(profileRef, {
+      credits: 5,
+    });
+
+    showNotification("Bonus 5 Kredit berhasil ditambahkan.");
+  }
+}
 
       setCurrentView("tool");
       window.scrollTo({ top: 0, behavior: "smooth" });
