@@ -1088,7 +1088,7 @@ export default function App() {
   const VideoLogo = () => (
     <video
       // GANTI URL DI BAWAH INI DENGAN PATH VIDEO LOGO ANDA, CONTOH: "/logo-kilat.mp4"
-      src="/logo.mp4" 
+      src="/logo.mov" 
       autoPlay
       loop
       muted
@@ -2030,8 +2030,8 @@ export default function App() {
         .app-wrapper {
           /* LIGHT MODE VARIABLES */
           --bg-body: #fbfbfc;
-          --bg-surface: rgba(255, 255, 255, 0.7);
-          --bg-surface-hover: rgba(243, 244, 246, 0.6);
+          --bg-surface: rgba(255, 255, 255, 1);
+          --bg-surface-hover: rgba(243, 244, 246, 1);
           --bg-surface-solid: #ffffff;
           
           --text-main: #09090b;
@@ -2051,7 +2051,7 @@ export default function App() {
           --error-bg: #fef2f2;
           --error-text: #dc2626;
 
-          --nav-bg: rgba(255, 255, 255, 0.75);
+          --nav-bg: rgba(255, 255, 255, 1);
           --skeleton-bg: #e4e4e7;
           --skeleton-hl: #f4f4f5;
 
@@ -2100,7 +2100,6 @@ export default function App() {
         /* GLASSMORPHISM & SHADOWS */
         .glass-panel {
           background: var(--bg-surface);
-          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-md);
         }
@@ -2163,9 +2162,7 @@ export default function App() {
         }
         .navbar {
           width: 100%; max-width: 800px; 
-          background: var(--nav-bg); /* Menggunakan warna tembus pandang (rgba) */
-          backdrop-filter: blur(20px); /* Ini efek kaca / blur-nya */
-          -webkit-backdrop-filter: blur(20px); /* Dukungan untuk browser Safari/iOS */
+          background: var(--nav-bg); /* Menggunakan warna putih padat */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -2176,7 +2173,7 @@ export default function App() {
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { height: 80px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
+        .logo-icon-wrap { height: 40px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
         .footer-logo { height: 56px; }
         .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
         
