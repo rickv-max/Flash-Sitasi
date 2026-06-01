@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import gsap from "https://esm.sh/gsap";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -56,6 +57,7 @@ export default function App() {
   // App Routing & Theme
   const [currentView, setCurrentView] = useState("landing");
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const landingRef = useRef(null);
 
   // User & Credit State
   const [user, setUser] = useState(null);
@@ -113,6 +115,26 @@ export default function App() {
       isDarkMode ? "dark" : "light",
     );
   }, [isDarkMode]);
+
+  // --- GSAP ANIMATIONS ---
+  useEffect(() => {
+    if (currentView === "landing" && landingRef.current) {
+      const ctx = gsap.context(() => {
+        const tl = gsap.timeline();
+        
+        // Staggered Animation Sequence
+        tl.fromTo(".hero-badge", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.8, ease: "back.out(1.5)" })
+          .fromTo(".hero-title-line", { opacity: 0, y: 40, rotationX: -15 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.15, ease: "power3.out" }, "-=0.4")
+          .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
+          .fromTo(".hero-cta", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          .fromTo(".preview-card-anim", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.2")
+          .fromTo(".feature-card-anim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }, "-=0.4")
+          .fromTo(".pricing-card-anim", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }, "-=0.2");
+      }, landingRef);
+
+      return () => ctx.revert(); // Cleanup GSAP saat berpindah halaman
+    }
+  }, [currentView]);
 
   useEffect(() => {
     setError("");
@@ -1366,21 +1388,27 @@ export default function App() {
 
       {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
       {currentView === "landing" && (
-        <main className="main-content z-10 relative">
+        <main className="main-content z-10 relative" ref={landingRef}>
           {/* Hero Section */}
-          <section id="hero" className="hero-section animate-slide-up">
-            <div className="container text-center">
-              <div className="badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
+          <section id="hero" className="hero-section">
+            <div className="container text-center relative">
+              {/* Efek Cahaya Latar (Ambient Glow) */}
+              <div className="hero-glow-bg"></div>
+
+              <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
                 <span className="pulse-dot"></span> Tools Sitasi Jurnal Cerdas
               </div>
-              <h1 className="hero-title">
-                Ekstrak Referensi Jurnal <br className="hidden-mobile" />
-                <span className="text-gradient">Dalam Hitungan Detik.</span>
+              
+              <h1 className="hero-title" style={{ perspective: "1000px" }}>
+                <div className="hero-title-line">Ekstrak Referensi Jurnal</div>
+                <div className="hero-title-line"><span className="text-gradient">Dalam Hitungan Detik.</span></div>
               </h1>
+              
               <p className="hero-subtitle mx-auto mt-6">
                 Berhenti menyusun daftar pustaka secara manual. Ekstrak metadata
                 dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan tingkat presisi tinggi.
               </p>
+              
               <div className="hero-cta mt-10">
                 <button
                   onClick={handleLoginAndEnter}
@@ -1397,9 +1425,9 @@ export default function App() {
           </section>
 
           {/* Live Preview Section */}
-          <section className="preview-section animate-slide-up-delayed mt-10">
+          <section className="preview-section mt-10">
             <div className="container">
-              <div className="preview-card glass-panel">
+              <div className="preview-card-anim preview-card glass-panel shadow-premium-glow">
                 <div className="preview-header">
                   <div className="preview-dots">
                     <span></span>
@@ -1443,11 +1471,11 @@ export default function App() {
           </section>
 
           {/* Features Detail */}
-          <section id="features" className="features-section animate-slide-up">
+          <section id="features" className="features-section">
             <div className="container text-center">
               <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card glass-panel">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                   <div className="feature-icon-box">🛡️</div>
                   <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">
@@ -1455,7 +1483,7 @@ export default function App() {
                     keamanan Cloudflare (seperti Academia & ResearchGate).
                   </p>
                 </div>
-                <div className="feature-card glass-panel">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                   <div className="feature-icon-box">🤖</div>
                   <h3 className="text-lg font-bold">AI Self-Healing</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">
@@ -1463,7 +1491,7 @@ export default function App() {
                     kami otomatis melacak dan merekonstruksi metadata aslinya.
                   </p>
                 </div>
-                <div className="feature-card glass-panel">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                   <div className="feature-icon-box">⚡</div>
                   <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">
@@ -1476,9 +1504,9 @@ export default function App() {
           </section>
 
           {/* Pricing & Transparency */}
-          <section className="pricing-section animate-slide-up">
+          <section className="pricing-section">
             <div className="container text-center">
-              <div className="pricing-card glass-panel relative overflow-hidden">
+              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
                 <div className="absolute-glow"></div>
                 <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
                 <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
@@ -1522,7 +1550,7 @@ export default function App() {
             </div>
           </section>
 
-          <footer className="footer animate-fade">
+          <footer className="footer">
             <div className="container footer-content">
               <div className="footer-brand flex items-center justify-center gap-2 mb-4">
                 <BoltIcon /> <span className="font-bold text-lg text-main">FlashCite</span>
@@ -2283,8 +2311,14 @@ export default function App() {
         .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
         @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
         
-        .hero-title { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.03em; }
-        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; }
+        .hero-title { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.03em; position: relative; z-index: 10; }
+        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
+
+        .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.12; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
+        [data-theme="dark"] .hero-glow-bg { opacity: 0.2; }
+
+        .shadow-premium-glow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08), 0 0 40px -10px var(--border-color); }
+        [data-theme="dark"] .shadow-premium-glow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.4), 0 0 40px -10px rgba(255, 255, 255, 0.08); }
 
         .preview-card { overflow: hidden; border-radius: var(--radius-lg); }
         .preview-header { background: var(--bg-surface-solid); padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
@@ -2300,9 +2334,11 @@ export default function App() {
         .features-section { padding: 6rem 0; }
         .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-        .feature-card { padding: 2rem; text-align: left; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); }
-        .feature-card:hover { transform: translateY(-4px); border-color: var(--text-muted); }
-        .feature-icon-box { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
+        .group-hover-effect:hover { transform: translateY(-8px); border-color: var(--text-muted); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1); }
+        [data-theme="dark"] .group-hover-effect:hover { box-shadow: 0 12px 30px -10px rgba(0,0,0,0.4); }
+        .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
         .pricing-section { padding: 5rem 0 6rem; }
         .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); }
