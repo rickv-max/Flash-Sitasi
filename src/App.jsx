@@ -1098,18 +1098,19 @@ export default function App() {
   };
 
   // --- ICONS ---
-  const BoltIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      height="24"
-      width="24"
-    >
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-    </svg>
+  // Komponen Logo Baru Menggunakan Video
+  const VideoLogo = () => (
+    <video
+      // GANTI URL DI BAWAH INI DENGAN PATH VIDEO LOGO ANDA, CONTOH: "/logo-kilat.mp4"
+      src="/logo.mp4" 
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="video-logo-asset"
+    />
   );
+
   const CheckIcon = () => (
     <svg
       viewBox="0 0 24 24"
@@ -1342,7 +1343,7 @@ export default function App() {
                 window.scrollTo(0, 0);
               }}
             >
-              <div className="logo-icon-wrap"><BoltIcon /></div>
+              <div className="logo-icon-wrap"><VideoLogo /></div>
               <span>FlashCite</span>
             </div>
 
@@ -1553,7 +1554,8 @@ export default function App() {
           <footer className="footer">
             <div className="container footer-content">
               <div className="footer-brand flex items-center justify-center gap-2 mb-4">
-                <BoltIcon /> <span className="font-bold text-lg text-main">FlashCite</span>
+                <div className="logo-icon-wrap" style={{ width: '32px', height: '32px' }}><VideoLogo /></div>
+                <span className="font-bold text-lg text-main">FlashCite</span>
               </div>
               <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
                 Automasi sitasi akademik pintar untuk penulisan karya ilmiah
@@ -2267,8 +2269,11 @@ export default function App() {
 
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { font-weight: 800; font-size: 1.125rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.5px; }
-        .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        
+        .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; overflow: hidden; /* padding dihapus agar video fit */ }
         .logo-icon-wrap svg { width: 16px; height: 16px; }
+        .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        
         [data-theme="dark"] .logo-icon-wrap { color: var(--bg-surface-solid); }
         
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
