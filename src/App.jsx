@@ -59,7 +59,6 @@ if (firebaseConfig.apiKey) {
 export default function App() {
   // App Routing & Theme
   const [currentView, setCurrentView] = useState("landing");
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const landingRef = useRef(null);
 
   // User & Credit State
@@ -102,22 +101,6 @@ export default function App() {
   const [dafpusResult, setDafpusResult] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [notification, setNotification] = useState("");
-
-  // --- THEME & INITIALIZATION ---
-  useEffect(() => {
-    if (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    )
-      setIsDarkMode(true);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDarkMode ? "dark" : "light",
-    );
-  }, [isDarkMode]);
 
   // --- GSAP ANIMATIONS ---
   useEffect(() => {
@@ -2086,36 +2069,6 @@ export default function App() {
           position: relative;
         }
 
-        /* DARK MODE VARIABLES */
-        html[data-theme="dark"] .app-wrapper,
-        [data-theme="dark"] .app-wrapper {
-          --bg-body: #09090b;
-          --bg-surface: rgba(24, 24, 27, 0.6);
-          --bg-surface-hover: rgba(39, 39, 42, 0.5);
-          --bg-surface-solid: #18181b;
-          
-          --text-main: #fafafa;
-          --text-muted: #a1a1aa;
-          
-          --border-color: rgba(255, 255, 255, 0.1);
-          --border-focus: rgba(255, 255, 255, 0.9);
-          
-          --primary: #fafafa;
-          --primary-hover: #e4e4e7;
-          --primary-light: #27272a;
-          --primary-gradient: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
-          
-          --success-light: rgba(34, 197, 94, 0.1);
-          --success: #4ade80;
-          --success-border: #22c55e;
-          --error-bg: rgba(239, 68, 68, 0.1);
-          --error-text: #f87171;
-          
-          --nav-bg: rgba(9, 9, 11, 0.75);
-          --skeleton-bg: #27272a;
-          --skeleton-hl: #3f3f46;
-        }
-
         * { box-sizing: border-box; }
         .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
 
@@ -2201,13 +2154,18 @@ export default function App() {
 
         /* NAVBAR FLOATING PILL */
         .navbar-wrapper {
-          position: sticky; top: 1.5rem; z-index: 100;
-          padding: 0 1.5rem; display: flex; justify-content: center;
+          position: sticky; /* Ini yang menahan navbar di atas */
+          top: 1.5rem;      /* Jarak dari ujung atas layar */
+          z-index: 100;
+          padding: 0 1.5rem; 
+          display: flex; 
+          justify-content: center;
         }
         .navbar {
           width: 100%; max-width: 800px; 
-          background: var(--nav-bg); 
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+          background: var(--nav-bg); /* Menggunakan warna tembus pandang (rgba) */
+          backdrop-filter: blur(20px); /* Ini efek kaca / blur-nya */
+          -webkit-backdrop-filter: blur(20px); /* Dukungan untuk browser Safari/iOS */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
