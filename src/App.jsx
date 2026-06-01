@@ -2176,7 +2176,7 @@ export default function App() {
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { height: 40px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
+        .logo-icon-wrap { height: 80px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
         .footer-logo { height: 56px; }
         .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
         
