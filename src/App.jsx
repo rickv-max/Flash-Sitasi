@@ -1344,7 +1344,6 @@ export default function App() {
               }}
             >
               <div className="logo-icon-wrap"><VideoLogo /></div>
-              <span>FlashCite</span>
             </div>
 
             <div className="nav-actions">
@@ -1553,9 +1552,8 @@ export default function App() {
 
           <footer className="footer">
             <div className="container footer-content">
-              <div className="footer-brand flex items-center justify-center gap-2 mb-4">
-                <div className="logo-icon-wrap" style={{ width: '32px', height: '32px' }}><VideoLogo /></div>
-                <span className="font-bold text-lg text-main">FlashCite</span>
+              <div className="footer-brand flex items-center justify-center mb-4">
+                <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
               </div>
               <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
                 Automasi sitasi akademik pintar untuk penulisan karya ilmiah
@@ -2268,11 +2266,11 @@ export default function App() {
         }
 
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
-        .nav-logo { font-weight: 800; font-size: 1.125rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: -0.5px; }
+        .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { background: var(--primary); color: var(--bg-body); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; overflow: hidden; /* padding dihapus agar video fit */ }
-        .logo-icon-wrap svg { width: 16px; height: 16px; }
-        .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .logo-icon-wrap { height: 40px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
+        .footer-logo { height: 56px; }
+        .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
         
         [data-theme="dark"] .logo-icon-wrap { color: var(--bg-surface-solid); }
         
