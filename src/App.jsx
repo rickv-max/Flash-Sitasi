@@ -2173,7 +2173,7 @@ export default function App() {
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { height: 44px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; }
+        .logo-icon-wrap { height: 34px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; }
         .footer-logo { height: 64px; justify-content: center; }
         .video-logo-asset { height: 100%; width: auto; object-fit: contain; border-radius: 0; display: block; }
         
