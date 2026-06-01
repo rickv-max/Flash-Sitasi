@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "https://esm.sh/gsap";
+import gsap from "gsap"; // GANTI INI MENJADI: import gsap from "gsap"; SAAT DI GITHUB/LOCAL
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -2173,9 +2173,9 @@ export default function App() {
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
-        .footer-logo { height: 24px; }
-        .video-logo-asset { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+        .logo-icon-wrap { height: 44px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; }
+        .footer-logo { height: 64px; justify-content: center; }
+        .video-logo-asset { height: 100%; width: auto; object-fit: contain; border-radius: 0; display: block; }
         
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
         
@@ -2341,7 +2341,6 @@ export default function App() {
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           .navbar { border-radius: var(--radius-md); padding: 0.6rem 0.6rem 0.6rem 1rem; }
-          .nav-logo span { display: none; }
           .pricing-card { padding: 2rem 1.5rem; border-radius: var(--radius-md); border-left: none; border-right: none; }
           .price-huge { font-size: 3rem; }
           .style-toggle-btn { flex: 1; justify-content: center; }
@@ -2350,3 +2349,5 @@ export default function App() {
     </div>
   );
 }
+
+
