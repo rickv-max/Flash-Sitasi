@@ -67,8 +67,9 @@ export default function App() {
   const [topupAmount, setTopupAmount] = useState(50); // Default 50 credits
   const [isPaying, setIsPaying] = useState(false);
 
-  // Mode State (Tabs)
+  // Mode State (Tabs & Style)
   const [inputMode, setInputMode] = useState("doi");
+  const [citationStyle, setCitationStyle] = useState("footnote"); // "footnote" | "apa7"
 
   // Form States
   const [doiInput, setDoiInput] = useState("");
@@ -289,7 +290,7 @@ export default function App() {
     });
   };
 
-  const saveToHistory = async (meta, fn, dp, inputVal, type) => {
+  const saveToHistory = async (meta, fn, dp, apaIn, apaRf, inputVal, type) => {
     if (!user || !db) return;
 
     const historyRef = collection(db, "users", user.uid, "history");
@@ -300,6 +301,8 @@ export default function App() {
       title: meta.title,
       footnote: fn,
       dafpus: dp,
+      apaInText: apaIn,
+      apaRef: apaRf,
       timestamp: Date.now(),
     });
   };
@@ -791,6 +794,7 @@ export default function App() {
     throw new Error("Gagal mengekstrak data dari tautan ini.");
   };
 
+  // --- BUILDERS (Footnote & APA 7) ---
   const buildFootnote = (m, kotaManual) => {
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
     const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
@@ -823,6 +827,42 @@ export default function App() {
     return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
 
+  const buildApaInText = (m) => {
+    let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim();
+    let hasEtAl = m.authorDafpus.toLowerCase().includes('et al');
+    return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`;
+  };
+
+  const buildApaReference = (m) => {
+    let authorPart = m.authorDafpus;
+    // Format APA 7 mengubah "Budi Santoso" menjadi "Santoso, B." (menggunakan Inisial)
+    if (authorPart && authorPart !== "Penulis Tidak Diketahui") {
+       let parts = authorPart.split(',');
+       if(parts.length > 1) {
+          let family = parts[0].trim();
+          let givenRaw = parts[1].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim();
+          let initials = givenRaw.split(' ').filter(Boolean).map(n => n[0].toUpperCase() + '.').join(' ');
+          let hasEtAl = authorPart.toLowerCase().includes('et al');
+          authorPart = `${family}, ${initials}${hasEtAl ? ', et al.' : ''}`;
+       }
+    }
+
+    let ref = `${authorPart} (${m.year}). ${capitalize(m.title)}. `;
+    if (m.journal) {
+       ref += `<i>${capitalize(m.journal)}</i>`;
+       if (m.volume) {
+          ref += `, <i>${m.volume}</i>`;
+          if (m.issue) ref += `(${m.issue})`;
+       }
+       if (m.page) ref += `, ${m.page}`;
+       ref += `.`;
+    } else if (m.publisher) {
+       ref += `${capitalize(m.publisher)}.`;
+    }
+    if (m.doiUrl) ref += ` ${m.doiUrl}`;
+    return ref.trim();
+  };
+
   // --- SUBMISSION HANDLERS ---
   const fetchDOI = async () => {
     if (!doiInput) return;
@@ -837,10 +877,13 @@ export default function App() {
       const meta = await processDOI(doiInput);
       const fn = buildFootnote(meta, kotaInput);
       const dp = buildDafpus(meta, kotaInput);
+      const apaIn = buildApaInText(meta);
+      const apaRf = buildApaReference(meta);
+      
       setMetadata(meta);
       setFootnoteResult(fn);
       setDafpusResult(dp);
-      await saveToHistory(meta, fn, dp, doiInput, "DOI");
+      await saveToHistory(meta, fn, dp, apaIn, apaRf, doiInput, "DOI");
     } catch (e) {
       await refundCredit(1); // Refund on fail
       setError(e.message);
@@ -862,10 +905,13 @@ export default function App() {
       const meta = await processURL(urlInput);
       const fn = buildFootnote(meta, kotaInput);
       const dp = buildDafpus(meta, kotaInput);
+      const apaIn = buildApaInText(meta);
+      const apaRf = buildApaReference(meta);
+
       setMetadata(meta);
       setFootnoteResult(fn);
       setDafpusResult(dp);
-      await saveToHistory(meta, fn, dp, urlInput, "URL");
+      await saveToHistory(meta, fn, dp, apaIn, apaRf, urlInput, "URL");
     } catch (e) {
       await refundCredit(1); // Refund on fail
       setError(e.message);
@@ -924,11 +970,13 @@ export default function App() {
     };
     const fn = buildFootnote(meta, kotaInput);
     const dp = buildDafpus(meta, kotaInput);
+    const apaIn = buildApaInText(meta);
+    const apaRf = buildApaReference(meta);
 
     setMetadata(meta);
     setFootnoteResult(fn);
     setDafpusResult(dp);
-    await saveToHistory(meta, fn, dp, "Input Manual", "Manual");
+    await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual");
   };
 
   const handleBatchGenerate = async () => {
@@ -974,7 +1022,9 @@ export default function App() {
 
         const fn = buildFootnote(meta, kotaInput);
         const dp = buildDafpus(meta, kotaInput);
-        await saveToHistory(meta, fn, dp, line, "Batch");
+        const apaIn = buildApaInText(meta);
+        const apaRf = buildApaReference(meta);
+        await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch");
       } catch (err) {
         results.push({ status: "error", line, error: err.message });
       }
@@ -1190,7 +1240,7 @@ export default function App() {
         </div>
       )}
 
-            {/* TOPUP MODAL */}
+      {/* TOPUP MODAL */}
       {showTopupModal && (
         <div className="modal-overlay">
           <div className="modal-box animate-scale-in">
@@ -1258,7 +1308,6 @@ export default function App() {
           </div>
         </div>
       )}
-
 
       {/* NAVBAR (Kapsul Melayang) */}
       <div className="navbar-wrapper">
@@ -1444,7 +1493,6 @@ export default function App() {
                   </span>
                 </div>
 
-
                 <ul className="pricing-list mt-8 mb-8 relative z-10">
                   <li>
                     <div className="icon-wrap"><CheckIcon /></div> 
@@ -1463,7 +1511,6 @@ export default function App() {
                     <span>Dukungan QRIS, e-Wallet, & Virtual Account.</span>
                   </li>
                 </ul>
-
 
                 <button
                   onClick={handleLoginAndEnter}
@@ -1540,6 +1587,28 @@ export default function App() {
               </div>
 
               <div className="card-body p-6 sm:p-8">
+                {/* --- TOGGLE CITATION STYLE (GLOBAL SELECTOR) --- */}
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-color">
+                   <div>
+                     <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
+                     <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
+                   </div>
+                   <div className="style-toggle">
+                      <button
+                         className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`}
+                         onClick={() => setCitationStyle("footnote")}
+                      >
+                         📝 Footnote
+                      </button>
+                      <button
+                         className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`}
+                         onClick={() => setCitationStyle("apa7")}
+                      >
+                         📑 APA 7
+                      </button>
+                   </div>
+                </div>
+
                 {inputMode === "doi" && (
                   <div className="animate-fade-in">
                     <div className="form-group mb-5 relative">
@@ -1553,16 +1622,18 @@ export default function App() {
                         placeholder="Contoh: 10.1038/s41586..."
                       />
                     </div>
-                    <div className="form-group mb-8 relative">
-                      <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
-                      <input
-                        type="text"
-                        className="input-field-modern"
-                        value={kotaInput}
-                        onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Masukkan kota terbit jurnal"
-                      />
-                    </div>
+                    {citationStyle === "footnote" && (
+                      <div className="form-group mb-8 relative">
+                        <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                        <input
+                          type="text"
+                          className="input-field-modern"
+                          value={kotaInput}
+                          onChange={(e) => setKotaInput(e.target.value)}
+                          placeholder="Masukkan kota terbit jurnal"
+                        />
+                      </div>
+                    )}
                     <button
                       className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={fetchDOI}
@@ -1588,16 +1659,18 @@ export default function App() {
                         placeholder="Paste link Academia, ResearchGate, OJS, dll"
                       />
                     </div>
-                    <div className="form-group mb-8 relative">
-                      <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
-                      <input
-                        type="text"
-                        className="input-field-modern"
-                        value={kotaInput}
-                        onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Masukkan kota terbit jurnal"
-                      />
-                    </div>
+                    {citationStyle === "footnote" && (
+                      <div className="form-group mb-8 relative">
+                        <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                        <input
+                          type="text"
+                          className="input-field-modern"
+                          value={kotaInput}
+                          onChange={(e) => setKotaInput(e.target.value)}
+                          placeholder="Masukkan kota terbit jurnal"
+                        />
+                      </div>
+                    )}
                     <button
                       className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={fetchURL}
@@ -1683,16 +1756,18 @@ export default function App() {
                           placeholder="Misal: 10-25"
                         />
                       </div>
-                      <div className="form-group">
-                        <label className="input-label">Kota Terbit</label>
-                        <input
-                          type="text"
-                          className="input-field-modern"
-                          value={kotaInput}
-                          onChange={(e) => setKotaInput(e.target.value)}
-                          placeholder="Jakarta"
-                        />
-                      </div>
+                      {citationStyle === "footnote" && (
+                        <div className="form-group">
+                          <label className="input-label">Kota Terbit</label>
+                          <input
+                            type="text"
+                            className="input-field-modern"
+                            value={kotaInput}
+                            onChange={(e) => setKotaInput(e.target.value)}
+                            placeholder="Jakarta"
+                          />
+                        </div>
+                      )}
                     </div>
                     <button
                       className="btn-primary w-full mt-8 py-3.5 shadow-glow"
@@ -1714,16 +1789,18 @@ export default function App() {
                         placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses"
                       />
                     </div>
-                    <div className="form-group mb-8">
-                      <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
-                      <input
-                        type="text"
-                        className="input-field-modern"
-                        value={kotaInput}
-                        onChange={(e) => setKotaInput(e.target.value)}
-                        placeholder="Diaplikasikan ke semua referensi"
-                      />
-                    </div>
+                    {citationStyle === "footnote" && (
+                      <div className="form-group mb-8">
+                        <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
+                        <input
+                          type="text"
+                          className="input-field-modern"
+                          value={kotaInput}
+                          onChange={(e) => setKotaInput(e.target.value)}
+                          placeholder="Diaplikasikan ke semua referensi"
+                        />
+                      </div>
+                    )}
                     <button
                       className="btn-primary w-full py-3.5 shadow-glow"
                       onClick={handleBatchGenerate}
@@ -1745,50 +1822,50 @@ export default function App() {
                         Ruang riwayat Anda masih kosong.
                       </div>
                     ) : (
-                      history.map((item) => (
-                        <div
-                          key={item.id}
-                          className="history-item mb-5 pb-5 border-b border-color last-no-border"
-                        >
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="badge-pill text-xs px-2 py-0.5">
-                              {item.type}
-                            </span>
-                            <span className="text-xs font-mono text-muted">
-                              {new Date(item.timestamp).toLocaleString("id-ID")}
-                            </span>
+                      history.map((item) => {
+                        const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia untuk riwayat lama. Silakan generate ulang.");
+                        const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia untuk riwayat lama. Silakan generate ulang.");
+                        return (
+                          <div
+                            key={item.id}
+                            className="history-item mb-5 pb-5 border-b border-color last-no-border"
+                          >
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="badge-pill text-xs px-2 py-0.5">
+                                {item.type}
+                              </span>
+                              <span className="text-xs font-mono text-muted">
+                                {new Date(item.timestamp).toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                            <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">
+                              {item.title}
+                            </h4>
+                            <div className="flex gap-2 mt-4">
+                              <button
+                                className="btn-secondary btn-sm flex-1 justify-center"
+                                onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}
+                              >
+                                {copiedId === `hist-in-${item.id}` ? (
+                                  <><CheckIcon /> Disalin</>
+                                ) : (
+                                  <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>
+                                )}
+                              </button>
+                              <button
+                                className="btn-secondary btn-sm flex-1 justify-center"
+                                onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}
+                              >
+                                {copiedId === `hist-dp-${item.id}` ? (
+                                  <><CheckIcon /> Disalin</>
+                                ) : (
+                                  <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>
+                                )}
+                              </button>
+                            </div>
                           </div>
-                          <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">
-                            {item.title}
-                          </h4>
-                          <div className="flex gap-2 mt-4">
-                            <button
-                              className="btn-secondary btn-sm flex-1 justify-center"
-                              onClick={() =>
-                                handleCopy(item.footnote, `hist-fn-${item.id}`)
-                              }
-                            >
-                              {copiedId === `hist-fn-${item.id}` ? (
-                                <><CheckIcon /> Disalin</>
-                              ) : (
-                                <><CopyIcon /> Footnote</>
-                              )}
-                            </button>
-                            <button
-                              className="btn-secondary btn-sm flex-1 justify-center"
-                              onClick={() =>
-                                handleCopy(item.dafpus, `hist-dp-${item.id}`)
-                              }
-                            >
-                              {copiedId === `hist-dp-${item.id}` ? (
-                                <><CheckIcon /> Disalin</>
-                              ) : (
-                                <><CopyIcon /> Dafpus</>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -1824,14 +1901,12 @@ export default function App() {
                   <div className="card-body p-6 sm:p-8">
                     <div className="result-block">
                       <div className="result-header">
-                        <span>CATATAN KAKI (FOOTNOTE)</span>
+                        <span>{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
                         <button
                           className="btn-copy-modern"
-                          onClick={() =>
-                            handleCopy(footnoteResult, "single-fn")
-                          }
+                          onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}
                         >
-                          {copiedId === "single-fn" ? (
+                          {copiedId === "single-in" ? (
                             <>
                               <span className="text-success"><CheckIcon /></span> Disalin
                             </>
@@ -1844,15 +1919,15 @@ export default function App() {
                       </div>
                       <div
                         className="result-html"
-                        dangerouslySetInnerHTML={{ __html: footnoteResult }}
+                        dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }}
                       />
                     </div>
                     <div className="result-block mt-8">
                       <div className="result-header">
-                        <span>DAFTAR PUSTAKA</span>
+                        <span>{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
                         <button
                           className="btn-copy-modern"
-                          onClick={() => handleCopy(dafpusResult, "single-dp")}
+                          onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}
                         >
                           {copiedId === "single-dp" ? (
                             <>
@@ -1867,7 +1942,7 @@ export default function App() {
                       </div>
                       <div
                         className="result-html"
-                        dangerouslySetInnerHTML={{ __html: dafpusResult }}
+                        dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }}
                       />
                     </div>
                   </div>
@@ -1882,12 +1957,12 @@ export default function App() {
                     <>
                       <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
                         <h3 className="text-base font-bold m-0 text-main">
-                          Catatan Kaki ({batchSuccesses.length})
+                          {citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}
                         </h3>
                       </div>
                       {batchSuccesses.map((r, index) => {
-                        const content = buildFootnote(r.meta, kotaInput);
-                        const copyId = `batch-fn-${index}`;
+                        const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
+                        const copyId = `batch-in-${index}`;
                         return (
                           <div className="result-block mb-5" key={copyId}>
                             <div className="result-header bg-subtle">
@@ -1913,11 +1988,11 @@ export default function App() {
                       
                       <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
                         <h3 className="text-base font-bold m-0 text-main">
-                          Daftar Pustaka A-Z ({sortedBatchDafpus.length})
+                          {citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}
                         </h3>
                       </div>
                       {sortedBatchDafpus.map((r, index) => {
-                        const content = buildDafpus(r.meta, kotaInput);
+                        const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
                         const copyId = `batch-dp-${index}`;
                         return (
                           <div className="result-block mb-5" key={copyId}>
@@ -1970,15 +2045,14 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         html, body, #root {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100%;
-  min-height: 100vh;
-  /* Memaksa background body mengikuti warna tema dari app-wrapper */
-  background-color: var(--bg-body); 
-}
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100%;
+          min-height: 100vh;
+          /* Memaksa background body mengikuti warna tema dari app-wrapper */
+          background-color: var(--bg-body); 
+        }
 
-        
         .app-wrapper {
           /* LIGHT MODE VARIABLES */
           --bg-body: #fbfbfc;
@@ -2106,24 +2180,25 @@ export default function App() {
         .text-gradient { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; }
         .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
-        .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
+        .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
-        .mt-0 { margin-top: 0; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
+        .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
         .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; }
         .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } 
         .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
-        .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
-        .pb-3 { padding-bottom: 0.75rem; } .pb-5 { padding-bottom: 1.25rem; } .pt-5 { padding-top: 1.25rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .p-1 { padding: 0.25rem; } .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
+        .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pt-5 { padding-top: 1.25rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
         .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
         .w-full { width: 100%; } .w-max { width: max-content; }
         .border-b { border-bottom: 1px solid var(--border-color); }
         .border-r { border-right: 1px solid var(--border-color); }
         .border-color { border-color: var(--border-color); }
-        .border-none { border: none; } .rounded-lg { border-radius: var(--radius-sm); }
-        .bg-subtle { background: var(--bg-surface-hover); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-lg { border-radius: var(--radius-sm); }
+        .bg-subtle { background: var(--bg-surface-hover); } .bg-surface-solid { background: var(--bg-surface-solid); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .bg-primary { background: var(--primary); }
         .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-4xl { font-size: 2.25rem; }
-        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); }
+        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); } .text-body { color: var(--bg-surface-solid); }
         .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
@@ -2139,8 +2214,9 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+        .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
-                /* NAVBAR FLOATING PILL */
+        /* NAVBAR FLOATING PILL */
         .navbar-wrapper {
           position: sticky; /* Ini yang menahan navbar di atas */
           top: 1.5rem;      /* Jarak dari ujung atas layar */
@@ -2235,7 +2311,6 @@ export default function App() {
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
         .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
-        .currency { margin-top: 0.5rem; }
         .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
         .pricing-list li { font-size: 0.95rem; display: flex; gap: 12px; align-items: flex-start; color: var(--text-main); }
         .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
@@ -2245,6 +2320,12 @@ export default function App() {
         .tool-section { padding: 2rem 0 6rem; flex: 1; }
         .tool-container { max-width: 720px; }
         
+        /* CITATION STYLE TOGGLE */
+        .style-toggle { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .style-toggle-btn { background: transparent; border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+        .style-toggle-btn:hover:not(.active) { color: var(--text-main); background: var(--bg-surface-hover); }
+        .style-toggle-btn.active { background: var(--text-main); color: var(--bg-surface-solid); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
         /* IOS STYLE SEGMENTED CONTROL */
         .segmented-control-wrapper { background: var(--bg-surface-hover); }
         .segmented-control { display: flex; gap: 4px; padding: 4px; background: var(--border-color); border-radius: 12px; }
@@ -2278,7 +2359,7 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-                /* MODALS & ALERTS */
+        /* MODALS & ALERTS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
@@ -2328,6 +2409,7 @@ export default function App() {
           .nav-logo span { display: none; }
           .pricing-card { padding: 2rem 1.5rem; border-radius: var(--radius-md); border-left: none; border-right: none; }
           .price-huge { font-size: 3rem; }
+          .style-toggle-btn { flex: 1; justify-content: center; }
         }
       `}</style>
     </div>
