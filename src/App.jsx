@@ -1088,7 +1088,7 @@ export default function App() {
   const VideoLogo = () => (
     <video
       // GANTI URL DI BAWAH INI DENGAN PATH VIDEO LOGO ANDA, CONTOH: "/logo-kilat.mp4"
-      src="/logo.mov" 
+      src="/logo.mp4" 
       autoPlay
       loop
       muted
