@@ -27,8 +27,8 @@ gsap.registerPlugin(ScrollTrigger);
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
 // ============================================================================
-
-const env = (import.meta && import.meta.env) || {};
+// Safe bypass for ESBuild / Sandbox environments
+const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
@@ -54,6 +54,140 @@ if (firebaseConfig.apiKey) {
 } else {
   console.warn("API Key Firebase belum diset di .env");
 }
+
+// ============================================================================
+// ANIMATED MOCK WORKSPACE COMPONENT (HERO SHOWCASE)
+// ============================================================================
+const AnimatedWorkspaceMock = () => {
+  const [step, setStep] = useState(0);
+  const [typedText, setTypedText] = useState("");
+  const targetText = "10.1038/s41586-020-2649-2";
+
+  useEffect(() => {
+    let timeoutId;
+    const runSequence = async () => {
+      // Reset
+      setStep(0);
+      setTypedText("");
+      
+      // Step 1: Cursor moves to input & clicks (Wait 1s)
+      timeoutId = setTimeout(() => setStep(1), 1000);
+      
+      // Step 2: Typing simulation
+      timeoutId = setTimeout(() => {
+        let currentText = "";
+        let i = 0;
+        const typeInterval = setInterval(() => {
+          currentText += targetText[i];
+          setTypedText(currentText);
+          i++;
+          if (i === targetText.length) {
+            clearInterval(typeInterval);
+            // Move cursor to Generate button
+            setTimeout(() => setStep(2), 500); 
+            // Click Generate
+            setTimeout(() => setStep(3), 1200);
+            // Show Loading
+            setTimeout(() => setStep(4), 1400);
+            // Show Result
+            setTimeout(() => setStep(5), 3500);
+            // Move cursor to Copy button
+            setTimeout(() => setStep(6), 4500);
+            // Click Copy
+            setTimeout(() => setStep(7), 5200);
+            // Show Copied state
+            setTimeout(() => setStep(8), 5400);
+            // Loop back to start
+            setTimeout(() => runSequence(), 8000);
+          }
+        }, 50);
+      }, 2000);
+    };
+
+    runSequence();
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <div className="mock-workspace glass-panel relative overflow-hidden text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-2xl">
+      <div className="p-6 sm:p-8 relative z-10">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
+          <div>
+            <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
+            <p className="text-xs text-muted mt-1 m-0">Pilih gaya output</p>
+          </div>
+          <div className="style-toggle pointer-events-none">
+            <button className="style-toggle-btn active">📝 Footnote</button>
+            <button className="style-toggle-btn">📑 APA 7</button>
+          </div>
+        </div>
+
+        <div className="form-group mb-5">
+          <label className="input-label">Nomor DOI Referensi</label>
+          <div className={`mock-input-wrap ${step >= 1 && step < 4 ? 'focused' : ''}`}>
+            <span className="mock-input-text">{typedText}</span>
+            {step >= 1 && step < 3 && <span className="mock-caret"></span>}
+            {!typedText && step === 0 && <span className="text-muted opacity-60 text-sm">Contoh: 10.1038/s41586...</span>}
+          </div>
+        </div>
+
+        <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 3 ? 'scale-95' : 'scale-100'}`}>
+          {step >= 4 && step < 5 ? (
+            <span className="flex items-center gap-2 justify-center"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
+          ) : "Generate Sitasi (1 Kredit)"}
+        </button>
+
+        {/* RESULTS MOCK */}
+        <div className={`mock-results-area mt-6 transition-all duration-700 ${step >= 5 ? 'opacity-100 translate-y-0 h-auto' : 'opacity-0 translate-y-4 h-0 overflow-hidden'}`}>
+          <div className="result-block border border-success-border rounded-md bg-success-light p-4 relative">
+            <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none text-success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="24" width="24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-bold text-muted">CATATAN KAKI (FOOTNOTE)</span>
+              <button className={`btn-copy-modern text-xs py-1 px-2 ${step === 7 ? 'scale-95 bg-surface-hover' : 'scale-100'}`}>
+                {step >= 8 ? <><span className="text-success text-xs">✓</span> Disalin</> : "Salin"}
+              </button>
+            </div>
+            <p className="text-sm m-0 leading-relaxed text-main">
+              Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* FAKE CURSOR */}
+      <div className={`fake-cursor cursor-step-${step}`}>
+        <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#09090b" stroke="#ffffff" strokeWidth="2"/>
+        </svg>
+      </div>
+
+      <style>{`
+        .mock-input-wrap { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height: 48px; display: flex; align-items: center; transition: 0.2s; }
+        .mock-input-wrap.focused { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+        .mock-caret { display: inline-block; width: 2px; height: 16px; background: var(--primary); margin-left: 2px; animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        
+        /* Cursor Animation States */
+        .fake-cursor { position: absolute; z-index: 50; transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; }
+        .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
+        .cursor-step-1, .cursor-step-2 { top: 40%; left: 30%; opacity: 1; }
+        .cursor-step-3 { top: 62%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-4, .cursor-step-5 { top: 65%; left: 50%; opacity: 1; }
+        .cursor-step-6, .cursor-step-7 { top: 76%; left: 85%; opacity: 1; }
+        .cursor-step-8 { top: 80%; left: 90%; opacity: 0; }
+        
+        @media (max-width: 640px) {
+           .cursor-step-1, .cursor-step-2 { top: 38%; left: 40%; }
+           .cursor-step-3 { top: 58%; left: 50%; }
+           .cursor-step-4, .cursor-step-5 { top: 60%; left: 50%; }
+           .cursor-step-6, .cursor-step-7 { top: 72%; left: 82%; }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 // ============================================================================
 // MAIN APPLICATION COMPONENT
@@ -118,14 +252,15 @@ export default function App() {
           .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
           .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
           .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
-          .fromTo(".hero-trusted", { opacity: 0 }, { opacity: 1, duration: 1 }, "-=0.2");
+          .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6")
+          .fromTo(".preview-section", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out" }, "-=0.4");
 
-        // 2. ScrollTrigger Animations
-        gsap.fromTo(".preview-card-anim", 
-          { opacity: 0, y: 60 }, 
-          { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 80%" } }
-        );
+        // 2. Parallax Floating Elements hiding behind Terminal
+        gsap.to(".float-1", { y: 250, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
+        gsap.to(".float-2", { y: 300, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
+        gsap.to(".float-3", { y: 200, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
 
+        // 3. ScrollTrigger Animations
         gsap.fromTo(".step-card-anim", 
           { opacity: 0, y: 40 }, 
           { opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } }
@@ -811,7 +946,11 @@ export default function App() {
   const CloseIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="20" width="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
   const ArrowRightIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>);
   
-  // Custom Feature Icons
+  // Floating Decor Elements (SVG)
+  const FloatBook = () => (<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(59, 130, 246, 0.2)" strokeWidth="1.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>);
+  const FloatToga = () => (<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="rgba(168, 85, 247, 0.2)" strokeWidth="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>);
+  const FloatFlash = () => (<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
+
   const ShieldIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>);
   const SparklesIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>);
   const ZapIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
@@ -833,14 +972,18 @@ export default function App() {
 
   return (
     <div className="app-wrapper pattern-bg" ref={appRef}>
-      {/* NOTIFICATION TOAST */}
+      {!firebaseConfig.apiKey && (
+        <div className="env-warning">
+          ⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.
+        </div>
+      )}
+
       {notification && (
         <div className="notification-toast animate-slide-up-fade">
           {notification}
         </div>
       )}
 
-      {/* TOPUP MODAL */}
       {showTopupModal && (
         <div className="modal-overlay">
           <div className="modal-box animate-scale-in">
@@ -886,7 +1029,7 @@ export default function App() {
         </div>
       )}
 
-      {/* FIXED NAVBAR */}
+      {/* FIXED NAVBAR (KELUAR BUTTON REMOVED FROM HERE) */}
       <div className="navbar-wrapper">
         <nav className="navbar">
           <div className="nav-container">
@@ -899,13 +1042,9 @@ export default function App() {
                   <CoinIcon /> {userData.credits || 0}
                 </div>
               )}
-              {!user ? (
+              {!user && (
                 <button onClick={handleLoginAndEnter} className="btn-primary btn-sm" disabled={loading}>
                   {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
-                </button>
-              ) : (
-                <button onClick={handleLogout} className="btn-secondary btn-sm">
-                  Keluar
                 </button>
               )}
             </div>
@@ -913,9 +1052,8 @@ export default function App() {
         </nav>
       </div>
 
-      {/* --- MAIN CONTENT (ACCOUNT FOR FIXED NAVBAR) --- */}
       <div className="content-padding-top">
-        {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
+        {/* --- VIEW 1: LANDING PAGE --- */}
         {currentView === "landing" && (
           <main className="main-content z-10 relative" ref={landingRef}>
             
@@ -923,12 +1061,17 @@ export default function App() {
             <div className="ambient-background">
                <div className="ambient-blob blob-1"></div>
                <div className="ambient-blob blob-2"></div>
+               <div className="ambient-blob blob-3"></div>
             </div>
 
             {/* Hero Section */}
             <section id="hero" className="hero-section">
-              <div className="container text-center relative">
-                
+              {/* Floating GSAP Elements */}
+              <div className="floating-element float-1" style={{position: 'absolute', top: '15%', left: '10%', zIndex: 0}}><FloatBook /></div>
+              <div className="floating-element float-2" style={{position: 'absolute', top: '25%', right: '12%', zIndex: 0}}><FloatToga /></div>
+              <div className="floating-element float-3" style={{position: 'absolute', top: '60%', left: '15%', zIndex: 0}}><FloatFlash /></div>
+
+              <div className="container text-center relative z-10">
                 <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
                   <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
                 </div>
@@ -963,46 +1106,15 @@ export default function App() {
               </div>
             </section>
 
-            {/* Live Preview Section */}
-            <section className="preview-section mt-6 pb-16">
-              <div className="container">
-                <div className="preview-card-anim preview-card glass-panel shadow-premium-glow">
-                  <div className="preview-header">
-                    <div className="preview-dots"><span></span><span></span><span></span></div>
-                    <span className="text-xs font-semibold text-muted font-mono">terminal_output.sh</span>
-                  </div>
-                  <div className="preview-body grid-2 gap-6">
-                    <div className="preview-col border-r pr-4">
-                      <span className="text-xs font-bold text-muted uppercase tracking-wide flex items-center gap-2 mb-4">
-                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Input Tautan / DOI
-                      </span>
-                      <div className="preview-mock-input font-mono text-sm">
-                        <span className="text-muted mr-2">$</span> https://www.academia.edu/download/111297711/214.pdf
-                      </div>
-                      <div className="mt-8 flex items-center justify-center gap-3 text-sm text-primary font-semibold p-4 bg-primary-subtle rounded-md border border-color">
-                        <span className="loading-spinner"></span> <span>Sistem Mengekstrak Metadata...</span>
-                      </div>
-                    </div>
-                    <div className="preview-col pl-2">
-                      <span className="text-xs font-bold text-success uppercase tracking-wide flex items-center gap-2 mb-4">
-                        <CheckIcon /> Ekstraksi Sukses
-                      </span>
-                      <div className="preview-mock-output">
-                        <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📝 Catatan Kaki:</strong>
-                        Budi Santoso (2024) Analisis Pajak PPh 21 Terhadap UMKM. Jurnal Ekonomi Terapan. Jakarta, hal. 12-25.
-                      </div>
-                      <div className="preview-mock-output mt-3 border-l-apa">
-                        <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📑 APA 7th Edition:</strong>
-                        Santoso, B. (2024). Analisis Pajak PPh 21 Terhadap UMKM. <i>Jurnal Ekonomi Terapan</i>.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Live Preview Section (Replaced with Animated Mock Workspace) */}
+            <section className="preview-section mt-6 pb-24 relative z-10">
+              <div className="container preview-card-anim">
+                 <AnimatedWorkspaceMock />
               </div>
             </section>
 
             {/* How It Works Section */}
-            <section className="steps-section py-16">
+            <section className="steps-section py-16 bg-surface-alt border-y border-color relative z-10">
                <div className="container text-center">
                   <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
                   <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
@@ -1029,7 +1141,7 @@ export default function App() {
             </section>
 
             {/* Features Detail */}
-            <section id="features" className="features-section pt-20 pb-16">
+            <section id="features" className="features-section pt-20 pb-16 relative z-10">
               <div className="container text-center">
                 <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
                 <div className="grid-3">
@@ -1059,11 +1171,10 @@ export default function App() {
             </section>
 
             {/* Pricing & Transparency */}
-            <section className="pricing-section pb-24">
+            <section className="pricing-section pb-24 relative z-10">
               <div className="container text-center">
                 <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
-                  <div className="absolute-glow"></div>
-                  <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs">Paling Diminati</div>
+                  <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
                   <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
                   <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
                     Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.
@@ -1077,7 +1188,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className="pricing-divider"></div>
+                  <div className="pricing-divider relative z-10"></div>
 
                   <ul className="pricing-list relative z-10">
                     <li>
@@ -1105,7 +1216,7 @@ export default function App() {
               </div>
             </section>
 
-            <footer className="footer">
+            <footer className="footer relative z-20">
               <div className="container footer-content">
                 <div className="footer-brand flex items-center justify-center mb-5">
                   <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
@@ -1113,7 +1224,7 @@ export default function App() {
                 <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
                   Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
                 </p>
-                <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex justify-center gap-6">
+                <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex flex-wrap justify-center gap-6">
                    <span>© {new Date().getFullYear()} FlashCite.</span>
                    <a href="#" className="footer-link">Kebijakan Privasi</a>
                    <a href="#" className="footer-link">Syarat & Ketentuan</a>
@@ -1134,7 +1245,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="card glass-panel shadow-premium">
+              <div className="card glass-panel shadow-premium mb-8">
                 <div className="segmented-control-wrapper p-2 border-b border-color">
                   <div className="segmented-control scrollable-tabs">
                     <button className={`segmented-btn ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>Nomor DOI</button>
@@ -1146,7 +1257,7 @@ export default function App() {
                 </div>
 
                 <div className="card-body p-6 sm:p-8">
-                  {/* --- TOGGLE CITATION STYLE (GLOBAL SELECTOR) --- */}
+                  {/* --- TOGGLE CITATION STYLE --- */}
                   <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
                      <div className="mb-4 sm:mb-0 text-center sm:text-left">
                        <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
@@ -1392,7 +1503,15 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <div style={{ height: "80px" }}></div>
+
+              {/* LOGOUT BUTTON RELOCATED HERE */}
+              <div className="mt-12 text-center pt-8 border-t border-color opacity-70 hover:opacity-100 transition-opacity">
+                <button onClick={handleLogout} className="btn-secondary btn-sm shadow-sm bg-white">
+                  Log Out dari Ruang Kerja
+                </button>
+              </div>
+              
+              <div style={{ height: "40px" }}></div>
             </div>
           </section>
         )}
@@ -1467,23 +1586,28 @@ export default function App() {
           overflow: hidden; z-index: 0; pointer-events: none;
         }
         .ambient-blob {
-          position: absolute; filter: blur(100px); opacity: 0.6;
+          position: absolute; filter: blur(100px); opacity: 0.7;
           border-radius: 50%; animation: floatBlob 25s infinite alternate;
         }
         .blob-1 {
-          top: -10%; left: -10%; width: 50vw; height: 50vw;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); /* Blue */
+          top: -5%; left: -5%; width: 55vw; height: 55vw;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
         }
         .blob-2 {
-          bottom: -20%; right: -10%; width: 60vw; height: 60vw;
-          background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); /* Purple */
-          animation-delay: -10s;
+          bottom: -10%; right: -5%; width: 65vw; height: 65vw;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          animation-delay: -5s;
+        }
+        .blob-3 {
+          top: 40%; left: 60%; width: 45vw; height: 45vw;
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          animation-delay: -12s;
         }
         
         @keyframes floatBlob {
           0% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(5%, 10%) scale(1.1); }
-          100% { transform: translate(-5%, -10%) scale(0.9); }
+          50% { transform: translate(8%, 12%) scale(1.15); }
+          100% { transform: translate(-8%, -12%) scale(0.9); }
         }
 
         /* GLASSMORPHISM & SHADOWS */
@@ -1505,11 +1629,11 @@ export default function App() {
         .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
         .p-1 { padding: 0.25rem; } .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
         .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; }
-        .pt-5 { padding-top: 1.25rem; } .pt-20 { padding-top: 5rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+        .pt-5 { padding-top: 1.25rem; } .pt-8 { padding-top: 2rem; } .pt-20 { padding-top: 5rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
         .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
         .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
         .w-full { width: 100%; } .w-max { width: max-content; } .w-auto { width: auto; }
-        .border-b { border-bottom: 1px solid var(--border-color); } .border-y { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .border-b { border-bottom: 1px solid var(--border-color); } .border-t { border-top: 1px solid var(--border-color); } .border-y { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
         .border-r { border-right: 1px solid var(--border-color); } .border-l-apa { border-left: 3px solid var(--text-muted) !important; }
         .border-color { border-color: var(--border-color); }
         .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-lg { border-radius: var(--radius-sm); }
@@ -1522,8 +1646,8 @@ export default function App() {
         .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
         .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
-        .z-10 { z-index: 10; }
-        .opacity-5 { opacity: 0.05; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-90 { opacity: 0.9; }
+        .z-10 { z-index: 10; } .z-20 { z-index: 20; }
+        .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-90 { opacity: 0.9; }
         .pointer-events-none { pointer-events: none; }
         .break-all { word-break: break-all; }
         .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1532,9 +1656,9 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-        .transition-colors { transition: background-color 0.2s, color 0.2s; }
+        .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; }
 
-        /* FIXED NAVBAR FLOATING PILL */
+        /* FIXED NAVBAR FLOATING PILL - DIHAPUS BLUR-NYA */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
@@ -1544,6 +1668,7 @@ export default function App() {
           pointer-events: auto; /* Re-enable clicks on the actual pill */
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
+          /* Blur dibuang: backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -1551,9 +1676,9 @@ export default function App() {
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
-        .logo-icon-wrap { height: 40px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
+        .logo-icon-wrap { height: 44px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
         .footer-logo { height: 64px; justify-content: center; }
-        .video-logo-asset { height: 100%; width: auto; max-width: 200px; object-fit: contain; border-radius: 0; display: block; }
+        .video-logo-asset { width: 100%; height: 100%; object-fit: contain; border-radius: 0; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
         
         .credit-badge {
@@ -1606,14 +1731,7 @@ export default function App() {
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
 
-        /* PREVIEW CARD */
-        .preview-card { overflow: hidden; border-radius: var(--radius-lg); }
-        .preview-header { background: var(--bg-surface-solid); padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
-        .preview-dots span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); margin-right: 8px; }
-        .preview-dots span:nth-child(1) { background: #ff5f56; } .preview-dots span:nth-child(2) { background: #ffbd2e; } .preview-dots span:nth-child(3) { background: #27c93f; }
-        .preview-body { padding: 2rem; text-align: left; }
-        .preview-mock-input { background: var(--bg-surface-solid); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-main); word-break: break-all; }
-        .preview-mock-output { background: var(--bg-surface-solid); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-main); line-height: 1.6; border-left: 3px solid var(--success-border); }
+        /* PREVIEW MOCK COMPONENT */
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -1718,6 +1836,7 @@ export default function App() {
 
         /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 640px) {
+          .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
@@ -1737,6 +1856,7 @@ export default function App() {
           .style-toggle-btn { flex: 1; justify-content: center; }
           .flex-col-mobile { flex-direction: column; align-items: flex-start; }
           .steps-grid { flex-direction: column; gap: 2rem; }
+          .floating-element { display: none; } /* Hide floating decor on mobile to keep it clean */
         }
       `}</style>
     </div>
