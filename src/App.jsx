@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "gsap"; // GANTI INI: import gsap from "gsap";
-import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // GANTI INI: import { ScrollTrigger } from "gsap/ScrollTrigger";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -115,13 +115,12 @@ export default function App() {
         // 1. Entrance Animations (Hero)
         tl.fromTo(".navbar-wrapper", { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
           .fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
-          // Animate per-word on title
           .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
           .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
           .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
           .fromTo(".hero-trusted", { opacity: 0 }, { opacity: 1, duration: 1 }, "-=0.2");
 
-        // 2. ScrollTrigger Animations (Terminal, Steps, Features, Pricing)
+        // 2. ScrollTrigger Animations
         gsap.fromTo(".preview-card-anim", 
           { opacity: 0, y: 60 }, 
           { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 80%" } }
@@ -385,7 +384,6 @@ export default function App() {
     return { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal, page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" };
   };
 
-  // Diubah namanya menjadi searchByTitleFallback untuk membersihkan elemen "AI"
   const searchByTitleFallback = async (rawTitle) => {
     const cleanTitle = rawTitle.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar|\.pdf)/gi, "").trim();
     if (cleanTitle.length < 10) return null;
@@ -835,13 +833,6 @@ export default function App() {
 
   return (
     <div className="app-wrapper pattern-bg" ref={appRef}>
-      {/* Peringatan ketika dibuka di Canvas/Tanpa Env */}
-      {!firebaseConfig.apiKey && (
-        <div className="env-warning">
-          ⚠️ Peringatan: Konfigurasi API Key di file .env belum diset. Pastikan Anda mengaturnya di environment lokal.
-        </div>
-      )}
-
       {/* NOTIFICATION TOAST */}
       {notification && (
         <div className="notification-toast animate-slide-up-fade">
@@ -909,11 +900,11 @@ export default function App() {
                 </div>
               )}
               {!user ? (
-                <button onClick={handleLoginAndEnter} className="btn-primary btn-sm hidden-mobile" disabled={loading}>
+                <button onClick={handleLoginAndEnter} className="btn-primary btn-sm" disabled={loading}>
                   {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
                 </button>
               ) : (
-                <button onClick={handleLogout} className="btn-secondary btn-sm hidden-mobile">
+                <button onClick={handleLogout} className="btn-secondary btn-sm">
                   Keluar
                 </button>
               )}
@@ -928,7 +919,7 @@ export default function App() {
         {currentView === "landing" && (
           <main className="main-content z-10 relative" ref={landingRef}>
             
-            {/* Colorful Mesh Gradient Background di belakang */}
+            {/* Colorful Mesh Gradient Background */}
             <div className="ambient-background">
                <div className="ambient-blob blob-1"></div>
                <div className="ambient-blob blob-2"></div>
@@ -1541,8 +1532,9 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+        .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
-        /* FIXED NAVBAR FLOATING PILL - TWEAKED FOR WHITE SOLID */
+        /* FIXED NAVBAR FLOATING PILL */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
@@ -1559,9 +1551,9 @@ export default function App() {
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
-        .logo-icon-wrap { height: 44px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
+        .logo-icon-wrap { height: 40px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
         .footer-logo { height: 64px; justify-content: center; }
-        .video-logo-asset { width: 100%; height: 100%; object-fit: contain; border-radius: 0; display: block; }
+        .video-logo-asset { height: 100%; width: auto; max-width: 200px; object-fit: contain; border-radius: 0; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
         
         .credit-badge {
@@ -1691,7 +1683,7 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; }
@@ -1726,13 +1718,18 @@ export default function App() {
 
         /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 640px) {
-          .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
-          .navbar { border-radius: var(--radius-md); padding: 0.6rem 0.6rem 0.6rem 1rem; }
+          
+          /* FIX NAVBAR MOBILE PADDING & LOGO */
+          .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
-          .logo-icon-wrap { height: 32px; }
+          .logo-icon-wrap { height: 28px; } /* Diperkecil agar proporsional sejajar tombol */
           .footer-logo { height: 44px; }
+          
+          /* FIX TOMBOL LOGIN MOBILE (DIBUAT KECIL AGAR MUAT) */
+          .btn-primary.btn-sm { font-size: 0.75rem; padding: 0 1rem !important; height: 32px; border-radius: 8px; }
+          
           .pricing-card { padding: 2.5rem 1.5rem; margin: 0 1rem; width: auto; }
           .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
           .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
