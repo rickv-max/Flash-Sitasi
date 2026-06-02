@@ -27,7 +27,6 @@ gsap.registerPlugin(ScrollTrigger);
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
 // ============================================================================
-// Safe bypass for ESBuild / Sandbox environments
 const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 
 const firebaseConfig = {
@@ -64,17 +63,17 @@ const AnimatedWorkspaceMock = () => {
   const targetText = "10.1038/s41586-020-2649-2";
 
   useEffect(() => {
-    let timeoutId;
-    const runSequence = async () => {
-      // Reset
+    let timeouts = [];
+    const runSequence = () => {
       setStep(0);
       setTypedText("");
       
-      // Step 1: Cursor moves to input & clicks (Wait 1s)
-      timeoutId = setTimeout(() => setStep(1), 1000);
-      
-      // Step 2: Typing simulation
-      timeoutId = setTimeout(() => {
+      // 1. Move to Input
+      timeouts.push(setTimeout(() => setStep(1), 800));
+      // 2. Click Input
+      timeouts.push(setTimeout(() => setStep(2), 1500));
+      // 3. Typing
+      timeouts.push(setTimeout(() => {
         let currentText = "";
         let i = 0;
         const typeInterval = setInterval(() => {
@@ -83,38 +82,36 @@ const AnimatedWorkspaceMock = () => {
           i++;
           if (i === targetText.length) {
             clearInterval(typeInterval);
-            // Move cursor to Generate button
-            setTimeout(() => setStep(2), 500); 
-            // Click Generate
-            setTimeout(() => setStep(3), 1200);
-            // Show Loading
-            setTimeout(() => setStep(4), 1400);
-            // Show Result
-            setTimeout(() => setStep(5), 3500);
-            // Move cursor to Copy button
-            setTimeout(() => setStep(6), 4500);
-            // Click Copy
-            setTimeout(() => setStep(7), 5200);
-            // Show Copied state
-            setTimeout(() => setStep(8), 5400);
-            // Loop back to start
-            setTimeout(() => runSequence(), 8000);
+            // 4. Move to Generate Button
+            timeouts.push(setTimeout(() => setStep(3), 600)); 
+            // 5. Click Generate
+            timeouts.push(setTimeout(() => setStep(4), 1400));
+            // 6. Loading State
+            timeouts.push(setTimeout(() => setStep(5), 1700));
+            // 7. Smooth Reveal Results
+            timeouts.push(setTimeout(() => setStep(6), 3500));
+            // 8. Move to Copy
+            timeouts.push(setTimeout(() => setStep(7), 4500));
+            // 9. Click Copy
+            timeouts.push(setTimeout(() => setStep(8), 5300));
+            // 10. Loop back
+            timeouts.push(setTimeout(() => runSequence(), 8000));
           }
-        }, 50);
-      }, 2000);
+        }, 40);
+      }, 1800));
     };
 
     runSequence();
-    return () => clearTimeout(timeoutId);
+    return () => timeouts.forEach(clearTimeout);
   }, []);
 
   return (
-    <div className="mock-workspace glass-panel relative overflow-hidden text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-2xl">
+    <div className="mock-workspace glass-panel relative text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-3xl overflow-hidden">
       <div className="p-6 sm:p-8 relative z-10">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
           <div>
             <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
-            <p className="text-xs text-muted mt-1 m-0">Pilih gaya output</p>
+            <p className="text-xs text-muted mt-1 m-0 hidden sm:block">Pilih gaya output</p>
           </div>
           <div className="style-toggle pointer-events-none">
             <button className="style-toggle-btn active">📝 Footnote</button>
@@ -123,34 +120,42 @@ const AnimatedWorkspaceMock = () => {
         </div>
 
         <div className="form-group mb-5">
-          <label className="input-label">Nomor DOI Referensi</label>
-          <div className={`mock-input-wrap ${step >= 1 && step < 4 ? 'focused' : ''}`}>
+          <label className="input-label text-xs">Nomor DOI Referensi</label>
+          <div className={`mock-input-wrap ${step >= 2 && step < 5 ? 'focused' : ''}`}>
             <span className="mock-input-text">{typedText}</span>
-            {step >= 1 && step < 3 && <span className="mock-caret"></span>}
-            {!typedText && step === 0 && <span className="text-muted opacity-60 text-sm">Contoh: 10.1038/s41586...</span>}
+            {step >= 2 && step < 4 && <span className="mock-caret"></span>}
+            {!typedText && step <= 1 && <span className="text-muted opacity-60 text-sm">Contoh: 10.1038/s41586...</span>}
           </div>
         </div>
 
-        <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 3 ? 'scale-95' : 'scale-100'}`}>
-          {step >= 4 && step < 5 ? (
+        <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 4 ? 'scale-95' : 'scale-100'}`}>
+          {step === 5 ? (
             <span className="flex items-center gap-2 justify-center"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
-        {/* RESULTS MOCK */}
-        <div className={`mock-results-area mt-6 transition-all duration-700 ${step >= 5 ? 'opacity-100 translate-y-0 h-auto' : 'opacity-0 translate-y-4 h-0 overflow-hidden'}`}>
-          <div className="result-block border border-success-border rounded-md bg-success-light p-4 relative">
-            <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none text-success">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="24" width="24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
+        {/* RESULTS MOCK - Smoothly revealed */}
+        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[500px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
+          {/* Footnote Result */}
+          <div className="result-block border border-color rounded-md p-4 relative bg-surface-hover">
             <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
-              <span className="text-xs font-bold text-muted">CATATAN KAKI (FOOTNOTE)</span>
-              <button className={`btn-copy-modern text-xs py-1 px-2 ${step === 7 ? 'scale-95 bg-surface-hover' : 'scale-100'}`}>
-                {step >= 8 ? <><span className="text-success text-xs">✓</span> Disalin</> : "Salin"}
+              <span className="text-xs font-bold text-muted">CATATAN KAKI</span>
+              <button className={`btn-copy-modern text-xs py-1 px-2 ${step === 8 ? 'scale-95 bg-surface-solid border-main' : 'scale-100'}`}>
+                {step > 8 ? <><span className="text-success text-xs">✓</span> Disalin</> : "Salin"}
               </button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-main">
               Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
+            </p>
+          </div>
+          {/* APA 7 Result */}
+          <div className="result-block border border-color rounded-md p-4 relative bg-surface-hover">
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-bold text-muted">APA 7TH EDITION</span>
+              <button className="btn-copy-modern text-xs py-1 px-2 scale-100">Salin</button>
+            </div>
+            <p className="text-sm m-0 leading-relaxed text-main">
+              Smith, J. (2020). The Architecture of Modern SaaS. <i>Nature</i>, 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
         </div>
@@ -169,20 +174,19 @@ const AnimatedWorkspaceMock = () => {
         .mock-caret { display: inline-block; width: 2px; height: 16px; background: var(--primary); margin-left: 2px; animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
         
-        /* Cursor Animation States */
-        .fake-cursor { position: absolute; z-index: 50; transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; }
+        .fake-cursor { position: absolute; z-index: 50; transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; }
         .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
-        .cursor-step-1, .cursor-step-2 { top: 40%; left: 30%; opacity: 1; }
-        .cursor-step-3 { top: 62%; left: 50%; opacity: 1; transform: scale(0.9); }
-        .cursor-step-4, .cursor-step-5 { top: 65%; left: 50%; opacity: 1; }
-        .cursor-step-6, .cursor-step-7 { top: 76%; left: 85%; opacity: 1; }
-        .cursor-step-8 { top: 80%; left: 90%; opacity: 0; }
+        .cursor-step-1, .cursor-step-2 { top: 38%; left: 30%; opacity: 1; }
+        .cursor-step-3 { top: 58%; left: 50%; opacity: 1; }
+        .cursor-step-4, .cursor-step-5 { top: 58%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-6, .cursor-step-7 { top: 78%; left: 45%; opacity: 1; transform: scale(1); }
+        .cursor-step-8 { top: 78%; left: 45%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
         
         @media (max-width: 640px) {
-           .cursor-step-1, .cursor-step-2 { top: 38%; left: 40%; }
-           .cursor-step-3 { top: 58%; left: 50%; }
-           .cursor-step-4, .cursor-step-5 { top: 60%; left: 50%; }
-           .cursor-step-6, .cursor-step-7 { top: 72%; left: 82%; }
+           .cursor-step-1, .cursor-step-2 { top: 32%; left: 40%; }
+           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 48%; left: 50%; }
+           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 62%; left: 82%; }
         }
       `}</style>
     </div>
@@ -194,32 +198,26 @@ const AnimatedWorkspaceMock = () => {
 // ============================================================================
 
 export default function App() {
-  // App Routing
   const [currentView, setCurrentView] = useState("landing");
   const landingRef = useRef(null);
   const appRef = useRef(null);
 
-  // User & Credit State
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState({ credits: 0 });
   const [history, setHistory] = useState([]);
 
-  // Payment State
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupAmount, setTopupAmount] = useState(50);
   const [isPaying, setIsPaying] = useState(false);
 
-  // Mode State
   const [inputMode, setInputMode] = useState("doi");
   const [citationStyle, setCitationStyle] = useState("footnote");
 
-  // Form States
   const [doiInput, setDoiInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [batchInput, setBatchInput] = useState("");
   const [kotaInput, setKotaInput] = useState("");
 
-  // Manual States
   const [mAuthor, setMAuthor] = useState("");
   const [mTitle, setMTitle] = useState("");
   const [mJournal, setMJournal] = useState("");
@@ -229,7 +227,6 @@ export default function App() {
   const [mPage, setMPage] = useState("");
   const [mPublisher, setMPublisher] = useState("");
 
-  // App Output States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState(null);
@@ -252,15 +249,20 @@ export default function App() {
           .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
           .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
           .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
-          .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6")
-          .fromTo(".preview-section", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out" }, "-=0.4");
+          .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6");
 
-        // 2. Parallax Floating Elements hiding behind Terminal
+        // 2. Parallax Floating Elements hiding behind Mock Workspace
+        // The mock workspace has z-index 10 and solid bg, floating elements have z-index 0.
         gsap.to(".float-1", { y: 250, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
         gsap.to(".float-2", { y: 300, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
         gsap.to(".float-3", { y: 200, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
 
         // 3. ScrollTrigger Animations
+        gsap.fromTo(".preview-card-anim", 
+          { opacity: 0, y: 60 }, 
+          { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 85%" } }
+        );
+
         gsap.fromTo(".step-card-anim", 
           { opacity: 0, y: 40 }, 
           { opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } }
@@ -283,35 +285,24 @@ export default function App() {
   }, [currentView]);
 
   useEffect(() => {
-    setError("");
-    setMetadata(null);
-    setBatchResults([]);
-    setFootnoteResult("");
-    setDafpusResult("");
-    setCopiedId(null);
+    setError(""); setMetadata(null); setBatchResults([]); setFootnoteResult(""); setDafpusResult(""); setCopiedId(null);
   }, [inputMode]);
 
   const showNotification = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(""), 3000);
+    setNotification(msg); setTimeout(() => setNotification(""), 3000);
   };
 
   // --- FIREBASE AUTH & REALTIME DATA ---
   useEffect(() => {
     if (!auth) return;
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => { setUser(currentUser); });
     return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
     if (!user || !db) return;
     const profileRef = doc(db, "users", user.uid);
-    const unsubProfile = onSnapshot(profileRef, (docSnap) => {
-      if (docSnap.exists()) setUserData(docSnap.data());
-    });
-
+    const unsubProfile = onSnapshot(profileRef, (docSnap) => { if (docSnap.exists()) setUserData(docSnap.data()); });
     const historyRef = collection(db, "users", user.uid, "history");
     const unsubHistory = onSnapshot(historyRef, (snapshot) => {
       const histData = [];
@@ -319,41 +310,22 @@ export default function App() {
       histData.sort((a, b) => b.timestamp - a.timestamp);
       setHistory(histData);
     });
-
-    return () => {
-      unsubProfile();
-      unsubHistory();
-    };
+    return () => { unsubProfile(); unsubHistory(); };
   }, [user]);
 
   // --- AUTH HANDLERS ---
   const handleLoginAndEnter = async () => {
-    if (user) {
-      setCurrentView("tool");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    if (!auth) {
-      showNotification("Error: Konfigurasi API Key di .env belum diset dengan benar.");
-      return;
-    }
-
+    if (user) { setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    if (!auth) return showNotification("Error: Konfigurasi API Key di .env belum diset.");
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const loggedUser = result.user;
-
       const profileRef = doc(db, "users", loggedUser.uid);
       const profileSnap = await getDoc(profileRef);
       if (!profileSnap.exists()) {
-        await setDoc(profileRef, {
-          credits: 5,
-          createdAt: Date.now(),
-          email: loggedUser.email,
-          name: loggedUser.displayName,
-        });
+        await setDoc(profileRef, { credits: 5, createdAt: Date.now(), email: loggedUser.email, name: loggedUser.displayName });
         showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
       } else {
         const existingData = profileSnap.data();
@@ -362,13 +334,8 @@ export default function App() {
           showNotification("Bonus 5 Kredit berhasil ditambahkan.");
         }
       }
-      setCurrentView("tool");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (e) {
-      setError("Login via Google dibatalkan atau gagal.");
-    } finally {
-      setLoading(false);
-    }
+      setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) { setError("Login via Google dibatalkan atau gagal."); } finally { setLoading(false); }
   };
 
   const handleLogout = async () => {
@@ -379,141 +346,68 @@ export default function App() {
   // --- PAYMENT HANDLER ---
   const processPayment = async () => {
     if (topupAmount < 1) return showNotification("Minimal pembelian 1 kredit.");
-    setIsPaying(true);
-    const price = topupAmount * 750;
+    setIsPaying(true); const price = topupAmount * 750;
     try {
       const response = await fetch("/api/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: price,
-          description: `Top Up ${topupAmount} Kredit FlashCite`,
-          customer_name: user.displayName || "Pengguna FlashCite",
-          customer_email: user.email || "",
-          payment_method: "qris",
-          redirect_url: window.location.href,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: price, description: `Top Up ${topupAmount} Kredit FlashCite`, customer_name: user.displayName || "Pengguna", customer_email: user.email || "", payment_method: "qris", redirect_url: window.location.href }),
       });
       const data = await response.json();
-      if (data.success && data.data?.payment_url) {
-        window.location.href = data.data.payment_url;
-      } else {
-        throw new Error(data.message || "Gagal membuat pembayaran");
-      }
-    } catch (err) {
-      console.warn("Bayar.gg error:", err);
-      showNotification(err.message || "Error payment.");
-    } finally {
-      setIsPaying(false);
-    }
+      if (data.success && data.data?.payment_url) { window.location.href = data.data.payment_url; } 
+      else { throw new Error(data.message || "Gagal membuat pembayaran"); }
+    } catch (err) { showNotification(err.message || "Error payment."); } finally { setIsPaying(false); }
   };
 
-  // --- CREDIT & HISTORY HELPERS ---
   const deductCredit = async (amount = 1) => {
     if (!user || !db) return false;
     const currentCredits = userData.credits || 0;
-    if (currentCredits < amount) {
-      setShowTopupModal(true);
-      return false;
-    }
-    const profileRef = doc(db, "users", user.uid);
-    await updateDoc(profileRef, { credits: increment(-amount) });
+    if (currentCredits < amount) { setShowTopupModal(true); return false; }
+    await updateDoc(doc(db, "users", user.uid), { credits: increment(-amount) });
     return true;
   };
 
   const refundCredit = async (amount = 1) => {
     if (!user || !db) return;
-    const profileRef = doc(db, "users", user.uid);
-    await updateDoc(profileRef, { credits: increment(amount) });
+    await updateDoc(doc(db, "users", user.uid), { credits: increment(amount) });
   };
 
   const saveToHistory = async (meta, fn, dp, apaIn, apaRf, inputVal, type) => {
     if (!user || !db) return;
-    const historyRef = collection(db, "users", user.uid, "history");
-    await addDoc(historyRef, {
-      type,
-      input: inputVal,
-      title: meta.title,
-      footnote: fn,
-      dafpus: dp,
-      apaInText: apaIn,
-      apaRef: apaRf,
-      timestamp: Date.now(),
-    });
+    await addDoc(collection(db, "users", user.uid, "history"), { type, input: inputVal, title: meta.title, footnote: fn, dafpus: dp, apaInText: apaIn, apaRef: apaRf, timestamp: Date.now() });
   };
 
-  // --- DATA PARSING & SCRAPING ENGINE ---
+  // --- SCRAPING ENGINE ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
-  const capitalize = (str) => {
-    if (!str || typeof str !== "string") return "";
-    return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1));
-  };
-  const extractDoiFromUrl = (url) => {
-    const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i);
-    return match ? match[1].replace(/\.pdf$/i, "") : null;
-  };
-
-  const normalizeUrl = (url) => {
-    let u = url.trim();
-    const acaMatch = u.match(/academia\.edu\/download\/(\d+)/i) || u.match(/academia\.edu\/(\d+)/i);
-    if (acaMatch) return `https://www.academia.edu/${acaMatch[1]}`;
-    const ojsMatch = u.match(/^(.*\/article\/(?:view|download|viewFile)\/\d+)(?:\/.*)?$/i);
-    if (ojsMatch) return ojsMatch[1].replace(/\/(download|viewFile)/i, "/view");
-    const rgMatch = u.match(/researchgate\.net\/.*publication\/(\d+)/i);
-    if (rgMatch) return `https://www.researchgate.net/publication/${rgMatch[1]}`;
-    return u;
-  };
+  const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
+  const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
+  const normalizeUrl = (url) => { let u = url.trim(); const acaMatch = u.match(/academia\.edu\/download\/(\d+)/i) || u.match(/academia\.edu\/(\d+)/i); if (acaMatch) return `https://www.academia.edu/${acaMatch[1]}`; const ojsMatch = u.match(/^(.*\/article\/(?:view|download|viewFile)\/\d+)(?:\/.*)?$/i); if (ojsMatch) return ojsMatch[1].replace(/\/(download|viewFile)/i, "/view"); const rgMatch = u.match(/researchgate\.net\/.*publication\/(\d+)/i); if (rgMatch) return `https://www.researchgate.net/publication/${rgMatch[1]}`; return u; };
 
   const formatAuthorsFootnote = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
     let given = authors[0].given || "", family = authors[0].family || "";
-    if (!given && family.includes(" ")) {
-      const parts = family.split(" ").filter(Boolean);
-      if (parts.length > 1) {
-        family = parts.pop();
-        given = parts.join(" ");
-      }
-    }
-    family = capitalize(family);
-    given = capitalize(given);
+    if (!given && family.includes(" ")) { const parts = family.split(" ").filter(Boolean); if (parts.length > 1) { family = parts.pop(); given = parts.join(" "); } }
+    family = capitalize(family); given = capitalize(given);
     const firstAuthor = given ? `${given} ${family}`.trim() : family.trim();
-    if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`;
-    return firstAuthor;
+    if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`; return firstAuthor;
   };
 
   const formatAuthorsDafpus = (authors) => {
     if (!authors || !authors.length) return "Penulis Tidak Diketahui";
     let given = authors[0].given || "", family = authors[0].family || "";
-    if (!given && family.includes(" ")) {
-      const parts = family.split(" ").filter(Boolean);
-      if (parts.length > 1) {
-        family = parts.pop();
-        given = parts.join(" ");
-      }
-    }
-    family = capitalize(family);
-    given = capitalize(given);
+    if (!given && family.includes(" ")) { const parts = family.split(" ").filter(Boolean); if (parts.length > 1) { family = parts.pop(); given = parts.join(" "); } }
+    family = capitalize(family); given = capitalize(given);
     let firstAuthor = given ? `${family}, ${given}` : family;
-    if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`;
-    return firstAuthor;
+    if (authors.length > 1) return `${firstAuthor} <i>et al.</i>`; return firstAuthor;
   };
 
   const formatFromSS = (paper) => {
-    const year = paper.year?.toString() || "Tahun";
-    const title = paper.title || "Judul Artikel";
-    const journal = paper.venue || paper.journal?.name || "Nama Jurnal";
+    const year = paper.year?.toString() || "Tahun"; const title = paper.title || "Judul Artikel"; const journal = paper.venue || paper.journal?.name || "Nama Jurnal";
     let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
     if (paper.authors && paper.authors.length > 0) {
-      let firstAuthor = paper.authors[0].name.trim();
-      const parts = firstAuthor.split(" ").filter(Boolean);
+      let firstAuthor = paper.authors[0].name.trim(); const parts = firstAuthor.split(" ").filter(Boolean);
       let family = "", given = "";
-      if (parts.length === 1) {
-        family = parts[0]; given = "";
-      } else {
-        family = parts.pop(); given = parts.join(" ");
-      }
-      fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
-      dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+      if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); }
+      fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
       if (paper.authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
     }
     return { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal, page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" };
@@ -524,421 +418,110 @@ export default function App() {
     if (cleanTitle.length < 10) return null;
     try {
       const ssRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(cleanTitle)}&limit=1&fields=title,authors,year,venue,journal`);
-      if (ssRes.ok) {
-        const ssData = await ssRes.json();
-        if (ssData.data?.[0]?.authors?.length > 0) return formatFromSS(ssData.data[0]);
-      }
+      if (ssRes.ok) { const ssData = await ssRes.json(); if (ssData.data?.[0]?.authors?.length > 0) return formatFromSS(ssData.data[0]); }
       const crRes = await fetch(`https://api.crossref.org/works?query.title=${encodeURIComponent(cleanTitle)}&rows=1`);
       if (crRes.ok) {
         const crData = await crRes.json();
         if (crData.message.items.length > 0) {
-          const item = crData.message.items[0];
-          const itemTitle = (item.title?.[0] || "").toLowerCase();
-          const searchWords = cleanTitle.toLowerCase().split(" ").filter((w) => w.length > 4);
-          const matches = searchWords.filter((w) => itemTitle.includes(w));
+          const item = crData.message.items[0]; const itemTitle = (item.title?.[0] || "").toLowerCase(); const searchWords = cleanTitle.toLowerCase().split(" ").filter((w) => w.length > 4); const matches = searchWords.filter((w) => itemTitle.includes(w));
           if (matches.length >= Math.min(2, searchWords.length)) {
-            const yearObj = item["published-print"] || item.issued;
-            const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
-            return {
-              authorFootnote: formatAuthorsFootnote(item.author),
-              authorDafpus: formatAuthorsDafpus(item.author),
-              year: year.toString(),
-              month: "",
-              title: item.title?.[0] ?? "Judul Artikel",
-              journal: item["container-title"]?.[0] ?? "Nama Jurnal",
-              page: item.page || "",
-              volume: item.volume || "",
-              issue: item.issue || "",
-              publisher: item.publisher || "",
-              kotaScraped: item["publisher-location"] || "",
-              doiUrl: item.DOI ? `https://doi.org/${item.DOI}` : "",
-            };
+            const yearObj = item["published-print"] || item.issued; const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
+            return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year: year.toString(), month: "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: item.DOI ? `https://doi.org/${item.DOI}` : "" };
           }
         }
       }
-    } catch (e) {}
-    return null;
+    } catch (e) {} return null;
   };
 
   const processDOI = async (rawDoi) => {
     const cleanedDoi = cleanDOI(rawDoi);
     const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
     if (!res.ok) throw new Error("DOI tidak ditemukan atau salah format.");
-    const data = await res.json();
-    const item = data.message;
-    const yearObj = item["published-print"] || item.issued;
-    const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
-    const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null;
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-    return {
-      authorFootnote: formatAuthorsFootnote(item.author),
-      authorDafpus: formatAuthorsDafpus(item.author),
-      year,
-      month: monthNum ? monthNames[monthNum - 1] : "",
-      title: item.title?.[0] ?? "Judul Artikel",
-      journal: item["container-title"]?.[0] ?? "Nama Jurnal",
-      page: item.page || "",
-      volume: item.volume || "",
-      issue: item.issue || "",
-      publisher: item.publisher || "",
-      kotaScraped: item["publisher-location"] || "",
-      doiUrl: `https://doi.org/${cleanedDoi}`,
-    };
+    const data = await res.json(); const item = data.message; const yearObj = item["published-print"] || item.issued; const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
+    const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
   };
 
   const processURL = async (rawUrl) => {
-    const targetUrl = normalizeUrl(rawUrl);
-    const ssUrlsToTry = [targetUrl, rawUrl.trim()];
-    for (const u of ssUrlsToTry) {
-      try {
-        const ssUrlRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/URL:${encodeURIComponent(u)}?fields=title,authors,year,venue,journal`);
-        if (ssUrlRes.ok) {
-          const ssData = await ssUrlRes.json();
-          if (ssData.title && ssData.authors && ssData.authors.length > 0) return formatFromSS(ssData);
-        }
-      } catch (e) {}
-    }
-
+    const targetUrl = normalizeUrl(rawUrl); const ssUrlsToTry = [targetUrl, rawUrl.trim()];
+    for (const u of ssUrlsToTry) { try { const ssUrlRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/URL:${encodeURIComponent(u)}?fields=title,authors,year,venue,journal`); if (ssUrlRes.ok) { const ssData = await ssUrlRes.json(); if (ssData.title && ssData.authors && ssData.authors.length > 0) return formatFromSS(ssData); } } catch (e) {} }
     try {
       const mlRes = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(targetUrl)}`);
       if (mlRes.ok) {
-        const mlData = await mlRes.json();
-        const mlTitle = mlData.data?.title || "";
+        const mlData = await mlRes.json(); const mlTitle = mlData.data?.title || "";
         if (mlTitle && !mlTitle.toLowerCase().includes("just a moment") && !mlTitle.toLowerCase().includes("cloudflare")) {
-          const fallbackResult = await searchByTitleFallback(mlTitle);
-          if (fallbackResult) return fallbackResult;
+          const fallbackResult = await searchByTitleFallback(mlTitle); if (fallbackResult) return fallbackResult;
           let rawAuthor = mlData.data?.author || mlData.data?.publisher || "";
-          return {
-            authorFootnote: rawAuthor ? formatAuthorsFootnote([{ family: rawAuthor }]) : "Penulis Tidak Diketahui",
-            authorDafpus: rawAuthor ? formatAuthorsDafpus([{ family: rawAuthor }]) : "Penulis Tidak Diketahui",
-            year: mlData.data?.date ? new Date(mlData.data.date).getFullYear().toString() : "Tahun",
-            month: "",
-            title: mlTitle.replace(/(\s*[-|]\s*Academia\.edu)/i, "").trim(),
-            journal: mlData.data?.publisher || "Nama Jurnal",
-            page: "",
-            volume: "",
-            issue: "",
-            publisher: "",
-            kotaScraped: "",
-            doiUrl: "",
-          };
+          return { authorFootnote: rawAuthor ? formatAuthorsFootnote([{ family: rawAuthor }]) : "Penulis Tidak Diketahui", authorDafpus: rawAuthor ? formatAuthorsDafpus([{ family: rawAuthor }]) : "Penulis Tidak Diketahui", year: mlData.data?.date ? new Date(mlData.data.date).getFullYear().toString() : "Tahun", month: "", title: mlTitle.replace(/(\s*[-|]\s*Academia\.edu)/i, "").trim(), journal: mlData.data?.publisher || "Nama Jurnal", page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" };
         }
       }
     } catch (e) {}
 
     const parseHTML = (html, contentType) => {
-      const isBase64Pdf = html.startsWith("JVBERi");
-      const isRawPdf = html.trim().startsWith("%PDF-");
-      const isPdfType = (contentType || "").toLowerCase().includes("pdf") || (contentType || "").toLowerCase().includes("octet-stream");
-      const isPdfUrl = targetUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+      const isBase64Pdf = html.startsWith("JVBERi"); const isRawPdf = html.trim().startsWith("%PDF-"); const isPdfType = (contentType || "").toLowerCase().includes("pdf") || (contentType || "").toLowerCase().includes("octet-stream"); const isPdfUrl = targetUrl.toLowerCase().split("?")[0].endsWith(".pdf");
       if (isPdfType || isRawPdf || isBase64Pdf || isPdfUrl) return { isPdfFile: true };
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const getMeta = (names) => {
-        for (const n of names) {
-          const el = doc.querySelector(`meta[name="${n}" i]`) || doc.querySelector(`meta[property="${n}" i]`);
-          if (el && el.getAttribute("content")) return el.getAttribute("content").trim();
-        }
-        return "";
-      };
-
-      let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
-      title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, "").trim();
-      const blockedKeywords = ["just a moment", "cloudflare", "attention required", "security check", "robot or human"];
-      if (blockedKeywords.some((kw) => title.toLowerCase().includes(kw))) return { blocked: true };
-
-      let authors = [];
-      doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]').forEach((node) => {
-        const content = node.getAttribute("content");
-        if (content && !authors.includes(content)) authors.push(content);
-      });
+      const parser = new DOMParser(); const doc = parser.parseFromString(html, "text/html");
+      const getMeta = (names) => { for (const n of names) { const el = doc.querySelector(`meta[name="${n}" i]`) || doc.querySelector(`meta[property="${n}" i]`); if (el && el.getAttribute("content")) return el.getAttribute("content").trim(); } return ""; };
+      let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui"; title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, "").trim();
+      const blockedKeywords = ["just a moment", "cloudflare", "attention required", "security check", "robot or human"]; if (blockedKeywords.some((kw) => title.toLowerCase().includes(kw))) return { blocked: true };
+      let authors = []; doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]').forEach((node) => { const content = node.getAttribute("content"); if (content && !authors.includes(content)) authors.push(content); });
       if (authors.length === 0 && title !== "Judul Tidak Diketahui") return { incomplete: true, title };
-
       let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
       if (authors.length > 0) {
-        let firstAuthor = authors[0].trim();
-        let family = "", given = "";
-        if (firstAuthor.includes(",")) {
-          const parts = firstAuthor.split(",");
-          family = parts[0].trim(); given = parts[1] ? parts[1].trim() : "";
-        } else {
-          const parts = firstAuthor.split(" ").filter(Boolean);
-          if (parts.length === 1) { family = parts[0]; given = ""; } 
-          else { family = parts.pop(); given = parts.join(" "); }
-        }
-        fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
-        dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+        let firstAuthor = authors[0].trim(); let family = "", given = "";
+        if (firstAuthor.includes(",")) { const parts = firstAuthor.split(","); family = parts[0].trim(); given = parts[1] ? parts[1].trim() : ""; } 
+        else { const parts = firstAuthor.split(" ").filter(Boolean); if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); } }
+        fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
         if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
       }
-
-      const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || "";
-      const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun";
-      const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]);
-      const lastPage = getMeta(["citation_lastpage"]);
-      return {
-        success: true,
-        data: {
-          authorFootnote: fn, authorDafpus: dp, year, month: "", title,
-          journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "",
-          page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "",
-          volume: getMeta(["citation_volume", "DC.Source.Volume"]) || "",
-          issue: getMeta(["citation_issue", "DC.Source.Issue"]) || "",
-          publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "",
-          kotaScraped: "",
-        },
-      };
+      const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || ""; const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun"; const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]); const lastPage = getMeta(["citation_lastpage"]);
+      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: getMeta(["citation_volume", "DC.Source.Volume"]) || "", issue: getMeta(["citation_issue", "DC.Source.Issue"]) || "", publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
     };
 
     let htmlContent = "", contentType = "", finalUrl = targetUrl;
-    const proxies = [
-      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-    ];
-
-    for (let proxy of proxies) {
-      try {
-        const res = await fetch(proxy);
-        if (!res.ok) continue;
-        htmlContent = await res.text();
-        contentType = res.headers.get("content-type") || "";
-        if (!htmlContent.toLowerCase().includes("just a moment") && htmlContent.trim() !== "") break;
-      } catch (e) {}
-    }
-
+    const proxies = [ `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}` ];
+    for (let proxy of proxies) { try { const res = await fetch(proxy); if (!res.ok) continue; htmlContent = await res.text(); contentType = res.headers.get("content-type") || ""; if (!htmlContent.toLowerCase().includes("just a moment") && htmlContent.trim() !== "") break; } catch (e) {} }
     if (!htmlContent) throw new Error("Gagal mengakses URL web. Pastikan web bersifat publik.");
 
     let parsed = parseHTML(htmlContent, contentType);
-    if (parsed.isPdfFile) {
-      const extractedDoi = extractDoiFromUrl(targetUrl);
-      if (extractedDoi) return await processDOI(extractedDoi);
-      throw new Error("Tautan PDF mentah tanpa meta. Silakan salin judul dari PDF dan gunakan mode KETIK MANUAL.");
-    }
-
+    if (parsed.isPdfFile) { const extractedDoi = extractDoiFromUrl(targetUrl); if (extractedDoi) return await processDOI(extractedDoi); throw new Error("Tautan PDF mentah tanpa meta. Silakan ketik manual."); }
     if (parsed.blocked || parsed.incomplete) {
       try {
-        const wbRes = await fetch(`https://archive.org/wayback/available?url=${encodeURIComponent(targetUrl)}`);
-        const wbData = await wbRes.json();
-        if (wbData.archived_snapshots?.closest?.url) {
-          const snapFetch = await fetch(wbData.archived_snapshots.closest.url.replace(/^http:/, "https:"));
-          if (snapFetch.ok) {
-            const snapParsed = parseHTML(await snapFetch.text(), "text/html");
-            if (snapParsed.success || (snapParsed.incomplete && parsed.blocked)) parsed = snapParsed;
-          }
-        }
+        const wbRes = await fetch(`https://archive.org/wayback/available?url=${encodeURIComponent(targetUrl)}`); const wbData = await wbRes.json();
+        if (wbData.archived_snapshots?.closest?.url) { const snapFetch = await fetch(wbData.archived_snapshots.closest.url.replace(/^http:/, "https:")); if (snapFetch.ok) { const snapParsed = parseHTML(await snapFetch.text(), "text/html"); if (snapParsed.success || (snapParsed.incomplete && parsed.blocked)) parsed = snapParsed; } }
       } catch (e) {}
     }
-
     let searchTitle = parsed.incomplete ? parsed.title : "";
-    if (parsed.blocked) {
-      try {
-        const segments = new URL(finalUrl).pathname.split("/").filter(Boolean);
-        const last = segments[segments.length - 1];
-        if (last && !last.match(/^\d+(\.pdf)?$/i)) searchTitle = decodeURIComponent(last).replace(/[-_]/g, " ").replace(/\.pdf/i, "").trim();
-      } catch (e) {}
-    }
-
-    if (searchTitle) {
-      const fallbackResult = await searchByTitleFallback(searchTitle);
-      if (fallbackResult) return fallbackResult;
-    }
-
+    if (parsed.blocked) { try { const segments = new URL(finalUrl).pathname.split("/").filter(Boolean); const last = segments[segments.length - 1]; if (last && !last.match(/^\d+(\.pdf)?$/i)) searchTitle = decodeURIComponent(last).replace(/[-_]/g, " ").replace(/\.pdf/i, "").trim(); } catch (e) {} }
+    if (searchTitle) { const fallbackResult = await searchByTitleFallback(searchTitle); if (fallbackResult) return fallbackResult; }
     if (parsed.success) return parsed.data;
-    if (parsed.blocked) throw new Error("Sistem diblokir oleh anti-bot Cloudflare. Mohon ketik manual.");
-    if (parsed.incomplete) {
-      parsed.data = { authorFootnote: "Penulis Tidak Diketahui", authorDafpus: "Penulis Tidak Diketahui", year: "Tahun", month: "", title: parsed.title || "Judul Artikel", journal: "", page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" };
-      return parsed.data;
-    }
+    if (parsed.blocked) throw new Error("Sistem diblokir. Mohon ketik manual.");
+    if (parsed.incomplete) { parsed.data = { authorFootnote: "Penulis Tidak Diketahui", authorDafpus: "Penulis Tidak Diketahui", year: "Tahun", month: "", title: parsed.title || "Judul Artikel", journal: "", page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" }; return parsed.data; }
     throw new Error("Gagal mengekstrak data dari tautan ini.");
   };
 
-  // --- BUILDERS (Footnote & APA 7) ---
   const buildFootnote = (m, kotaManual) => {
-    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
-    const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
-    const pageTxt = m.page ? `hal. ${m.page}.` : "";
-    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`;
-    baseFootnote = baseFootnote.trim();
-    if (!baseFootnote.endsWith(".")) baseFootnote += ".";
-    if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`;
-    return baseFootnote;
+    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : ""; const pageTxt = m.page ? `hal. ${m.page}.` : "";
+    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`; baseFootnote = baseFootnote.trim(); if (!baseFootnote.endsWith(".")) baseFootnote += "."; if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`; return baseFootnote;
   };
-
   const buildDafpus = (m, kotaManual) => {
-    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
-    const parts = [];
-    if (m.journal) parts.push(capitalize(m.journal));
-    if (m.publisher) parts.push(capitalize(m.publisher));
-    if (finalKota) parts.push(capitalize(finalKota));
-    let volIssue = "";
-    if (m.volume) volIssue += `Vol. ${m.volume}`;
-    if (m.issue) volIssue += volIssue ? ` No. ${m.issue}` : `No. ${m.issue}`;
-    if (volIssue) parts.push(volIssue);
-    let datePart = m.month ? `${m.month} ` : "";
-    datePart += m.year;
-    parts.push(datePart);
-    const journalMeta = parts.join(", ") + ".";
-    const authorDot = m.authorDafpus.endsWith("</i>") || m.authorDafpus.endsWith(".") ? "" : ".";
-    return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
+    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const parts = []; if (m.journal) parts.push(capitalize(m.journal)); if (m.publisher) parts.push(capitalize(m.publisher)); if (finalKota) parts.push(capitalize(finalKota)); let volIssue = ""; if (m.volume) volIssue += `Vol. ${m.volume}`; if (m.issue) volIssue += volIssue ? ` No. ${m.issue}` : `No. ${m.issue}`; if (volIssue) parts.push(volIssue); let datePart = m.month ? `${m.month} ` : ""; datePart += m.year; parts.push(datePart); const journalMeta = parts.join(", ") + "."; const authorDot = m.authorDafpus.endsWith("</i>") || m.authorDafpus.endsWith(".") ? "" : "."; return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
-
-  const buildApaInText = (m) => {
-    let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim();
-    let hasEtAl = m.authorDafpus.toLowerCase().includes('et al');
-    return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`;
-  };
-
+  const buildApaInText = (m) => { let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let hasEtAl = m.authorDafpus.toLowerCase().includes('et al'); return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`; };
   const buildApaReference = (m) => {
     let authorPart = m.authorDafpus;
-    if (authorPart && authorPart !== "Penulis Tidak Diketahui") {
-       let parts = authorPart.split(',');
-       if(parts.length > 1) {
-          let family = parts[0].trim();
-          let givenRaw = parts[1].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim();
-          let initials = givenRaw.split(' ').filter(Boolean).map(n => n[0].toUpperCase() + '.').join(' ');
-          let hasEtAl = authorPart.toLowerCase().includes('et al');
-          authorPart = `${family}, ${initials}${hasEtAl ? ', et al.' : ''}`;
-       }
-    }
-    let ref = `${authorPart} (${m.year}). ${capitalize(m.title)}. `;
-    if (m.journal) {
-       ref += `<i>${capitalize(m.journal)}</i>`;
-       if (m.volume) {
-          ref += `, <i>${m.volume}</i>`;
-          if (m.issue) ref += `(${m.issue})`;
-       }
-       if (m.page) ref += `, ${m.page}`;
-       ref += `.`;
-    } else if (m.publisher) {
-       ref += `${capitalize(m.publisher)}.`;
-    }
-    if (m.doiUrl) ref += ` ${m.doiUrl}`;
-    return ref.trim();
+    if (authorPart && authorPart !== "Penulis Tidak Diketahui") { let parts = authorPart.split(','); if(parts.length > 1) { let family = parts[0].trim(); let givenRaw = parts[1].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let initials = givenRaw.split(' ').filter(Boolean).map(n => n[0].toUpperCase() + '.').join(' '); let hasEtAl = authorPart.toLowerCase().includes('et al'); authorPart = `${family}, ${initials}${hasEtAl ? ', et al.' : ''}`; } }
+    let ref = `${authorPart} (${m.year}). ${capitalize(m.title)}. `; if (m.journal) { ref += `<i>${capitalize(m.journal)}</i>`; if (m.volume) { ref += `, <i>${m.volume}</i>`; if (m.issue) ref += `(${m.issue})`; } if (m.page) ref += `, ${m.page}`; ref += `.`; } else if (m.publisher) { ref += `${capitalize(m.publisher)}.`; } if (m.doiUrl) ref += ` ${m.doiUrl}`; return ref.trim();
   };
 
-  // --- SUBMISSION HANDLERS ---
-  const fetchDOI = async () => {
-    if (!doiInput) return;
-    setError("");
-    const canProceed = await deductCredit(1);
-    if (!canProceed) return;
-    setLoading(true); setMetadata(null);
-    try {
-      const meta = await processDOI(doiInput);
-      const fn = buildFootnote(meta, kotaInput);
-      const dp = buildDafpus(meta, kotaInput);
-      const apaIn = buildApaInText(meta);
-      const apaRf = buildApaReference(meta);
-      setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp);
-      await saveToHistory(meta, fn, dp, apaIn, apaRf, doiInput, "DOI");
-    } catch (e) {
-      await refundCredit(1); setError(e.message);
-    } finally { setLoading(false); }
-  };
-
-  const fetchURL = async () => {
-    if (!urlInput) return;
-    setError("");
-    const canProceed = await deductCredit(1);
-    if (!canProceed) return;
-    setLoading(true); setMetadata(null);
-    try {
-      const meta = await processURL(urlInput);
-      const fn = buildFootnote(meta, kotaInput);
-      const dp = buildDafpus(meta, kotaInput);
-      const apaIn = buildApaInText(meta);
-      const apaRf = buildApaReference(meta);
-      setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp);
-      await saveToHistory(meta, fn, dp, apaIn, apaRf, urlInput, "URL");
-    } catch (e) {
-      await refundCredit(1); setError(e.message);
-    } finally { setLoading(false); }
-  };
-
-  const handleGenerateManual = async () => {
-    setError("");
-    if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi.");
-    const canProceed = await deductCredit(1);
-    if (!canProceed) return;
-
-    let fnName = "Penulis Tidak Diketahui", dpName = "Penulis Tidak Diketahui";
-    if (mAuthor.trim()) {
-      const authors = mAuthor.split(",").map((a) => a.trim()).filter(Boolean);
-      const parts = authors[0].split(" ").filter(Boolean);
-      let family = "", given = "";
-      if (parts.length === 1) { family = parts[0]; } 
-      else { family = parts.pop(); given = parts.join(" "); }
-      fnName = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family);
-      dpName = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
-      if (authors.length > 1) { fnName += " <i>et al.</i>"; dpName += " <i>et al.</i>"; }
-    }
-    const meta = { authorFootnote: fnName, authorDafpus: dpName, title: mTitle, journal: mJournal, year: mYear, month: "", volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, kotaScraped: "" };
-    const fn = buildFootnote(meta, kotaInput);
-    const dp = buildDafpus(meta, kotaInput);
-    const apaIn = buildApaInText(meta);
-    const apaRf = buildApaReference(meta);
-
-    setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp);
-    await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual");
-  };
-
-  const handleBatchGenerate = async () => {
-    if (!batchInput.trim()) return setError("Masukkan setidaknya 1 baris URL/DOI.");
-    const lines = batchInput.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
-    const currentCredits = userData.credits || 0;
-    if (currentCredits <= 0) return setShowTopupModal(true);
-
-    setLoading(true); setError(""); setBatchResults([]); setMetadata(null);
-    const results = []; let successfulParses = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      if (currentCredits - successfulParses <= 0) {
-        results.push({ status: "error", line: lines[i], error: "Kredit habis. Silakan Top Up untuk melanjutkan baris lainnya." });
-        break;
-      }
-      const line = lines[i];
-      const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
-      try {
-        let meta = isDoi ? await processDOI(line) : await processURL(line);
-        results.push({ status: "success", line, meta });
-        successfulParses++;
-        const fn = buildFootnote(meta, kotaInput);
-        const dp = buildDafpus(meta, kotaInput);
-        const apaIn = buildApaInText(meta);
-        const apaRf = buildApaReference(meta);
-        await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch");
-      } catch (err) {
-        results.push({ status: "error", line, error: err.message });
-      }
-    }
-
-    if (successfulParses > 0) {
-      const profileRef = doc(db, "users", user.uid);
-      await updateDoc(profileRef, { credits: currentCredits - successfulParses });
-    }
-    setBatchResults(results); setLoading(false);
-  };
-
-  const handleCopy = (htmlString, targetCopyId) => {
-    if (!htmlString) return;
-    const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
-    const div = document.createElement("div");
-    div.innerHTML = htmlString; div.style.position = "fixed"; div.style.left = "-9999px"; document.body.appendChild(div);
-    const selection = window.getSelection(); const range = document.createRange();
-    range.selectNodeContents(div); selection.removeAllRanges(); selection.addRange(range);
-    let success = false;
-    try { success = document.execCommand("copy"); } catch (err) {}
-    selection.removeAllRanges(); document.body.removeChild(div);
-    if (!success && navigator.clipboard) { navigator.clipboard.writeText(plainText).then(() => (success = true)).catch((e) => {}); }
-    if (success) { setCopiedId(targetCopyId); setTimeout(() => setCopiedId(null), 2000); }
-  };
+  const fetchDOI = async () => { if (!doiInput) return; setError(""); const canProceed = await deductCredit(1); if (!canProceed) return; setLoading(true); setMetadata(null); try { const meta = await processDOI(doiInput); const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, doiInput, "DOI"); } catch (e) { await refundCredit(1); setError(e.message); } finally { setLoading(false); } };
+  const fetchURL = async () => { if (!urlInput) return; setError(""); const canProceed = await deductCredit(1); if (!canProceed) return; setLoading(true); setMetadata(null); try { const meta = await processURL(urlInput); const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, urlInput, "URL"); } catch (e) { await refundCredit(1); setError(e.message); } finally { setLoading(false); } };
+  const handleGenerateManual = async () => { if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi."); const canProceed = await deductCredit(1); if (!canProceed) return; let fnName = "Penulis Tidak Diketahui", dpName = "Penulis Tidak Diketahui"; if (mAuthor.trim()) { const authors = mAuthor.split(",").map((a) => a.trim()).filter(Boolean); const parts = authors[0].split(" ").filter(Boolean); let family = "", given = ""; if (parts.length === 1) { family = parts[0]; } else { family = parts.pop(); given = parts.join(" "); } fnName = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dpName = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family); if (authors.length > 1) { fnName += " <i>et al.</i>"; dpName += " <i>et al.</i>"; } } const meta = { authorFootnote: fnName, authorDafpus: dpName, title: mTitle, journal: mJournal, year: mYear, month: "", volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, kotaScraped: "" }; const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual"); };
+  const handleBatchGenerate = async () => { if (!batchInput.trim()) return setError("Masukkan setidaknya 1 baris URL/DOI."); const lines = batchInput.split("\n").map((l) => l.trim()).filter((l) => l.length > 0); const currentCredits = userData.credits || 0; if (currentCredits <= 0) return setShowTopupModal(true); setLoading(true); setError(""); setBatchResults([]); setMetadata(null); const results = []; let successfulParses = 0; for (let i = 0; i < lines.length; i++) { if (currentCredits - successfulParses <= 0) { results.push({ status: "error", line: lines[i], error: "Kredit habis." }); break; } const line = lines[i]; const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org"); try { let meta = isDoi ? await processDOI(line) : await processURL(line); results.push({ status: "success", line, meta }); successfulParses++; const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch"); } catch (err) { results.push({ status: "error", line, error: err.message }); } } if (successfulParses > 0) { const profileRef = doc(db, "users", user.uid); await updateDoc(profileRef, { credits: currentCredits - successfulParses }); } setBatchResults(results); setLoading(false); };
+  const handleCopy = (htmlString, targetCopyId) => { if (!htmlString) return; const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, ""); const div = document.createElement("div"); div.innerHTML = htmlString; div.style.position = "fixed"; div.style.left = "-9999px"; document.body.appendChild(div); const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(div); selection.removeAllRanges(); selection.addRange(range); let success = false; try { success = document.execCommand("copy"); } catch (err) {} selection.removeAllRanges(); document.body.removeChild(div); if (!success && navigator.clipboard) { navigator.clipboard.writeText(plainText).then(() => (success = true)).catch((e) => {}); } if (success) { setCopiedId(targetCopyId); setTimeout(() => setCopiedId(null), 2000); } };
 
   // --- SVGs & ICONS ---
-  const VideoLogo = () => (
-    <video src="/logo.mp4" autoPlay loop muted playsInline className="video-logo-asset" />
-  );
-
+  const VideoLogo = () => (<video src="/logo.mp4" autoPlay loop muted playsInline className="video-logo-asset" />);
   const CheckIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg>);
   const CopyIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>);
   const WarningIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
@@ -946,10 +529,55 @@ export default function App() {
   const CloseIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="20" width="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
   const ArrowRightIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>);
   
-  // Floating Decor Elements (SVG)
-  const FloatBook = () => (<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(59, 130, 246, 0.2)" strokeWidth="1.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>);
-  const FloatToga = () => (<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="rgba(168, 85, 247, 0.2)" strokeWidth="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>);
-  const FloatFlash = () => (<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
+  // Custom Solid/Artistic Icons for Floating Background
+  const FloatBook = () => (
+    <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bookGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#3b82f6" />
+          <stop offset="1" stopColor="#1d4ed8" />
+        </linearGradient>
+        <linearGradient id="pageGrad" x1="0" y1="0" x2="64" y2="64">
+           <stop stopColor="#ffffff" />
+           <stop offset="1" stopColor="#f1f5f9" />
+        </linearGradient>
+        <filter id="shadowBook"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.15" /></filter>
+      </defs>
+      <g filter="url(#shadowBook)">
+        <path d="M32 16C24 16 16 20 10 24V56C16 52 24 48 32 48C40 48 48 52 54 56V24C48 20 40 16 32 16Z" fill="url(#pageGrad)" stroke="#e2e8f0" strokeWidth="2"/>
+        <path d="M32 16V48" stroke="#cbd5e1" strokeWidth="2"/>
+        <path d="M24 16V28" stroke="url(#bookGrad)" strokeWidth="6" strokeLinecap="round"/>
+        <rect x="18" y="14" width="8" height="20" fill="#ef4444" rx="2"/>
+      </g>
+    </svg>
+  );
+  const FloatToga = () => (
+    <svg width="90" height="90" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+       <defs>
+          <linearGradient id="togaGrad" x1="0" y1="0" x2="64" y2="64">
+             <stop stopColor="#1e1b4b"/><stop offset="1" stopColor="#4c1d95"/>
+          </linearGradient>
+          <filter id="shadowToga"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.2" /></filter>
+       </defs>
+       <g filter="url(#shadowToga)">
+         <path d="M32 16L8 28L32 40L56 28L32 16Z" fill="url(#togaGrad)" />
+         <path d="M18 33V45C18 45 25 50 32 50C39 50 46 45 46 45V33" fill="none" stroke="url(#togaGrad)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+         <path d="M52 30V44" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round"/>
+         <circle cx="52" cy="46" r="4" fill="#f59e0b"/>
+       </g>
+    </svg>
+  );
+  const FloatFlash = () => (
+    <svg width="70" height="70" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+       <defs>
+          <linearGradient id="flashGrad" x1="0" y1="0" x2="64" y2="64">
+             <stop stopColor="#fef08a"/><stop offset="1" stopColor="#ea580c"/>
+          </linearGradient>
+          <filter id="shadowFlash"><feDropShadow dx="0" dy="6" stdDeviation="8" floodOpacity="0.25" floodColor="#ea580c" /></filter>
+       </defs>
+       <path d="M36 4L14 34H32L28 60L50 30H32L36 4Z" fill="url(#flashGrad)" filter="url(#shadowFlash)"/>
+    </svg>
+  );
 
   const ShieldIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>);
   const SparklesIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>);
@@ -961,75 +589,49 @@ export default function App() {
 
   const SkeletonLoader = () => (
     <div className="card mt-6 glass-panel animate-fade-in">
-      <div className="p-6">
-        <div className="skeleton-line w-40 mb-6"></div>
-        <div className="skeleton-box h-24 mb-6"></div>
-        <div className="skeleton-line w-48 mb-6"></div>
-        <div className="skeleton-box h-20"></div>
-      </div>
+      <div className="p-6"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
     </div>
   );
 
   return (
     <div className="app-wrapper pattern-bg" ref={appRef}>
       {!firebaseConfig.apiKey && (
-        <div className="env-warning">
-          ⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.
-        </div>
+        <div className="env-warning">⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.</div>
       )}
 
-      {notification && (
-        <div className="notification-toast animate-slide-up-fade">
-          {notification}
-        </div>
-      )}
+      {notification && (<div className="notification-toast animate-slide-up-fade">{notification}</div>)}
 
       {showTopupModal && (
         <div className="modal-overlay">
           <div className="modal-box animate-scale-in">
             <div className="modal-header">
-              <h3 className="m-0 flex items-center gap-2 text-lg font-bold">
-                <CoinIcon /> Top Up Kredit
-              </h3>
-              <button className="btn-close-modal" onClick={() => setShowTopupModal(false)}>
-                <CloseIcon />
-              </button>
+              <h3 className="m-0 flex items-center gap-2 text-lg font-bold"><CoinIcon /> Top Up Kredit</h3>
+              <button className="btn-close-modal" onClick={() => setShowTopupModal(false)}><CloseIcon /></button>
             </div>
             <div className="modal-body">
-              <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">
-                Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750. Bebas hambatan, bebas stres.
-              </p>
+              <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750. Bebas hambatan, bebas stres.</p>
               <div className="grid-packages mb-5">
                 {[50, 75, 100, 125].map((amt) => (
-                  <button key={amt} className={`btn-package ${topupAmount === amt ? "active" : ""}`} onClick={() => setTopupAmount(amt)}>
-                    {amt} Kredit
-                  </button>
+                  <button key={amt} className={`btn-package ${topupAmount === amt ? "active" : ""}`} onClick={() => setTopupAmount(amt)}>{amt} Kredit</button>
                 ))}
               </div>
               <div className="form-group">
-                <label className="text-xs font-bold text-muted uppercase tracking-wide mb-2 block">
-                  Nominal Custom:
-                </label>
+                <label className="text-xs font-bold text-muted uppercase tracking-wide mb-2 block">Nominal Custom:</label>
                 <input type="number" min="1" className="input-field-modern" value={topupAmount} onChange={(e) => setTopupAmount(parseInt(e.target.value) || 0)} />
               </div>
               <div className="price-tag mt-6">
                 <span className="text-muted font-medium text-sm">Total Pembayaran</span>
-                <span className="font-extrabold text-xl text-main">
-                  Rp {(topupAmount * 750).toLocaleString("id-ID")}
-                </span>
+                <span className="font-extrabold text-xl text-main">Rp {(topupAmount * 750).toLocaleString("id-ID")}</span>
               </div>
               <button className="btn-primary w-full mt-6 py-3.5 shadow-glow" onClick={processPayment} disabled={isPaying}>
                 {isPaying ? "Menghubungkan..." : "Bayar via Bayar.gg"}
               </button>
-              <p className="text-xs text-muted text-center mt-4">
-                Pembayaran Anda aman dan diproses otomatis.
-              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* FIXED NAVBAR (KELUAR BUTTON REMOVED FROM HERE) */}
+      {/* FIXED NAVBAR */}
       <div className="navbar-wrapper">
         <nav className="navbar">
           <div className="nav-container">
@@ -1044,7 +646,7 @@ export default function App() {
               )}
               {!user && (
                 <button onClick={handleLoginAndEnter} className="btn-primary btn-sm" disabled={loading}>
-                  {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
+                  {loading ? "Mengahubungkan..." : "Buka Ruang Kerja"}
                 </button>
               )}
             </div>
@@ -1057,7 +659,7 @@ export default function App() {
         {currentView === "landing" && (
           <main className="main-content z-10 relative" ref={landingRef}>
             
-            {/* Colorful Mesh Gradient Background */}
+            {/* Mesh Gradient Background */}
             <div className="ambient-background">
                <div className="ambient-blob blob-1"></div>
                <div className="ambient-blob blob-2"></div>
@@ -1067,9 +669,9 @@ export default function App() {
             {/* Hero Section */}
             <section id="hero" className="hero-section">
               {/* Floating GSAP Elements */}
-              <div className="floating-element float-1" style={{position: 'absolute', top: '15%', left: '10%', zIndex: 0}}><FloatBook /></div>
-              <div className="floating-element float-2" style={{position: 'absolute', top: '25%', right: '12%', zIndex: 0}}><FloatToga /></div>
-              <div className="floating-element float-3" style={{position: 'absolute', top: '60%', left: '15%', zIndex: 0}}><FloatFlash /></div>
+              <div className="floating-element float-1" style={{position: 'absolute', top: '20%', left: '8%', zIndex: 0}}><FloatBook /></div>
+              <div className="floating-element float-2" style={{position: 'absolute', top: '15%', right: '10%', zIndex: 0}}><FloatToga /></div>
+              <div className="floating-element float-3" style={{position: 'absolute', top: '65%', left: '15%', zIndex: 0}}><FloatFlash /></div>
 
               <div className="container text-center relative z-10">
                 <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
@@ -1095,19 +697,15 @@ export default function App() {
                     {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
                   </button>
                   <div className="hero-trusted mt-6 flex items-center justify-center gap-3">
-                    <div className="avatar-group flex">
-                       <div className="avatar"></div>
-                       <div className="avatar"></div>
-                       <div className="avatar"></div>
-                    </div>
+                    <div className="avatar-group flex"><div className="avatar"></div><div className="avatar"></div><div className="avatar"></div></div>
                     <p className="text-xs text-muted font-medium m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* Live Preview Section (Replaced with Animated Mock Workspace) */}
-            <section className="preview-section mt-6 pb-24 relative z-10">
+            {/* Live Preview Section (Animated Mock Workspace) */}
+            <section className="preview-section mt-12 pb-24 relative z-20">
               <div className="container preview-card-anim">
                  <AnimatedWorkspaceMock />
               </div>
@@ -1119,23 +717,11 @@ export default function App() {
                   <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
                   <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
                   <div className="steps-grid">
-                     <div className="step-card-anim step-card">
-                        <div className="step-icon">1</div>
-                        <h4 className="font-bold text-lg mb-2">Salin Tautan</h4>
-                        <p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p>
-                     </div>
+                     <div className="step-card-anim step-card"><div className="step-icon">1</div><h4 className="font-bold text-lg mb-2">Salin Tautan</h4><p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p></div>
                      <div className="step-card-anim step-connector hidden-mobile"></div>
-                     <div className="step-card-anim step-card">
-                        <div className="step-icon">2</div>
-                        <h4 className="font-bold text-lg mb-2">Sistem Memproses</h4>
-                        <p className="text-sm text-muted">Mesin ekstraksi kami akan memproses PDF/Link dan menarik data penting.</p>
-                     </div>
+                     <div className="step-card-anim step-card"><div className="step-icon">2</div><h4 className="font-bold text-lg mb-2">Sistem Memproses</h4><p className="text-sm text-muted">Mesin ekstraksi kami akan memproses PDF/Link dan menarik data penting.</p></div>
                      <div className="step-card-anim step-connector hidden-mobile"></div>
-                     <div className="step-card-anim step-card">
-                        <div className="step-icon">3</div>
-                        <h4 className="font-bold text-lg mb-2">Selesai</h4>
-                        <p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p>
-                     </div>
+                     <div className="step-card-anim step-card"><div className="step-icon">3</div><h4 className="font-bold text-lg mb-2">Selesai</h4><p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p></div>
                   </div>
                </div>
             </section>
@@ -1148,23 +734,17 @@ export default function App() {
                   <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                     <div className="feature-icon-box text-primary"><ShieldIcon /></div>
                     <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
-                    <p className="text-muted mt-2 text-sm leading-relaxed">
-                      Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).
-                    </p>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).</p>
                   </div>
                   <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                     <div className="feature-icon-box text-primary"><SparklesIcon /></div>
                     <h3 className="text-lg font-bold">Smart Metadata Recovery</h3>
-                    <p className="text-muted mt-2 text-sm leading-relaxed">
-                      Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.
-                    </p>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.</p>
                   </div>
                   <div className="feature-card-anim feature-card glass-panel group-hover-effect">
                     <div className="feature-icon-box text-primary"><ZapIcon /></div>
                     <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
-                    <p className="text-muted mt-2 text-sm leading-relaxed">
-                      Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.
-                    </p>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.</p>
                   </div>
                 </div>
               </div>
@@ -1176,39 +756,15 @@ export default function App() {
                 <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
                   <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
                   <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
-                  <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
-                    Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.
-                  </p>
-
-                  <div className="price-huge relative z-10">
-                    <span className="currency font-semibold">Rp</span>
-                    750
-                    <span className="suffix font-medium text-muted">
-                      / Sitasi Sukses
-                    </span>
-                  </div>
-
+                  <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
+                  <div className="price-huge relative z-10"><span className="currency font-semibold">Rp</span>750<span className="suffix font-medium text-muted">/ Sitasi Sukses</span></div>
                   <div className="pricing-divider relative z-10"></div>
-
                   <ul className="pricing-list relative z-10">
-                    <li>
-                      <div className="icon-wrap"><CheckIcon /></div> 
-                      <span>Gratis 5 Kredit untuk pengguna baru.</span>
-                    </li>
-                    <li>
-                      <div className="icon-wrap"><CheckIcon /></div> 
-                      <span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span>
-                    </li>
-                    <li>
-                      <div className="icon-wrap"><CheckIcon /></div> 
-                      <span>Mendukung format Footnote & APA 7th Edition.</span>
-                    </li>
-                    <li>
-                      <div className="icon-wrap"><CheckIcon /></div> 
-                      <span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span>
-                    </li>
+                    <li><div className="icon-wrap"><CheckIcon /></div><span>Gratis 5 Kredit untuk pengguna baru.</span></li>
+                    <li><div className="icon-wrap"><CheckIcon /></div><span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span></li>
+                    <li><div className="icon-wrap"><CheckIcon /></div><span>Mendukung format Footnote & APA 7th Edition.</span></li>
+                    <li><div className="icon-wrap"><CheckIcon /></div><span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span></li>
                   </ul>
-
                   <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
                     Mulai Ruang Kerja Anda <ArrowRightIcon />
                   </button>
@@ -1240,12 +796,10 @@ export default function App() {
             <div className="container tool-container">
               <div className="tool-header mb-8 text-center sm:text-left">
                 <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
-                <p className="text-muted text-sm mt-2 font-medium">
-                  Sistem ekstraksi metadata aktif. Masukkan referensi Anda.
-                </p>
+                <p className="text-muted text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
               </div>
 
-              <div className="card glass-panel shadow-premium mb-8">
+              <div className="card glass-panel shadow-premium mb-8 relative z-20">
                 <div className="segmented-control-wrapper p-2 border-b border-color">
                   <div className="segmented-control scrollable-tabs">
                     <button className={`segmented-btn ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>Nomor DOI</button>
@@ -1257,7 +811,7 @@ export default function App() {
                 </div>
 
                 <div className="card-body p-6 sm:p-8">
-                  {/* --- TOGGLE CITATION STYLE --- */}
+                  {/* TOGGLE CITATION STYLE */}
                   <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
                      <div className="mb-4 sm:mb-0 text-center sm:text-left">
                        <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
@@ -1308,58 +862,26 @@ export default function App() {
                   {inputMode === "manual" && (
                     <div className="animate-fade-in">
                       <div className="grid-2 gap-5">
-                        <div className="col-span-2 form-group">
-                          <label className="input-label">Nama Penulis Lengkap *</label>
-                          <input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" />
-                        </div>
-                        <div className="col-span-2 form-group">
-                          <label className="input-label">Judul Artikel *</label>
-                          <input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" />
-                        </div>
-                        <div className="form-group">
-                          <label className="input-label">Nama Jurnal</label>
-                          <input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" />
-                        </div>
-                        <div className="form-group">
-                          <label className="input-label">Tahun Terbit *</label>
-                          <input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" />
-                        </div>
-                        <div className="form-group">
-                          <label className="input-label">Volume</label>
-                          <input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" />
-                        </div>
-                        <div className="form-group">
-                          <label className="input-label">Isu / Nomor</label>
-                          <input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" />
-                        </div>
-                        <div className="form-group">
-                          <label className="input-label">Halaman</label>
-                          <input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" />
-                        </div>
+                        <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
+                        <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
+                        <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
+                        <div className="form-group"><label className="input-label">Tahun Terbit *</label><input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
+                        <div className="form-group"><label className="input-label">Volume</label><input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
+                        <div className="form-group"><label className="input-label">Isu / Nomor</label><input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
+                        <div className="form-group"><label className="input-label">Halaman</label><input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
                         {citationStyle === "footnote" && (
-                          <div className="form-group animate-fade-in">
-                            <label className="input-label">Kota Terbit</label>
-                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" />
-                          </div>
+                          <div className="form-group animate-fade-in"><label className="input-label">Kota Terbit</label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
                         )}
                       </div>
-                      <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>
-                        Generate Manual (1 Kredit)
-                      </button>
+                      <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>Generate Manual (1 Kredit)</button>
                     </div>
                   )}
 
                   {inputMode === "batch" && (
                     <div className="animate-fade-in">
-                      <div className="form-group mb-5">
-                        <label className="input-label">Daftar Link / DOI</label>
-                        <textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" />
-                      </div>
+                      <div className="form-group mb-5"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
                       {citationStyle === "footnote" && (
-                        <div className="form-group mb-8 animate-fade-in">
-                          <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
-                          <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" />
-                        </div>
+                        <div className="form-group mb-8 animate-fade-in"><label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
                       )}
                       <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
                         {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
@@ -1372,8 +894,7 @@ export default function App() {
                     <div className="animate-fade-in history-container custom-scrollbar pr-3">
                       {history.length === 0 ? (
                         <div className="text-center text-muted p-10 flex flex-col items-center">
-                          <span className="text-4xl mb-3 opacity-20">🗂️</span>
-                          Ruang riwayat Anda masih kosong.
+                          <span className="text-4xl mb-3 opacity-20">🗂️</span> Ruang riwayat Anda masih kosong.
                         </div>
                       ) : (
                         history.map((item) => {
@@ -1412,10 +933,7 @@ export default function App() {
 
               {loading && inputMode !== "batch" && <SkeletonLoader />}
               {loading && inputMode === "batch" && (
-                <>
-                  <SkeletonLoader />
-                  <div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div>
-                </>
+                <><SkeletonLoader /><div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div></>
               )}
 
               {/* RESULTS AREA: SINGLE */}
@@ -1504,8 +1022,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* LOGOUT BUTTON RELOCATED HERE */}
-              <div className="mt-12 text-center pt-8 border-t border-color opacity-70 hover:opacity-100 transition-opacity">
+              {/* LOGOUT BUTTON MOVED TO BOTTOM OF WORKSPACE */}
+              <div className="mt-16 text-center pt-8 border-t border-color opacity-70 hover:opacity-100 transition-opacity">
                 <button onClick={handleLogout} className="btn-secondary btn-sm shadow-sm bg-white">
                   Log Out dari Ruang Kerja
                 </button>
@@ -1534,7 +1052,7 @@ export default function App() {
         .app-wrapper {
           --bg-body: #f8fafc;
           --bg-surface: rgba(255, 255, 255, 1);
-          --bg-surface-hover: rgba(241, 245, 249, 1);
+          --bg-surface-hover: #f8fafc;
           --bg-surface-alt: transparent;
           --bg-surface-solid: #ffffff;
           
@@ -1624,21 +1142,21 @@ export default function App() {
         .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
         .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
-        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; }
+        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
         .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } 
         .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
         .p-1 { padding: 0.25rem; } .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
         .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; }
         .pt-5 { padding-top: 1.25rem; } .pt-8 { padding-top: 2rem; } .pt-20 { padding-top: 5rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
         .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
         .w-full { width: 100%; } .w-max { width: max-content; } .w-auto { width: auto; }
         .border-b { border-bottom: 1px solid var(--border-color); } .border-t { border-top: 1px solid var(--border-color); } .border-y { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
         .border-r { border-right: 1px solid var(--border-color); } .border-l-apa { border-left: 3px solid var(--text-muted) !important; }
-        .border-color { border-color: var(--border-color); }
-        .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-lg { border-radius: var(--radius-sm); }
-        .bg-subtle { background: var(--bg-surface-hover); } .bg-surface-solid { background: var(--bg-surface-solid); } .bg-surface-alt { background: var(--bg-surface-alt); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
-        .bg-primary { background: var(--primary); } .bg-primary-subtle { background: var(--primary-subtle); }
+        .border-color { border-color: var(--border-color); } .border-main { border-color: var(--text-main); }
+        .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-xl { border-radius: 12px; } .rounded-lg { border-radius: var(--radius-sm); }
+        .bg-subtle { background: var(--bg-surface-hover); } .bg-surface-solid { background: var(--bg-surface-solid); } .bg-surface-hover { background: var(--bg-surface-hover); } .bg-surface-alt { background: var(--bg-surface-alt); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .bg-primary { background: var(--primary); } .bg-primary-subtle { background: var(--primary-subtle); } .bg-white { background: #ffffff; }
         .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-4xl { font-size: 2.25rem; }
         .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); } .text-body { color: var(--bg-surface-solid); }
         .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; }
@@ -1646,29 +1164,33 @@ export default function App() {
         .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
         .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
-        .z-10 { z-index: 10; } .z-20 { z-index: 20; }
-        .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-90 { opacity: 0.9; }
+        .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
+        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
         .pointer-events-none { pointer-events: none; }
         .break-all { word-break: break-all; }
         .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; }
+        .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; }
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-        .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; }
+        .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; } .transition-all { transition: all 0.2s; }
+        .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; }
+        .ease-in-out { transition-timing-function: ease-in-out; }
+        .scale-95 { transform: scale(0.95); } .scale-100 { transform: scale(1); }
+        .translate-y-0 { transform: translateY(0); } .translate-y-4 { transform: translateY(1rem); }
+        .h-0 { height: 0; } .h-auto { height: auto; }
 
         /* FIXED NAVBAR FLOATING PILL - DIHAPUS BLUR-NYA */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
-          pointer-events: none; /* Let clicks pass through outside the pill */
+          pointer-events: none; 
         }
         .navbar {
-          pointer-events: auto; /* Re-enable clicks on the actual pill */
+          pointer-events: auto; 
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
-          /* Blur dibuang: backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -1676,7 +1198,7 @@ export default function App() {
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
-        .logo-icon-wrap { height: 44px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
+        .logo-icon-wrap { height: 36px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
         .footer-logo { height: 64px; justify-content: center; }
         .video-logo-asset { width: 100%; height: 100%; object-fit: contain; border-radius: 0; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
@@ -1732,8 +1254,9 @@ export default function App() {
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
 
         /* PREVIEW MOCK COMPONENT */
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--bg-surface-solid); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        .preview-section { background: var(--bg-body); } /* Ensure mock workspace covers floating items */
 
         /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
@@ -1836,27 +1359,24 @@ export default function App() {
 
         /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 640px) {
-          .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
-          /* FIX NAVBAR MOBILE PADDING & LOGO */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
-          .logo-icon-wrap { height: 28px; } /* Diperkecil agar proporsional sejajar tombol */
+          .logo-icon-wrap { height: 28px; } 
           .footer-logo { height: 44px; }
           
-          /* FIX TOMBOL LOGIN MOBILE (DIBUAT KECIL AGAR MUAT) */
           .btn-primary.btn-sm { font-size: 0.75rem; padding: 0 1rem !important; height: 32px; border-radius: 8px; }
           
-          .pricing-card { padding: 2.5rem 1.5rem; margin: 0 1rem; width: auto; }
+          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-md); border-left: none; border-right: none; }
           .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
           .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
           .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .style-toggle-btn { flex: 1; justify-content: center; }
           .flex-col-mobile { flex-direction: column; align-items: flex-start; }
           .steps-grid { flex-direction: column; gap: 2rem; }
-          .floating-element { display: none; } /* Hide floating decor on mobile to keep it clean */
+          .floating-element { display: none; } 
         }
       `}</style>
     </div>
