@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "https://esm.sh/gsap"; // GANTI INI: import gsap from "gsap";
+import gsap from "gsap"; // GANTI INI: import gsap from "gsap";
 import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // GANTI INI: import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
