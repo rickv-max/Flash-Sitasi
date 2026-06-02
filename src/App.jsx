@@ -69,9 +69,9 @@ const AnimatedWorkspaceMock = () => {
       setTypedText("");
       
       // 1. Move to Input
-      timeouts.push(setTimeout(() => setStep(1), 800));
+      timeouts.push(setTimeout(() => setStep(1), 1000));
       // 2. Click Input
-      timeouts.push(setTimeout(() => setStep(2), 1500));
+      timeouts.push(setTimeout(() => setStep(2), 1600));
       // 3. Typing
       timeouts.push(setTimeout(() => {
         let currentText = "";
@@ -83,35 +83,46 @@ const AnimatedWorkspaceMock = () => {
           if (i === targetText.length) {
             clearInterval(typeInterval);
             // 4. Move to Generate Button
-            timeouts.push(setTimeout(() => setStep(3), 600)); 
+            timeouts.push(setTimeout(() => setStep(3), 500)); 
             // 5. Click Generate
-            timeouts.push(setTimeout(() => setStep(4), 1400));
+            timeouts.push(setTimeout(() => setStep(4), 1200));
             // 6. Loading State
-            timeouts.push(setTimeout(() => setStep(5), 1700));
+            timeouts.push(setTimeout(() => setStep(5), 1400));
             // 7. Smooth Reveal Results
             timeouts.push(setTimeout(() => setStep(6), 3500));
-            // 8. Move to Copy
+            // 8. Move to Copy Button
             timeouts.push(setTimeout(() => setStep(7), 4500));
             // 9. Click Copy
-            timeouts.push(setTimeout(() => setStep(8), 5300));
+            timeouts.push(setTimeout(() => setStep(8), 5100));
             // 10. Loop back
             timeouts.push(setTimeout(() => runSequence(), 8000));
           }
         }, 40);
-      }, 1800));
+      }, 1900));
     };
 
     runSequence();
-    return () => timeouts.forEach(clearTimeout);
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
   }, []);
 
   return (
-    <div className="mock-workspace glass-panel relative text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-3xl overflow-hidden">
-      <div className="p-6 sm:p-8 relative z-10">
+    <div className="mock-workspace glass-panel relative text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-3xl overflow-hidden z-20">
+      <div className="preview-header bg-surface-alt border-b border-color px-4 py-3 flex items-center gap-3">
+         <div className="flex gap-2">
+            <span className="w-3 h-3 rounded-full bg-red-400"></span>
+            <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+            <span className="w-3 h-3 rounded-full bg-green-400"></span>
+         </div>
+         <span className="text-xs font-semibold text-muted font-mono ml-2">demo_ruang_kerja.app</span>
+      </div>
+
+      <div className="p-6 sm:p-8 relative z-10 bg-white">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
           <div>
-            <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
-            <p className="text-xs text-muted mt-1 m-0 hidden sm:block">Pilih gaya output</p>
+            <h3 className="text-base font-bold text-slate-900 m-0">Format Sitasi</h3>
+            <p className="text-xs text-slate-500 mt-1 m-0 hidden sm:block">Pilih gaya output</p>
           </div>
           <div className="style-toggle pointer-events-none">
             <button className="style-toggle-btn active">📝 Footnote</button>
@@ -120,41 +131,41 @@ const AnimatedWorkspaceMock = () => {
         </div>
 
         <div className="form-group mb-5">
-          <label className="input-label text-xs">Nomor DOI Referensi</label>
+          <label className="input-label text-xs text-slate-900 font-bold mb-2 block">Nomor DOI Referensi</label>
           <div className={`mock-input-wrap ${step >= 2 && step < 5 ? 'focused' : ''}`}>
-            <span className="mock-input-text">{typedText}</span>
+            <span className="mock-input-text text-slate-900 font-medium">{typedText}</span>
             {step >= 2 && step < 4 && <span className="mock-caret"></span>}
-            {!typedText && step <= 1 && <span className="text-muted opacity-60 text-sm">Contoh: 10.1038/s41586...</span>}
+            {!typedText && step <= 1 && <span className="text-slate-400 opacity-80 text-sm">Contoh: 10.1038/s41586...</span>}
           </div>
         </div>
 
         <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 4 ? 'scale-95' : 'scale-100'}`}>
           {step === 5 ? (
-            <span className="flex items-center gap-2 justify-center"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
+            <span className="flex items-center gap-2 justify-center text-white"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
         {/* RESULTS MOCK - Smoothly revealed */}
-        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[500px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
+        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[800px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
           {/* Footnote Result */}
-          <div className="result-block border border-color rounded-md p-4 relative bg-surface-hover">
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
             <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
-              <span className="text-xs font-bold text-muted">CATATAN KAKI</span>
-              <button className={`btn-copy-modern text-xs py-1 px-2 ${step === 8 ? 'scale-95 bg-surface-solid border-main' : 'scale-100'}`}>
-                {step > 8 ? <><span className="text-success text-xs">✓</span> Disalin</> : "Salin"}
+              <span className="text-xs font-extrabold text-slate-500">CATATAN KAKI</span>
+              <button className={`btn-copy-modern text-xs py-1 px-2 transition-transform ${step === 8 ? 'scale-95 bg-white border-slate-800' : 'scale-100'}`}>
+                {step > 8 ? <><span className="text-green-600 font-bold text-xs mr-1">✓</span><span className="text-slate-800">Disalin</span></> : <span className="text-slate-800">Salin</span>}
               </button>
             </div>
-            <p className="text-sm m-0 leading-relaxed text-main">
+            <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
           {/* APA 7 Result */}
-          <div className="result-block border border-color rounded-md p-4 relative bg-surface-hover">
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
             <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
-              <span className="text-xs font-bold text-muted">APA 7TH EDITION</span>
-              <button className="btn-copy-modern text-xs py-1 px-2 scale-100">Salin</button>
+              <span className="text-xs font-extrabold text-slate-500">APA 7TH EDITION</span>
+              <button className="btn-copy-modern text-xs py-1 px-2 scale-100 text-slate-800">Salin</button>
             </div>
-            <p className="text-sm m-0 leading-relaxed text-main">
+            <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020). The Architecture of Modern SaaS. <i>Nature</i>, 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
@@ -163,30 +174,33 @@ const AnimatedWorkspaceMock = () => {
 
       {/* FAKE CURSOR */}
       <div className={`fake-cursor cursor-step-${step}`}>
-        <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#09090b" stroke="#ffffff" strokeWidth="2"/>
+        <svg width="28" height="34" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#0f172a" stroke="#ffffff" strokeWidth="2.5"/>
         </svg>
       </div>
 
       <style>{`
-        .mock-input-wrap { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height: 48px; display: flex; align-items: center; transition: 0.2s; }
+        .mock-input-wrap { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height: 52px; display: flex; align-items: center; transition: 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
         .mock-input-wrap.focused { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-        .mock-caret { display: inline-block; width: 2px; height: 16px; background: var(--primary); margin-left: 2px; animation: blink 1s step-end infinite; }
+        .mock-caret { display: inline-block; width: 2px; height: 18px; background: var(--primary); margin-left: 4px; animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
         
-        .fake-cursor { position: absolute; z-index: 50; transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; }
+        .fake-cursor { position: absolute; z-index: 50; transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
+        
+        /* Dekstop Animation States */
         .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
-        .cursor-step-1, .cursor-step-2 { top: 38%; left: 30%; opacity: 1; }
-        .cursor-step-3 { top: 58%; left: 50%; opacity: 1; }
-        .cursor-step-4, .cursor-step-5 { top: 58%; left: 50%; opacity: 1; transform: scale(0.9); }
-        .cursor-step-6, .cursor-step-7 { top: 78%; left: 45%; opacity: 1; transform: scale(1); }
-        .cursor-step-8 { top: 78%; left: 45%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-1, .cursor-step-2 { top: 35%; left: 25%; opacity: 1; transform: scale(1); }
+        .cursor-step-3 { top: 52%; left: 50%; opacity: 1; transform: scale(1); }
+        .cursor-step-4, .cursor-step-5 { top: 52%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-6, .cursor-step-7 { top: 80%; left: 45%; opacity: 1; transform: scale(1); }
+        .cursor-step-8 { top: 80%; left: 45%; opacity: 1; transform: scale(0.9); }
         .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
         
+        /* Mobile Animation States */
         @media (max-width: 640px) {
-           .cursor-step-1, .cursor-step-2 { top: 32%; left: 40%; }
-           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 48%; left: 50%; }
-           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 62%; left: 82%; }
+           .cursor-step-1, .cursor-step-2 { top: 25%; left: 35%; }
+           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 38%; left: 50%; }
+           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 58%; left: 80%; }
         }
       `}</style>
     </div>
@@ -243,7 +257,7 @@ export default function App() {
       const ctx = gsap.context(() => {
         const tl = gsap.timeline();
         
-        // 1. Entrance Animations (Hero)
+        // Entrance Animations
         tl.fromTo(".navbar-wrapper", { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
           .fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
           .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
@@ -251,13 +265,13 @@ export default function App() {
           .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
           .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6");
 
-        // 2. Parallax Floating Elements hiding behind Mock Workspace
-        // The mock workspace has z-index 10 and solid bg, floating elements have z-index 0.
-        gsap.to(".float-1", { y: 250, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
-        gsap.to(".float-2", { y: 300, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
-        gsap.to(".float-3", { y: 200, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
+        // Parallax Floating Elements hiding behind Mock Workspace
+        // The mock workspace has solid bg and z-index: 20, floating elements have z-index: 0.
+        gsap.to(".float-1", { y: 280, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
+        gsap.to(".float-2", { y: 320, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
+        gsap.to(".float-3", { y: 250, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
 
-        // 3. ScrollTrigger Animations
+        // ScrollTrigger Animations
         gsap.fromTo(".preview-card-anim", 
           { opacity: 0, y: 60 }, 
           { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 85%" } }
@@ -341,6 +355,7 @@ export default function App() {
   const handleLogout = async () => {
     if (auth) await signOut(auth);
     setCurrentView("landing");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // --- PAYMENT HANDLER ---
@@ -533,14 +548,8 @@ export default function App() {
   const FloatBook = () => (
     <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bookGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id="pageGrad" x1="0" y1="0" x2="64" y2="64">
-           <stop stopColor="#ffffff" />
-           <stop offset="1" stopColor="#f1f5f9" />
-        </linearGradient>
+        <linearGradient id="bookGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6" /><stop offset="1" stopColor="#1d4ed8" /></linearGradient>
+        <linearGradient id="pageGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#ffffff" /><stop offset="1" stopColor="#f1f5f9" /></linearGradient>
         <filter id="shadowBook"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.15" /></filter>
       </defs>
       <g filter="url(#shadowBook)">
@@ -554,9 +563,7 @@ export default function App() {
   const FloatToga = () => (
     <svg width="90" height="90" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
        <defs>
-          <linearGradient id="togaGrad" x1="0" y1="0" x2="64" y2="64">
-             <stop stopColor="#1e1b4b"/><stop offset="1" stopColor="#4c1d95"/>
-          </linearGradient>
+          <linearGradient id="togaGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#1e1b4b"/><stop offset="1" stopColor="#4c1d95"/></linearGradient>
           <filter id="shadowToga"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.2" /></filter>
        </defs>
        <g filter="url(#shadowToga)">
@@ -570,9 +577,7 @@ export default function App() {
   const FloatFlash = () => (
     <svg width="70" height="70" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
        <defs>
-          <linearGradient id="flashGrad" x1="0" y1="0" x2="64" y2="64">
-             <stop stopColor="#fef08a"/><stop offset="1" stopColor="#ea580c"/>
-          </linearGradient>
+          <linearGradient id="flashGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#fef08a"/><stop offset="1" stopColor="#ea580c"/></linearGradient>
           <filter id="shadowFlash"><feDropShadow dx="0" dy="6" stdDeviation="8" floodOpacity="0.25" floodColor="#ea580c" /></filter>
        </defs>
        <path d="M36 4L14 34H32L28 60L50 30H32L36 4Z" fill="url(#flashGrad)" filter="url(#shadowFlash)"/>
@@ -631,7 +636,7 @@ export default function App() {
         </div>
       )}
 
-      {/* FIXED NAVBAR */}
+      {/* FIXED NAVBAR (KELUAR BUTTON REMOVED FROM HERE) */}
       <div className="navbar-wrapper">
         <nav className="navbar">
           <div className="nav-container">
@@ -646,7 +651,7 @@ export default function App() {
               )}
               {!user && (
                 <button onClick={handleLoginAndEnter} className="btn-primary btn-sm" disabled={loading}>
-                  {loading ? "Mengahubungkan..." : "Buka Ruang Kerja"}
+                  {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
                 </button>
               )}
             </div>
@@ -667,11 +672,11 @@ export default function App() {
             </div>
 
             {/* Hero Section */}
-            <section id="hero" className="hero-section">
-              {/* Floating GSAP Elements */}
-              <div className="floating-element float-1" style={{position: 'absolute', top: '20%', left: '8%', zIndex: 0}}><FloatBook /></div>
-              <div className="floating-element float-2" style={{position: 'absolute', top: '15%', right: '10%', zIndex: 0}}><FloatToga /></div>
-              <div className="floating-element float-3" style={{position: 'absolute', top: '65%', left: '15%', zIndex: 0}}><FloatFlash /></div>
+            <section id="hero" className="hero-section relative">
+              {/* Floating GSAP Elements - Hidden on mobile to keep clean, visible and animated on Desktop */}
+              <div className="floating-element float-1 hidden-mobile" style={{position: 'absolute', top: '10%', left: '8%', zIndex: 0}}><FloatBook /></div>
+              <div className="floating-element float-2 hidden-mobile" style={{position: 'absolute', top: '5%', right: '10%', zIndex: 0}}><FloatToga /></div>
+              <div className="floating-element float-3 hidden-mobile" style={{position: 'absolute', top: '40%', left: '12%', zIndex: 0}}><FloatFlash /></div>
 
               <div className="container text-center relative z-10">
                 <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
@@ -697,7 +702,11 @@ export default function App() {
                     {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
                   </button>
                   <div className="hero-trusted mt-6 flex items-center justify-center gap-3">
-                    <div className="avatar-group flex"><div className="avatar"></div><div className="avatar"></div><div className="avatar"></div></div>
+                    <div className="avatar-group flex">
+                       <div className="avatar"></div>
+                       <div className="avatar"></div>
+                       <div className="avatar"></div>
+                    </div>
                     <p className="text-xs text-muted font-medium m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
                   </div>
                 </div>
@@ -1022,7 +1031,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* LOGOUT BUTTON MOVED TO BOTTOM OF WORKSPACE */}
+              {/* LOGOUT BUTTON RELOCATED HERE */}
               <div className="mt-16 text-center pt-8 border-t border-color opacity-70 hover:opacity-100 transition-opacity">
                 <button onClick={handleLogout} className="btn-secondary btn-sm shadow-sm bg-white">
                   Log Out dari Ruang Kerja
@@ -1052,7 +1061,7 @@ export default function App() {
         .app-wrapper {
           --bg-body: #f8fafc;
           --bg-surface: rgba(255, 255, 255, 1);
-          --bg-surface-hover: #f8fafc;
+          --bg-surface-hover: #f1f5f9;
           --bg-surface-alt: transparent;
           --bg-surface-solid: #ffffff;
           
@@ -1165,7 +1174,7 @@ export default function App() {
         .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
         .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
-        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
+        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
         .pointer-events-none { pointer-events: none; }
         .break-all { word-break: break-all; }
         .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1174,7 +1183,7 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-        .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; } .transition-all { transition: all 0.2s; }
+        .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; } .transition-all { transition: all 0.2s; } .transition-transform { transition: transform 0.2s; }
         .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; }
         .ease-in-out { transition-timing-function: ease-in-out; }
         .scale-95 { transform: scale(0.95); } .scale-100 { transform: scale(1); }
@@ -1185,10 +1194,10 @@ export default function App() {
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
-          pointer-events: none; 
+          pointer-events: none; /* Let clicks pass through outside the pill */
         }
         .navbar {
-          pointer-events: auto; 
+          pointer-events: auto; /* Re-enable clicks on the actual pill */
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
           border: 1px solid var(--border-color); 
@@ -1200,7 +1209,7 @@ export default function App() {
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         .logo-icon-wrap { height: 36px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
         .footer-logo { height: 64px; justify-content: center; }
-        .video-logo-asset { width: 100%; height: 100%; object-fit: contain; border-radius: 0; display: block; }
+        .video-logo-asset { height: 100%; width: auto; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
         
         .credit-badge {
@@ -1209,7 +1218,7 @@ export default function App() {
           padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
           cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
         }
-        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-hover); }
+        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-solid); }
 
         /* PADDING PENGGANTI NAVBAR FIXED */
         .content-padding-top { padding-top: 100px; }
@@ -1256,7 +1265,7 @@ export default function App() {
         /* PREVIEW MOCK COMPONENT */
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--bg-surface-solid); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .preview-section { background: var(--bg-body); } /* Ensure mock workspace covers floating items */
+        .preview-section { background: var(--bg-body); } 
 
         /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
@@ -1273,7 +1282,7 @@ export default function App() {
         .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
         /* PRICING SECTION */
-        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative;}
+        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative; box-sizing: border-box;}
         .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
@@ -1312,8 +1321,8 @@ export default function App() {
         .result-block { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; }
         .result-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
         .result-html { padding: 1.25rem; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
-        .btn-copy-modern { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; }
-        .btn-copy-modern:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
+        .btn-copy-modern { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; }
+        .btn-copy-modern:hover { background: var(--bg-surface-hover); border-color: var(--text-main); }
         .btn-sm-padding { padding: 4px; }
         .history-container { max-height: 480px; overflow-y: auto; }
         
@@ -1362,24 +1371,29 @@ export default function App() {
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
+          /* FIX NAVBAR MOBILE PADDING & LOGO */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
-          .logo-icon-wrap { height: 28px; } 
+          .logo-icon-wrap { height: 28px; } /* Diperkecil agar proporsional sejajar tombol */
           .footer-logo { height: 44px; }
           
+          /* FIX TOMBOL LOGIN MOBILE (DIBUAT KECIL AGAR MUAT) */
           .btn-primary.btn-sm { font-size: 0.75rem; padding: 0 1rem !important; height: 32px; border-radius: 8px; }
           
-          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-md); border-left: none; border-right: none; }
+          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-md); border-left: none; border-right: none; box-sizing: border-box; }
           .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
           .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
           .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .style-toggle-btn { flex: 1; justify-content: center; }
           .flex-col-mobile { flex-direction: column; align-items: flex-start; }
           .steps-grid { flex-direction: column; gap: 2rem; }
-          .floating-element { display: none; } 
+          
+          /* HIDE FLOATING DECOR ON MOBILE */
+          .hidden-mobile { display: none !important; }
         }
       `}</style>
     </div>
   );
 }
+
 
