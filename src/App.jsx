@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "gsap"; // GANTI INI MENJADI: import gsap from "gsap"; SAAT DI GITHUB/LOCAL
+import gsap from "https://esm.sh/gsap"; // GANTI INI: import gsap from "gsap";
+import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // GANTI INI: import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -19,6 +20,9 @@ import {
   addDoc,
   onSnapshot,
 } from "firebase/firestore";
+
+// Register GSAP Plugin
+gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
@@ -59,6 +63,7 @@ export default function App() {
   // App Routing
   const [currentView, setCurrentView] = useState("landing");
   const landingRef = useRef(null);
+  const appRef = useRef(null);
 
   // User & Credit State
   const [user, setUser] = useState(null);
@@ -70,9 +75,9 @@ export default function App() {
   const [topupAmount, setTopupAmount] = useState(50);
   const [isPaying, setIsPaying] = useState(false);
 
-  // Mode State (Tabs & Style)
+  // Mode State
   const [inputMode, setInputMode] = useState("doi");
-  const [citationStyle, setCitationStyle] = useState("footnote"); // "footnote" | "apa7"
+  const [citationStyle, setCitationStyle] = useState("footnote");
 
   // Form States
   const [doiInput, setDoiInput] = useState("");
@@ -103,20 +108,41 @@ export default function App() {
 
   // --- GSAP ANIMATIONS ---
   useEffect(() => {
-    if (currentView === "landing" && landingRef.current) {
+    if (currentView === "landing" && appRef.current) {
       const ctx = gsap.context(() => {
         const tl = gsap.timeline();
         
-        tl.fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" })
-          .fromTo(".hero-title-line", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: "power3.out" }, "-=0.3")
-          .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.5")
-          .fromTo(".hero-cta", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, "-=0.5")
-          .fromTo(".hero-trusted", { opacity: 0 }, { opacity: 1, duration: 1 }, "-=0.2")
-          .fromTo(".preview-card-anim", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.4")
-          .fromTo(".step-card-anim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power2.out" }, "-=0.2")
-          .fromTo(".feature-card-anim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }, "-=0.4")
-          .fromTo(".pricing-card-anim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, "-=0.2");
-      }, landingRef);
+        // 1. Entrance Animations (Hero)
+        tl.fromTo(".navbar-wrapper", { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
+          .fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          // Animate per-word on title
+          .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
+          .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
+          .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          .fromTo(".hero-trusted", { opacity: 0 }, { opacity: 1, duration: 1 }, "-=0.2");
+
+        // 2. ScrollTrigger Animations (Terminal, Steps, Features, Pricing)
+        gsap.fromTo(".preview-card-anim", 
+          { opacity: 0, y: 60 }, 
+          { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 80%" } }
+        );
+
+        gsap.fromTo(".step-card-anim", 
+          { opacity: 0, y: 40 }, 
+          { opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } }
+        );
+
+        gsap.fromTo(".feature-card-anim", 
+          { opacity: 0, y: 40 }, 
+          { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: "power2.out", scrollTrigger: { trigger: ".features-section", start: "top 80%" } }
+        );
+
+        gsap.fromTo(".pricing-card-anim", 
+          { opacity: 0, scale: 0.95, y: 40 }, 
+          { opacity: 1, scale: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".pricing-section", start: "top 85%" } }
+        );
+
+      }, appRef);
 
       return () => ctx.revert();
     }
@@ -359,7 +385,8 @@ export default function App() {
     return { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal, page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" };
   };
 
-  const searchByTitleAI = async (rawTitle) => {
+  // Diubah namanya menjadi searchByTitleFallback untuk membersihkan elemen "AI"
+  const searchByTitleFallback = async (rawTitle) => {
     const cleanTitle = rawTitle.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar|\.pdf)/gi, "").trim();
     if (cleanTitle.length < 10) return null;
     try {
@@ -445,8 +472,8 @@ export default function App() {
         const mlData = await mlRes.json();
         const mlTitle = mlData.data?.title || "";
         if (mlTitle && !mlTitle.toLowerCase().includes("just a moment") && !mlTitle.toLowerCase().includes("cloudflare")) {
-          const aiResult = await searchByTitleAI(mlTitle);
-          if (aiResult) return aiResult;
+          const fallbackResult = await searchByTitleFallback(mlTitle);
+          if (fallbackResult) return fallbackResult;
           let rawAuthor = mlData.data?.author || mlData.data?.publisher || "";
           return {
             authorFootnote: rawAuthor ? formatAuthorsFootnote([{ family: rawAuthor }]) : "Penulis Tidak Diketahui",
@@ -580,8 +607,8 @@ export default function App() {
     }
 
     if (searchTitle) {
-      const aiResult = await searchByTitleAI(searchTitle);
-      if (aiResult) return aiResult;
+      const fallbackResult = await searchByTitleFallback(searchTitle);
+      if (fallbackResult) return fallbackResult;
     }
 
     if (parsed.success) return parsed.data;
@@ -786,7 +813,7 @@ export default function App() {
   const CloseIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="20" width="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
   const ArrowRightIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>);
   
-  // Custom Feature Icons (SaaS Grade)
+  // Custom Feature Icons
   const ShieldIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>);
   const SparklesIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>);
   const ZapIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
@@ -807,7 +834,7 @@ export default function App() {
   );
 
   return (
-    <div className="app-wrapper pattern-bg">
+    <div className="app-wrapper pattern-bg" ref={appRef}>
       {/* Peringatan ketika dibuka di Canvas/Tanpa Env */}
       {!firebaseConfig.apiKey && (
         <div className="env-warning">
@@ -868,7 +895,7 @@ export default function App() {
         </div>
       )}
 
-      {/* NAVBAR */}
+      {/* FIXED NAVBAR */}
       <div className="navbar-wrapper">
         <nav className="navbar">
           <div className="nav-container">
@@ -895,482 +922,489 @@ export default function App() {
         </nav>
       </div>
 
-      {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
-      {currentView === "landing" && (
-        <main className="main-content z-10 relative" ref={landingRef}>
-          {/* Hero Section */}
-          <section id="hero" className="hero-section">
-            <div className="container text-center relative">
-              <div className="hero-glow-bg"></div>
-              
-              <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
-                <span className="pulse-dot"></span> Tools Sitasi Cerdas Indonesia
-              </div>
-              
-              <h1 className="hero-title">
-                <div className="hero-title-line">Ekstrak Referensi Jurnal</div>
-                <div className="hero-title-line"><span className="text-gradient">Dalam Hitungan Detik.</span></div>
-              </h1>
-              
-              <p className="hero-subtitle mx-auto mt-6">
-                Berhenti menyusun daftar pustaka secara manual. Ekstrak metadata
-                dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan presisi AI tinggi.
-              </p>
-              
-              <div className="hero-cta mt-10">
-                <button onClick={handleLoginAndEnter} className="btn-primary btn-lg shadow-glow" disabled={loading}>
-                  {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
-                </button>
-                <div className="hero-trusted mt-6 flex items-center justify-center gap-3">
-                  <div className="avatar-group flex">
-                     <div className="avatar"></div>
-                     <div className="avatar"></div>
-                     <div className="avatar"></div>
+      {/* --- MAIN CONTENT (ACCOUNT FOR FIXED NAVBAR) --- */}
+      <div className="content-padding-top">
+        {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
+        {currentView === "landing" && (
+          <main className="main-content z-10 relative" ref={landingRef}>
+            {/* Hero Section */}
+            <section id="hero" className="hero-section">
+              <div className="container text-center relative">
+                <div className="hero-glow-bg"></div>
+                
+                <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
+                  <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
+                </div>
+                
+                <h1 className="hero-title" style={{ perspective: "1000px" }}>
+                  <div className="hero-title-line">
+                    <span className="title-word inline-block">Ekstrak</span> <span className="title-word inline-block">Referensi</span> <span className="title-word inline-block">Jurnal</span>
                   </div>
-                  <p className="text-xs text-muted font-medium m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Live Preview Section */}
-          <section className="preview-section mt-10 pb-16">
-            <div className="container">
-              <div className="preview-card-anim preview-card glass-panel shadow-premium-glow">
-                <div className="preview-header">
-                  <div className="preview-dots"><span></span><span></span><span></span></div>
-                  <span className="text-xs font-semibold text-muted font-mono">terminal_output.sh</span>
-                </div>
-                <div className="preview-body grid-2 gap-6">
-                  <div className="preview-col border-r pr-4">
-                    <span className="text-xs font-bold text-muted uppercase tracking-wide flex items-center gap-2 mb-4">
-                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Input Tautan / DOI
-                    </span>
-                    <div className="preview-mock-input font-mono text-sm">
-                      <span className="text-muted mr-2">$</span> https://www.academia.edu/download/111297711/214.pdf
-                    </div>
-                    <div className="mt-8 flex items-center justify-center gap-3 text-sm text-primary font-semibold p-4 bg-primary-subtle rounded-md border border-color">
-                      <span className="loading-spinner"></span> <span>AI Mengekstrak Metadata...</span>
-                    </div>
+                  <div className="hero-title-line">
+                    <span className="text-gradient title-word inline-block">Dalam</span> <span className="text-gradient title-word inline-block">Hitungan</span> <span className="text-gradient title-word inline-block">Detik.</span>
                   </div>
-                  <div className="preview-col pl-2">
-                    <span className="text-xs font-bold text-success uppercase tracking-wide flex items-center gap-2 mb-4">
-                      <CheckIcon /> Ekstraksi Sukses
-                    </span>
-                    <div className="preview-mock-output">
-                      <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📝 Catatan Kaki:</strong>
-                      Budi Santoso (2024) Analisis Pajak PPh 21 Terhadap UMKM. Jurnal Ekonomi Terapan. Jakarta, hal. 12-25.
-                    </div>
-                    <div className="preview-mock-output mt-3 border-l-apa">
-                      <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📑 APA 7th Edition:</strong>
-                      Santoso, B. (2024). Analisis Pajak PPh 21 Terhadap UMKM. <i>Jurnal Ekonomi Terapan</i>.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* How It Works Section */}
-          <section className="steps-section py-16 bg-surface-alt border-y border-color">
-             <div className="container text-center">
-                <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
-                <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
-                <div className="steps-grid">
-                   <div className="step-card-anim step-card">
-                      <div className="step-icon">1</div>
-                      <h4 className="font-bold text-lg mb-2">Salin Tautan</h4>
-                      <p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p>
-                   </div>
-                   <div className="step-card-anim step-connector hidden-mobile"></div>
-                   <div className="step-card-anim step-card">
-                      <div className="step-icon">2</div>
-                      <h4 className="font-bold text-lg mb-2">AI Menganalisis</h4>
-                      <p className="text-sm text-muted">Sistem pintar kami akan menembus PDF dan mengekstrak data penting.</p>
-                   </div>
-                   <div className="step-card-anim step-connector hidden-mobile"></div>
-                   <div className="step-card-anim step-card">
-                      <div className="step-icon">3</div>
-                      <h4 className="font-bold text-lg mb-2">Selesai</h4>
-                      <p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p>
-                   </div>
-                </div>
-             </div>
-          </section>
-
-          {/* Features Detail */}
-          <section id="features" className="features-section pt-20 pb-16">
-            <div className="container text-center">
-              <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
-              <div className="grid-3">
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
-                  <div className="feature-icon-box text-primary"><ShieldIcon /></div>
-                  <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
-                  <p className="text-muted mt-2 text-sm leading-relaxed">
-                    Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).
-                  </p>
-                </div>
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
-                  <div className="feature-icon-box text-primary"><SparklesIcon /></div>
-                  <h3 className="text-lg font-bold">AI Self-Healing</h3>
-                  <p className="text-muted mt-2 text-sm leading-relaxed">
-                    Jika jurnal PDF rusak, AI berbasis Semantic Scholar kami otomatis melacak dan merekonstruksi metadata asli.
-                  </p>
-                </div>
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
-                  <div className="feature-icon-box text-primary"><ZapIcon /></div>
-                  <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
-                  <p className="text-muted mt-2 text-sm leading-relaxed">
-                    Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Pricing & Transparency */}
-          <section className="pricing-section pb-24">
-            <div className="container text-center">
-              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
-                <div className="absolute-glow"></div>
-                <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs">Paling Diminati</div>
-                <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
-                <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
-                  Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.
+                </h1>
+                
+                <p className="hero-subtitle mx-auto mt-6">
+                  Berhenti menyusun daftar pustaka secara manual. Sistem mengekstrak metadata
+                  dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan presisi tinggi.
                 </p>
-
-                <div className="price-huge relative z-10">
-                  <span className="currency font-semibold">Rp</span>
-                  750
-                  <span className="suffix font-medium text-muted">
-                    / Sitasi Sukses
-                  </span>
-                </div>
-
-                <div className="pricing-divider"></div>
-
-                <ul className="pricing-list relative z-10">
-                  <li>
-                    <div className="icon-wrap"><CheckIcon /></div> 
-                    <span>Gratis 5 Kredit untuk pengguna baru.</span>
-                  </li>
-                  <li>
-                    <div className="icon-wrap"><CheckIcon /></div> 
-                    <span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span>
-                  </li>
-                  <li>
-                    <div className="icon-wrap"><CheckIcon /></div> 
-                    <span>Mendukung format Footnote & APA 7th Edition.</span>
-                  </li>
-                  <li>
-                    <div className="icon-wrap"><CheckIcon /></div> 
-                    <span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span>
-                  </li>
-                </ul>
-
-                <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
-                  Mulai Ruang Kerja Anda <ArrowRightIcon />
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <footer className="footer">
-            <div className="container footer-content">
-              <div className="footer-brand flex items-center justify-center mb-5">
-                <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
-              </div>
-              <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
-                Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
-              </p>
-              <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex justify-center gap-6">
-                 <span>© {new Date().getFullYear()} FlashCite.</span>
-                 <a href="#" className="footer-link">Kebijakan Privasi</a>
-                 <a href="#" className="footer-link">Syarat & Ketentuan</a>
-              </div>
-            </div>
-          </footer>
-        </main>
-      )}
-
-      {/* --- VIEW 2: WORKSPACE APP --- */}
-      {currentView === "tool" && user && (
-        <section className="tool-section animate-fade-in z-10 relative mt-4">
-          <div className="container tool-container">
-            <div className="tool-header mb-8 text-center sm:text-left">
-              <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
-              <p className="text-muted text-sm mt-2 font-medium">
-                Sistem ekstraksi metadata aktif. Masukkan referensi Anda.
-              </p>
-            </div>
-
-            <div className="card glass-panel shadow-premium">
-              <div className="segmented-control-wrapper p-2 border-b border-color">
-                <div className="segmented-control scrollable-tabs">
-                  <button className={`segmented-btn ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>Nomor DOI</button>
-                  <button className={`segmented-btn ${inputMode === "url" ? "active" : ""}`} onClick={() => setInputMode("url")}>Link Web/PDF</button>
-                  <button className={`segmented-btn ${inputMode === "batch" ? "active" : ""}`} onClick={() => setInputMode("batch")}>Mode Batch</button>
-                  <button className={`segmented-btn ${inputMode === "manual" ? "active" : ""}`} onClick={() => setInputMode("manual")}>Manual</button>
-                  <button className={`segmented-btn ${inputMode === "history" ? "active" : ""}`} onClick={() => setInputMode("history")}>Riwayat</button>
-                </div>
-              </div>
-
-              <div className="card-body p-6 sm:p-8">
-                {/* --- TOGGLE CITATION STYLE (GLOBAL SELECTOR) --- */}
-                <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
-                   <div className="mb-4 sm:mb-0 text-center sm:text-left">
-                     <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
-                     <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
-                   </div>
-                   <div className="style-toggle w-full sm:w-auto">
-                      <button className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
-                      <button className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
-                   </div>
-                </div>
-
-                {inputMode === "doi" && (
-                  <div className="animate-fade-in">
-                    <div className="form-group mb-5 relative">
-                      <label className="input-label">Nomor DOI Referensi</label>
-                      <input type="text" className="input-field-modern" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
+                
+                <div className="hero-cta mt-10">
+                  <button onClick={handleLoginAndEnter} className="btn-primary btn-lg shadow-glow" disabled={loading}>
+                    {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
+                  </button>
+                  <div className="hero-trusted mt-6 flex items-center justify-center gap-3">
+                    <div className="avatar-group flex">
+                       <div className="avatar"></div>
+                       <div className="avatar"></div>
+                       <div className="avatar"></div>
                     </div>
-                    {citationStyle === "footnote" && (
-                      <div className="form-group mb-8 relative animate-fade-in">
-                        <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
-                        <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
-                      </div>
-                    )}
-                    <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchDOI} disabled={loading || !doiInput}>
-                      {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Kredit)"}
-                    </button>
+                    <p className="text-xs text-muted font-medium m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
                   </div>
-                )}
+                </div>
+              </div>
+            </section>
 
-                {inputMode === "url" && (
-                  <div className="animate-fade-in">
-                    <div className="form-group mb-5 relative">
-                      <label className="input-label">Tautan Artikel / PDF</label>
-                      <input type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
+            {/* Live Preview Section */}
+            <section className="preview-section mt-6 pb-16">
+              <div className="container">
+                <div className="preview-card-anim preview-card glass-panel shadow-premium-glow">
+                  <div className="preview-header">
+                    <div className="preview-dots"><span></span><span></span><span></span></div>
+                    <span className="text-xs font-semibold text-muted font-mono">terminal_output.sh</span>
+                  </div>
+                  <div className="preview-body grid-2 gap-6">
+                    <div className="preview-col border-r pr-4">
+                      <span className="text-xs font-bold text-muted uppercase tracking-wide flex items-center gap-2 mb-4">
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Input Tautan / DOI
+                      </span>
+                      <div className="preview-mock-input font-mono text-sm">
+                        <span className="text-muted mr-2">$</span> https://www.academia.edu/download/111297711/214.pdf
+                      </div>
+                      <div className="mt-8 flex items-center justify-center gap-3 text-sm text-primary font-semibold p-4 bg-primary-subtle rounded-md border border-color">
+                        <span className="loading-spinner"></span> <span>Sistem Mengekstrak Metadata...</span>
+                      </div>
                     </div>
-                    {citationStyle === "footnote" && (
-                      <div className="form-group mb-8 relative animate-fade-in">
-                        <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
-                        <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                    <div className="preview-col pl-2">
+                      <span className="text-xs font-bold text-success uppercase tracking-wide flex items-center gap-2 mb-4">
+                        <CheckIcon /> Ekstraksi Sukses
+                      </span>
+                      <div className="preview-mock-output">
+                        <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📝 Catatan Kaki:</strong>
+                        Budi Santoso (2024) Analisis Pajak PPh 21 Terhadap UMKM. Jurnal Ekonomi Terapan. Jakarta, hal. 12-25.
                       </div>
-                    )}
-                    <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchURL} disabled={loading || !urlInput}>
-                      {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Kredit)"}
-                    </button>
+                      <div className="preview-mock-output mt-3 border-l-apa">
+                        <strong className="text-xs uppercase text-muted tracking-wide block mb-1">📑 APA 7th Edition:</strong>
+                        Santoso, B. (2024). Analisis Pajak PPh 21 Terhadap UMKM. <i>Jurnal Ekonomi Terapan</i>.
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
+              </div>
+            </section>
 
-                {inputMode === "manual" && (
-                  <div className="animate-fade-in">
-                    <div className="grid-2 gap-5">
-                      <div className="col-span-2 form-group">
-                        <label className="input-label">Nama Penulis Lengkap *</label>
-                        <input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" />
-                      </div>
-                      <div className="col-span-2 form-group">
-                        <label className="input-label">Judul Artikel *</label>
-                        <input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" />
-                      </div>
-                      <div className="form-group">
-                        <label className="input-label">Nama Jurnal</label>
-                        <input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" />
-                      </div>
-                      <div className="form-group">
-                        <label className="input-label">Tahun Terbit *</label>
-                        <input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" />
-                      </div>
-                      <div className="form-group">
-                        <label className="input-label">Volume</label>
-                        <input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" />
-                      </div>
-                      <div className="form-group">
-                        <label className="input-label">Isu / Nomor</label>
-                        <input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" />
-                      </div>
-                      <div className="form-group">
-                        <label className="input-label">Halaman</label>
-                        <input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" />
+            {/* How It Works Section */}
+            <section className="steps-section py-16 bg-surface-alt border-y border-color">
+               <div className="container text-center">
+                  <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
+                  <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
+                  <div className="steps-grid">
+                     <div className="step-card-anim step-card">
+                        <div className="step-icon">1</div>
+                        <h4 className="font-bold text-lg mb-2">Salin Tautan</h4>
+                        <p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p>
+                     </div>
+                     <div className="step-card-anim step-connector hidden-mobile"></div>
+                     <div className="step-card-anim step-card">
+                        <div className="step-icon">2</div>
+                        <h4 className="font-bold text-lg mb-2">Sistem Memproses</h4>
+                        <p className="text-sm text-muted">Mesin ekstraksi kami akan memproses PDF/Link dan menarik data penting.</p>
+                     </div>
+                     <div className="step-card-anim step-connector hidden-mobile"></div>
+                     <div className="step-card-anim step-card">
+                        <div className="step-icon">3</div>
+                        <h4 className="font-bold text-lg mb-2">Selesai</h4>
+                        <p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p>
+                     </div>
+                  </div>
+               </div>
+            </section>
+
+            {/* Features Detail */}
+            <section id="features" className="features-section pt-20 pb-16">
+              <div className="container text-center">
+                <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
+                <div className="grid-3">
+                  <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                    <div className="feature-icon-box text-primary"><ShieldIcon /></div>
+                    <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">
+                      Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).
+                    </p>
+                  </div>
+                  <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                    <div className="feature-icon-box text-primary"><SparklesIcon /></div>
+                    <h3 className="text-lg font-bold">Smart Metadata Recovery</h3>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">
+                      Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.
+                    </p>
+                  </div>
+                  <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                    <div className="feature-icon-box text-primary"><ZapIcon /></div>
+                    <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
+                    <p className="text-muted mt-2 text-sm leading-relaxed">
+                      Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Pricing & Transparency */}
+            <section className="pricing-section pb-24">
+              <div className="container text-center">
+                <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
+                  <div className="absolute-glow"></div>
+                  <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs">Paling Diminati</div>
+                  <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
+                  <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">
+                    Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.
+                  </p>
+
+                  <div className="price-huge relative z-10">
+                    <span className="currency font-semibold">Rp</span>
+                    750
+                    <span className="suffix font-medium text-muted">
+                      / Sitasi Sukses
+                    </span>
+                  </div>
+
+                  <div className="pricing-divider"></div>
+
+                  <ul className="pricing-list relative z-10">
+                    <li>
+                      <div className="icon-wrap"><CheckIcon /></div> 
+                      <span>Gratis 5 Kredit untuk pengguna baru.</span>
+                    </li>
+                    <li>
+                      <div className="icon-wrap"><CheckIcon /></div> 
+                      <span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span>
+                    </li>
+                    <li>
+                      <div className="icon-wrap"><CheckIcon /></div> 
+                      <span>Mendukung format Footnote & APA 7th Edition.</span>
+                    </li>
+                    <li>
+                      <div className="icon-wrap"><CheckIcon /></div> 
+                      <span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span>
+                    </li>
+                  </ul>
+
+                  <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
+                    Mulai Ruang Kerja Anda <ArrowRightIcon />
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <footer className="footer">
+              <div className="container footer-content">
+                <div className="footer-brand flex items-center justify-center mb-5">
+                  <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
+                </div>
+                <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
+                  Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
+                </p>
+                <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex justify-center gap-6">
+                   <span>© {new Date().getFullYear()} FlashCite.</span>
+                   <a href="#" className="footer-link">Kebijakan Privasi</a>
+                   <a href="#" className="footer-link">Syarat & Ketentuan</a>
+                </div>
+              </div>
+            </footer>
+          </main>
+        )}
+
+        {/* --- VIEW 2: WORKSPACE APP --- */}
+        {currentView === "tool" && user && (
+          <section className="tool-section animate-fade-in z-10 relative mt-4 pb-16">
+            <div className="container tool-container">
+              <div className="tool-header mb-8 text-center sm:text-left">
+                <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
+                <p className="text-muted text-sm mt-2 font-medium">
+                  Sistem ekstraksi metadata aktif. Masukkan referensi Anda.
+                </p>
+              </div>
+
+              <div className="card glass-panel shadow-premium">
+                <div className="segmented-control-wrapper p-2 border-b border-color">
+                  <div className="segmented-control scrollable-tabs">
+                    <button className={`segmented-btn ${inputMode === "doi" ? "active" : ""}`} onClick={() => setInputMode("doi")}>Nomor DOI</button>
+                    <button className={`segmented-btn ${inputMode === "url" ? "active" : ""}`} onClick={() => setInputMode("url")}>Link Web/PDF</button>
+                    <button className={`segmented-btn ${inputMode === "batch" ? "active" : ""}`} onClick={() => setInputMode("batch")}>Mode Batch</button>
+                    <button className={`segmented-btn ${inputMode === "manual" ? "active" : ""}`} onClick={() => setInputMode("manual")}>Manual</button>
+                    <button className={`segmented-btn ${inputMode === "history" ? "active" : ""}`} onClick={() => setInputMode("history")}>Riwayat</button>
+                  </div>
+                </div>
+
+                <div className="card-body p-6 sm:p-8">
+                  {/* --- TOGGLE CITATION STYLE (GLOBAL SELECTOR) --- */}
+                  <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
+                     <div className="mb-4 sm:mb-0 text-center sm:text-left">
+                       <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
+                       <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
+                     </div>
+                     <div className="style-toggle w-full sm:w-auto">
+                        <button className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
+                        <button className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
+                     </div>
+                  </div>
+
+                  {inputMode === "doi" && (
+                    <div className="animate-fade-in">
+                      <div className="form-group mb-5 relative">
+                        <label className="input-label">Nomor DOI Referensi</label>
+                        <input type="text" className="input-field-modern" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
                       </div>
                       {citationStyle === "footnote" && (
-                        <div className="form-group animate-fade-in">
-                          <label className="input-label">Kota Terbit</label>
-                          <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" />
+                        <div className="form-group mb-8 relative animate-fade-in">
+                          <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                          <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                         </div>
                       )}
+                      <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchDOI} disabled={loading || !doiInput}>
+                        {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Kredit)"}
+                      </button>
                     </div>
-                    <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>
-                      Generate Manual (1 Kredit)
-                    </button>
-                  </div>
-                )}
+                  )}
 
-                {inputMode === "batch" && (
-                  <div className="animate-fade-in">
-                    <div className="form-group mb-5">
-                      <label className="input-label">Daftar Link / DOI</label>
-                      <textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" />
+                  {inputMode === "url" && (
+                    <div className="animate-fade-in">
+                      <div className="form-group mb-5 relative">
+                        <label className="input-label">Tautan Artikel / PDF</label>
+                        <input type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
+                      </div>
+                      {citationStyle === "footnote" && (
+                        <div className="form-group mb-8 relative animate-fade-in">
+                          <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                          <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                        </div>
+                      )}
+                      <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchURL} disabled={loading || !urlInput}>
+                        {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Kredit)"}
+                      </button>
                     </div>
-                    {citationStyle === "footnote" && (
-                      <div className="form-group mb-8 animate-fade-in">
-                        <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
-                        <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" />
-                      </div>
-                    )}
-                    <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
-                      {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
-                    </button>
-                  </div>
-                )}
+                  )}
 
-                {/* TAB HISTORY */}
-                {inputMode === "history" && (
-                  <div className="animate-fade-in history-container custom-scrollbar pr-3">
-                    {history.length === 0 ? (
-                      <div className="text-center text-muted p-10 flex flex-col items-center">
-                        <span className="text-4xl mb-3 opacity-20">🗂️</span>
-                        Ruang riwayat Anda masih kosong.
-                      </div>
-                    ) : (
-                      history.map((item) => {
-                        const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia.");
-                        const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia.");
-                        return (
-                          <div key={item.id} className="history-item mb-5 pb-5 border-b border-color last-no-border">
-                            <div className="flex justify-between items-center mb-3">
-                              <span className="badge-pill text-xs px-2 py-0.5">{item.type}</span>
-                              <span className="text-xs font-mono text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
-                            </div>
-                            <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">{item.title}</h4>
-                            <div className="flex gap-2 mt-4 flex-col-mobile">
-                              <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
-                                {copiedId === `hist-in-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
-                              </button>
-                              <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
-                                {copiedId === `hist-dp-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
-                              </button>
-                            </div>
+                  {inputMode === "manual" && (
+                    <div className="animate-fade-in">
+                      <div className="grid-2 gap-5">
+                        <div className="col-span-2 form-group">
+                          <label className="input-label">Nama Penulis Lengkap *</label>
+                          <input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" />
+                        </div>
+                        <div className="col-span-2 form-group">
+                          <label className="input-label">Judul Artikel *</label>
+                          <input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" />
+                        </div>
+                        <div className="form-group">
+                          <label className="input-label">Nama Jurnal</label>
+                          <input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" />
+                        </div>
+                        <div className="form-group">
+                          <label className="input-label">Tahun Terbit *</label>
+                          <input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" />
+                        </div>
+                        <div className="form-group">
+                          <label className="input-label">Volume</label>
+                          <input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" />
+                        </div>
+                        <div className="form-group">
+                          <label className="input-label">Isu / Nomor</label>
+                          <input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" />
+                        </div>
+                        <div className="form-group">
+                          <label className="input-label">Halaman</label>
+                          <input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" />
+                        </div>
+                        {citationStyle === "footnote" && (
+                          <div className="form-group animate-fade-in">
+                            <label className="input-label">Kota Terbit</label>
+                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" />
                           </div>
-                        );
-                      })
+                        )}
+                      </div>
+                      <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>
+                        Generate Manual (1 Kredit)
+                      </button>
+                    </div>
+                  )}
+
+                  {inputMode === "batch" && (
+                    <div className="animate-fade-in">
+                      <div className="form-group mb-5">
+                        <label className="input-label">Daftar Link / DOI</label>
+                        <textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" />
+                      </div>
+                      {citationStyle === "footnote" && (
+                        <div className="form-group mb-8 animate-fade-in">
+                          <label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label>
+                          <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" />
+                        </div>
+                      )}
+                      <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                        {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* TAB HISTORY */}
+                  {inputMode === "history" && (
+                    <div className="animate-fade-in history-container custom-scrollbar pr-3">
+                      {history.length === 0 ? (
+                        <div className="text-center text-muted p-10 flex flex-col items-center">
+                          <span className="text-4xl mb-3 opacity-20">🗂️</span>
+                          Ruang riwayat Anda masih kosong.
+                        </div>
+                      ) : (
+                        history.map((item) => {
+                          const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia.");
+                          const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia.");
+                          return (
+                            <div key={item.id} className="history-item mb-5 pb-5 border-b border-color last-no-border">
+                              <div className="flex justify-between items-center mb-3">
+                                <span className="badge-pill text-xs px-2 py-0.5">{item.type}</span>
+                                <span className="text-xs font-mono text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
+                              </div>
+                              <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">{item.title}</h4>
+                              <div className="flex gap-2 mt-4 flex-col-mobile">
+                                <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
+                                  {copiedId === `hist-in-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
+                                </button>
+                                <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
+                                  {copiedId === `hist-dp-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
+                      <div className="mt-0.5"><WarningIcon /></div> 
+                      <span className="leading-relaxed font-medium">{error}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {loading && inputMode !== "batch" && <SkeletonLoader />}
+              {loading && inputMode === "batch" && (
+                <>
+                  <SkeletonLoader />
+                  <div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div>
+                </>
+              )}
+
+              {/* RESULTS AREA: SINGLE */}
+              {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
+                <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
+                  <div className="card-body p-6 sm:p-8">
+                    <div className="result-block">
+                      <div className="result-header">
+                        <span>{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
+                        <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
+                          {copiedId === "single-in" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
+                        </button>
+                      </div>
+                      <div className="result-html" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
+                    </div>
+                    <div className="result-block mt-8">
+                      <div className="result-header">
+                        <span>{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
+                        <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
+                          {copiedId === "single-dp" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
+                        </button>
+                      </div>
+                      <div className="result-html" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* RESULTS AREA: BATCH */}
+              {!loading && batchResults.length > 0 && inputMode === "batch" && (
+                <div className="card glass-panel mt-8 animate-slide-up border-t-success">
+                  <div className="card-body p-6 sm:p-8">
+                    {batchSuccesses.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
+                          <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
+                        </div>
+                        {batchSuccesses.map((r, index) => {
+                          const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
+                          const copyId = `batch-in-${index}`;
+                          return (
+                            <div className="result-block mb-5" key={copyId}>
+                              <div className="result-header bg-subtle">
+                                <span className="truncate font-mono text-xs">{r.line}</span>
+                                <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                  {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
+                                </button>
+                              </div>
+                              <div className="result-html text-sm" dangerouslySetInnerHTML={{ __html: content }} />
+                            </div>
+                          );
+                        })}
+                        
+                        <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
+                          <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
+                        </div>
+                        {sortedBatchDafpus.map((r, index) => {
+                          const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
+                          const copyId = `batch-dp-${index}`;
+                          return (
+                            <div className="result-block mb-5" key={copyId}>
+                              <div className="result-header bg-subtle">
+                                <span className="truncate font-mono text-xs">{r.line}</span>
+                                <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                  {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
+                                </button>
+                              </div>
+                              <div className="result-html text-sm" dangerouslySetInnerHTML={{ __html: content }} />
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {batchErrors.length > 0 && (
+                      <div className="error-alert mt-8 p-5 bg-error-subtle border-error border rounded-lg">
+                        <strong className="flex items-center gap-2 mb-3 text-error"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
+                        <ul className="m-0 pl-5 text-error text-sm space-y-2 opacity-90">
+                          {batchErrors.map((err, i) => (
+                            <li key={i} className="break-all"><span className="font-mono text-xs font-semibold mr-2">{err.line}</span><br className="sm:hidden" />{err.error}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
-                )}
-
-                {error && (
-                  <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
-                    <div className="mt-0.5"><WarningIcon /></div> 
-                    <span className="leading-relaxed font-medium">{error}</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-
-            {loading && inputMode !== "batch" && <SkeletonLoader />}
-            {loading && inputMode === "batch" && (
-              <>
-                <SkeletonLoader />
-                <div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div>
-              </>
-            )}
-
-            {/* RESULTS AREA: SINGLE */}
-            {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
-              <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
-                <div className="card-body p-6 sm:p-8">
-                  <div className="result-block">
-                    <div className="result-header">
-                      <span>{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
-                      <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
-                        {copiedId === "single-in" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
-                      </button>
-                    </div>
-                    <div className="result-html" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
-                  </div>
-                  <div className="result-block mt-8">
-                    <div className="result-header">
-                      <span>{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
-                      <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
-                        {copiedId === "single-dp" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
-                      </button>
-                    </div>
-                    <div className="result-html" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* RESULTS AREA: BATCH */}
-            {!loading && batchResults.length > 0 && inputMode === "batch" && (
-              <div className="card glass-panel mt-8 animate-slide-up border-t-success">
-                <div className="card-body p-6 sm:p-8">
-                  {batchSuccesses.length > 0 && (
-                    <>
-                      <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
-                        <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
-                      </div>
-                      {batchSuccesses.map((r, index) => {
-                        const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
-                        const copyId = `batch-in-${index}`;
-                        return (
-                          <div className="result-block mb-5" key={copyId}>
-                            <div className="result-header bg-subtle">
-                              <span className="truncate font-mono text-xs">{r.line}</span>
-                              <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
-                                {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
-                              </button>
-                            </div>
-                            <div className="result-html text-sm" dangerouslySetInnerHTML={{ __html: content }} />
-                          </div>
-                        );
-                      })}
-                      
-                      <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
-                        <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
-                      </div>
-                      {sortedBatchDafpus.map((r, index) => {
-                        const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
-                        const copyId = `batch-dp-${index}`;
-                        return (
-                          <div className="result-block mb-5" key={copyId}>
-                            <div className="result-header bg-subtle">
-                              <span className="truncate font-mono text-xs">{r.line}</span>
-                              <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
-                                {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
-                              </button>
-                            </div>
-                            <div className="result-html text-sm" dangerouslySetInnerHTML={{ __html: content }} />
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
-                  {batchErrors.length > 0 && (
-                    <div className="error-alert mt-8 p-5 bg-error-subtle border-error border rounded-lg">
-                      <strong className="flex items-center gap-2 mb-3 text-error"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
-                      <ul className="m-0 pl-5 text-error text-sm space-y-2 opacity-90">
-                        {batchErrors.map((err, i) => (
-                          <li key={i} className="break-all"><span className="font-mono text-xs font-semibold mr-2">{err.line}</span><br className="sm:hidden" />{err.error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            <div style={{ height: "80px" }}></div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </div>
 
       {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
+        /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
         html, body, #root {
           margin: 0 !important;
           padding: 0 !important;
@@ -1380,7 +1414,6 @@ export default function App() {
           overflow-x: hidden;
         }
 
-        /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
         .app-wrapper {
           --bg-body: #fbfbfc;
           --bg-surface: rgba(255, 255, 255, 1);
@@ -1405,7 +1438,7 @@ export default function App() {
           --error-bg: #fef2f2;
           --error-text: #dc2626;
 
-          --nav-bg: rgba(255, 255, 255, 1);
+          --nav-bg: rgba(255, 255, 255, 0.85); /* Slightly transparent for blur effect */
           --skeleton-bg: #e4e4e7;
           --skeleton-hl: #f4f4f5;
 
@@ -1420,8 +1453,6 @@ export default function App() {
           display: flex;
           flex-direction: column;
           position: relative;
-          overflow-x: clip;
-          max-width: 100vw;
         }
 
         * { box-sizing: border-box; }
@@ -1503,14 +1534,17 @@ export default function App() {
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
-        /* NAVBAR FLOATING PILL */
+        /* FIXED NAVBAR FLOATING PILL */
         .navbar-wrapper {
-          position: sticky; top: 1.5rem; z-index: 100;
+          position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
+          pointer-events: none; /* Let clicks pass through outside the pill */
         }
         .navbar {
+          pointer-events: auto; /* Re-enable clicks on the actual pill */
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -1530,6 +1564,9 @@ export default function App() {
           cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
         }
         .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-solid); }
+
+        /* PADDING PENGGANTI NAVBAR FIXED */
+        .content-padding-top { padding-top: 100px; }
 
         /* BUTTONS */
         .btn-primary {
@@ -1552,12 +1589,14 @@ export default function App() {
         .btn-lg { padding: 1.125rem 2.5rem !important; font-size: 1.05rem; }
 
         /* HERO SECTION */
-        .hero-section { padding: 6rem 0 5rem; }
+        .hero-section { padding: 4rem 0 5rem; }
         .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface-solid); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
         @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
         
         .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; }
+        .hero-title-line { overflow: hidden; }
+        .title-word { display: inline-block; padding-right: 0.2em; }
         .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
         .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.08; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
         
@@ -1645,7 +1684,7 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; }
@@ -1690,7 +1729,7 @@ export default function App() {
           .pricing-card { padding: 2.5rem 1.5rem; margin: 0 1rem; width: auto; }
           .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
           .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
-          .hero-title { font-size: clamp(2rem, 8vw, 2.75rem); }
+          .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .style-toggle-btn { flex: 1; justify-content: center; }
           .flex-col-mobile { flex-direction: column; align-items: flex-start; }
           .steps-grid { flex-direction: column; gap: 2rem; }
