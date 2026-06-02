@@ -1438,7 +1438,7 @@ export default function App() {
           --error-bg: #fef2f2;
           --error-text: #dc2626;
 
-          --nav-bg: rgba(255, 255, 255, 0.85); /* Slightly transparent for blur effect */
+          --nav-bg: #ffffff; /* Menggunakan putih solid, bukan transparan */
           --skeleton-bg: #e4e4e7;
           --skeleton-hl: #f4f4f5;
 
@@ -1534,7 +1534,7 @@ export default function App() {
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
-        /* FIXED NAVBAR FLOATING PILL */
+        /* FIXED NAVBAR FLOATING PILL - DIHAPUS BLUR-NYA */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
@@ -1544,7 +1544,7 @@ export default function App() {
           pointer-events: auto; /* Re-enable clicks on the actual pill */
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          /* Blur dibuang: backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -1684,7 +1684,7 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; }
