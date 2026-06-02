@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "gsap"; // GANTI INI MENJADI: import gsap from "gsap"; SAAT DI GITHUB/LOCAL
+import gsap from "gsap";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -24,7 +24,6 @@ import {
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
 // ============================================================================
 
-// Bypass "empty-import-meta" warning in preview environments while keeping Vite compatibility
 const env = (import.meta && import.meta.env) || {};
 
 const firebaseConfig = {
@@ -57,7 +56,7 @@ if (firebaseConfig.apiKey) {
 // ============================================================================
 
 export default function App() {
-  // App Routing & Theme
+  // App Routing
   const [currentView, setCurrentView] = useState("landing");
   const landingRef = useRef(null);
 
@@ -1087,7 +1086,6 @@ export default function App() {
   // Komponen Logo Baru Menggunakan Video
   const VideoLogo = () => (
     <video
-      // GANTI URL DI BAWAH INI DENGAN PATH VIDEO LOGO ANDA, CONTOH: "/logo-kilat.mp4"
       src="/logo.mp4" 
       autoPlay
       loop
@@ -1098,80 +1096,38 @@ export default function App() {
   );
 
   const CheckIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      height="16"
-      width="16"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16">
       <polyline points="20 6 9 17 4 12"></polyline>
     </svg>
   );
   const CopyIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      height="18"
-      width="18"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18">
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
     </svg>
   );
   const WarningIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      height="18"
-      width="18"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18">
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
       <line x1="12" y1="9" x2="12" y2="13"></line>
       <line x1="12" y1="17" x2="12.01" y2="17"></line>
     </svg>
   );
   const CoinIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      height="18"
-      width="18"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18">
       <circle cx="12" cy="12" r="10"></circle>
       <path d="M12 8v8"></path>
       <path d="M8 12h8"></path>
     </svg>
   );
   const CloseIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      height="20"
-      width="20"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="20" width="20">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
   );
   const ArrowRightIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      height="18"
-      width="18"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" height="18" width="18">
       <line x1="5" y1="12" x2="19" y2="12"></line>
       <polyline points="12 5 19 12 12 19"></polyline>
     </svg>
@@ -2023,12 +1979,11 @@ export default function App() {
           padding: 0 !important;
           width: 100%;
           min-height: 100vh;
-          /* Memaksa background body mengikuti warna tema dari app-wrapper */
           background-color: var(--bg-body); 
+          overflow-x: hidden; /* <--- KUNCI MENCEGAH HORIZONTAL SCROLL */
         }
 
         .app-wrapper {
-          /* LIGHT MODE VARIABLES */
           --bg-body: #fbfbfc;
           --bg-surface: rgba(255, 255, 255, 1);
           --bg-surface-hover: rgba(243, 244, 246, 1);
@@ -2063,10 +2018,11 @@ export default function App() {
           background-color: var(--bg-body);
           color: var(--text-main);
           font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-          transition: background-color 0.4s ease, color 0.4s ease;
           display: flex;
           flex-direction: column;
           position: relative;
+          overflow-x: clip; /* Memastikan konten yang melebar dipotong */
+          max-width: 100vw;
         }
 
         * { box-sizing: border-box; }
@@ -2149,33 +2105,42 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-        .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
         /* NAVBAR FLOATING PILL */
         .navbar-wrapper {
-          position: sticky; /* Ini yang menahan navbar di atas */
-          top: 1.5rem;      /* Jarak dari ujung atas layar */
-          z-index: 100;
-          padding: 0 1.5rem; 
-          display: flex; 
-          justify-content: center;
+          position: sticky; top: 1.5rem; z-index: 100;
+          padding: 0 1.5rem; display: flex; justify-content: center;
         }
         .navbar {
           width: 100%; max-width: 800px; 
-          background: var(--nav-bg); /* Menggunakan warna putih padat */
+          background: var(--nav-bg); 
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
           box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-          transition: all 0.3s ease;
         }
 
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
         
-        .logo-icon-wrap { height: 34px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; }
+        /* LOGO FIX MENCEGAH GEPENG */
+        .logo-icon-wrap { 
+          height: 34px; 
+          aspect-ratio: 16 / 9; 
+          display: flex; 
+          align-items: center; 
+          justify-content: flex-start; 
+          border-radius: 0; 
+          flex-shrink: 0; /* KUNCI: Mencegah flexbox memeras logo */
+        }
         .footer-logo { height: 64px; justify-content: center; }
-        .video-logo-asset { height: 100%; width: auto; object-fit: contain; border-radius: 0; display: block; }
+        .video-logo-asset { 
+          width: 100%; 
+          height: 100%; 
+          object-fit: contain; /* Memastikan rasio video tetap terjaga */
+          border-radius: 0; 
+          display: block; 
+        }
         
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
         
@@ -2210,7 +2175,7 @@ export default function App() {
 
         /* HERO & FEATURES (ENTERPRISE SAAS) */
         .hero-section { padding: 6rem 0 5rem; }
-        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; backdrop-filter: blur(12px); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
         @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
         
@@ -2234,7 +2199,14 @@ export default function App() {
 
         .features-section { padding: 6rem 0; }
         .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        
+        /* GRID FIX UNTUK MENCEGAH SCROLL HORIZONTAL DI HP KECIL */
+        .grid-3 { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+          gap: 1.5rem; 
+        }
+
         .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
         .group-hover-effect:hover { transform: translateY(-8px); border-color: var(--text-muted); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1); }
         .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -2243,9 +2215,11 @@ export default function App() {
         .pricing-section { padding: 5rem 0 6rem; }
         .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); }
         .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
+        
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
         .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
+        
         .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
         .pricing-list li { font-size: 0.95rem; display: flex; gap: 12px; align-items: flex-start; color: var(--text-main); }
         .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
@@ -2295,7 +2269,7 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1rem; }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; }
@@ -2335,19 +2309,23 @@ export default function App() {
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
-        /* RESPONSIVE */
+        /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 640px) {
           .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           .navbar { border-radius: var(--radius-md); padding: 0.6rem 0.6rem 0.6rem 1rem; }
-          .pricing-card { padding: 2rem 1.5rem; border-radius: var(--radius-md); border-left: none; border-right: none; }
-          .price-huge { font-size: 3rem; }
+          .nav-container { padding: 0; }
+          .logo-icon-wrap { height: 32px; } /* Sedikit diperkecil di mobile agar tidak desak-desakan */
+          .footer-logo { height: 44px; }
+          .pricing-card { padding: 2rem 1.25rem; margin: 0 1rem; width: auto; } /* Mencegah overflow horizontal di pricing */
+          .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
+          .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
+          .hero-title { font-size: clamp(2rem, 8vw, 2.75rem); } /* Skala judul lebih adaptif di HP */
           .style-toggle-btn { flex: 1; justify-content: center; }
         }
       `}</style>
     </div>
   );
 }
-
 
