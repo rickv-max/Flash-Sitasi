@@ -2125,7 +2125,7 @@ export default function App() {
         
         /* LOGO FIX MENCEGAH GEPENG */
         .logo-icon-wrap { 
-          height: 44px; 
+          height: 64px; 
           aspect-ratio: 16 / 9; 
           display: flex; 
           align-items: center; 
