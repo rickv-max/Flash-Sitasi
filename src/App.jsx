@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "gsap"; // GANTI INI: import gsap from "gsap";
+import gsap from "https://esm.sh/gsap"; // GANTI INI: import gsap from "gsap";
 import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // GANTI INI: import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
@@ -927,10 +927,16 @@ export default function App() {
         {/* --- VIEW 1: LANDING PAGE (SaaS Enterprise Level) --- */}
         {currentView === "landing" && (
           <main className="main-content z-10 relative" ref={landingRef}>
+            
+            {/* Colorful Mesh Gradient Background di belakang */}
+            <div className="ambient-background">
+               <div className="ambient-blob blob-1"></div>
+               <div className="ambient-blob blob-2"></div>
+            </div>
+
             {/* Hero Section */}
             <section id="hero" className="hero-section">
               <div className="container text-center relative">
-                <div className="hero-glow-bg"></div>
                 
                 <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
                   <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
@@ -1005,7 +1011,7 @@ export default function App() {
             </section>
 
             {/* How It Works Section */}
-            <section className="steps-section py-16 bg-surface-alt border-y border-color">
+            <section className="steps-section py-16">
                <div className="container text-center">
                   <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
                   <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
@@ -1395,6 +1401,7 @@ export default function App() {
                   </div>
                 </div>
               )}
+              <div style={{ height: "80px" }}></div>
             </div>
           </section>
         )}
@@ -1415,22 +1422,22 @@ export default function App() {
         }
 
         .app-wrapper {
-          --bg-body: #fbfbfc;
+          --bg-body: #f8fafc;
           --bg-surface: rgba(255, 255, 255, 1);
-          --bg-surface-hover: rgba(243, 244, 246, 1);
-          --bg-surface-alt: #fafafa;
+          --bg-surface-hover: rgba(241, 245, 249, 1);
+          --bg-surface-alt: transparent;
           --bg-surface-solid: #ffffff;
           
-          --text-main: #09090b;
-          --text-muted: #71717a;
+          --text-main: #0f172a;
+          --text-muted: #64748b;
           
-          --border-color: rgba(0, 0, 0, 0.08);
-          --border-focus: rgba(24, 24, 27, 0.9);
+          --border-color: rgba(15, 23, 42, 0.08);
+          --border-focus: rgba(15, 23, 42, 0.8);
           
-          --primary: #09090b;
-          --primary-hover: #27272a;
-          --primary-subtle: rgba(9, 9, 11, 0.03);
-          --primary-gradient: linear-gradient(135deg, #09090b 0%, #3f3f46 100%);
+          --primary: #0f172a;
+          --primary-hover: #1e293b;
+          --primary-subtle: rgba(15, 23, 42, 0.03);
+          --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
           
           --success-light: #f0fdf4;
           --success: #16a34a;
@@ -1438,9 +1445,9 @@ export default function App() {
           --error-bg: #fef2f2;
           --error-text: #dc2626;
 
-          --nav-bg: #ffffff; /* Menggunakan putih solid, bukan transparan */
-          --skeleton-bg: #e4e4e7;
-          --skeleton-hl: #f4f4f5;
+          --nav-bg: #ffffff; 
+          --skeleton-bg: #e2e8f0;
+          --skeleton-hl: #f1f5f9;
 
           --radius-sm: 8px;
           --radius-md: 16px;
@@ -1463,23 +1470,25 @@ export default function App() {
           background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
           background-size: 24px 24px;
         }
+        
         .ambient-background {
           position: fixed; top: 0; left: 0; width: 100%; height: 100%;
           overflow: hidden; z-index: 0; pointer-events: none;
         }
         .ambient-blob {
-          position: absolute; filter: blur(100px); opacity: 0.5;
-          border-radius: 50%; animation: floatBlob 20s infinite alternate;
+          position: absolute; filter: blur(100px); opacity: 0.6;
+          border-radius: 50%; animation: floatBlob 25s infinite alternate;
         }
         .blob-1 {
           top: -10%; left: -10%; width: 50vw; height: 50vw;
-          background: radial-gradient(circle, rgba(161, 161, 170, 0.15) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); /* Blue */
         }
         .blob-2 {
           bottom: -20%; right: -10%; width: 60vw; height: 60vw;
-          background: radial-gradient(circle, rgba(113, 113, 122, 0.1) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); /* Purple */
           animation-delay: -10s;
         }
+        
         @keyframes floatBlob {
           0% { transform: translate(0, 0) scale(1); }
           50% { transform: translate(5%, 10%) scale(1.1); }
@@ -1532,9 +1541,8 @@ export default function App() {
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         .border-t-success { border-top: 3px solid var(--success-border); }
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-        .transition-colors { transition: background-color 0.2s, color 0.2s; }
 
-        /* FIXED NAVBAR FLOATING PILL - DIHAPUS BLUR-NYA */
+        /* FIXED NAVBAR FLOATING PILL - TWEAKED FOR WHITE SOLID */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
@@ -1544,7 +1552,6 @@ export default function App() {
           pointer-events: auto; /* Re-enable clicks on the actual pill */
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
-          /* Blur dibuang: backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); */
           border: 1px solid var(--border-color); 
           border-radius: 100px;
           padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
@@ -1563,14 +1570,14 @@ export default function App() {
           padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
           cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
         }
-        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-solid); }
+        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-hover); }
 
         /* PADDING PENGGANTI NAVBAR FIXED */
         .content-padding-top { padding-top: 100px; }
 
         /* BUTTONS */
         .btn-primary {
-          background: var(--primary); color: var(--bg-body);
+          background: var(--primary); color: var(--bg-surface-solid);
           border: 1px solid transparent; border-radius: 100px; font-weight: 600; font-size: 0.95rem;
           padding: 0.875rem 1.75rem !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           letter-spacing: -0.01em;
@@ -1602,7 +1609,7 @@ export default function App() {
         
         /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
-        .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-body); background-color: var(--skeleton-bg); margin-left: -8px; background-size: cover; background-position: center; }
+        .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-surface-solid); background-color: var(--skeleton-bg); margin-left: -8px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .avatar:nth-child(1) { background-image: url('https://i.pravatar.cc/100?img=1'); margin-left: 0; z-index: 3; }
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
@@ -1619,21 +1626,21 @@ export default function App() {
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* STEPS SECTION */
-        .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; }
+        .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
         .step-card { flex: 1; text-align: center; padding: 0 1rem; z-index: 2; position: relative; }
         .step-icon { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1.25rem; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .step-connector { flex: 1; height: 1px; background: var(--border-color); margin-top: 24px; z-index: 1; }
 
         /* FEATURES SECTION */
-        .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+        .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; position: relative; z-index: 2; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; position: relative; z-index: 2;}
         .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
         .group-hover-effect:hover { transform: translateY(-8px); border-color: var(--text-muted); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1); }
         .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
         /* PRICING SECTION */
-        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); }
+        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative;}
         .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
@@ -1645,7 +1652,7 @@ export default function App() {
         .icon-wrap svg { width: 13px; height: 13px; stroke-width: 3.5; }
 
         /* WORKSPACE & CARDS */
-        .tool-section { padding: 2rem 0 6rem; flex: 1; }
+        .tool-section { padding: 2rem 0 6rem; flex: 1; z-index: 2;}
         .tool-container { max-width: 720px; }
         
         .style-toggle { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
@@ -1704,7 +1711,7 @@ export default function App() {
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* FOOTER */
-        .footer { padding: 4rem 0 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; }
+        .footer { padding: 4rem 0 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; background-color: var(--bg-surface-solid); position: relative; z-index: 10; }
         .footer-link { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
         .footer-link:hover { color: var(--text-main); text-decoration: underline; }
 
