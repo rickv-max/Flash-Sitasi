@@ -96,21 +96,21 @@ const AnimatedWorkspaceMock = () => {
   }, []);
 
   return (
-    <div className="mock-workspace bg-white border-2 border-slate-900 rounded-3xl mx-auto max-w-3xl overflow-hidden relative z-20 app-shadow">
-      <div className="preview-header bg-slate-50 border-b-2 border-slate-900 px-5 py-4 flex items-center gap-3">
+    <div className="mock-workspace glass-panel relative text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-3xl overflow-hidden z-20">
+      <div className="preview-header bg-surface-alt border-b border-color px-4 py-3 flex items-center gap-3">
          <div className="flex gap-2">
-            <span className="w-3 h-3 rounded-full bg-red-400 border border-slate-900"></span>
-            <span className="w-3 h-3 rounded-full bg-amber-400 border border-slate-900"></span>
-            <span className="w-3 h-3 rounded-full bg-green-400 border border-slate-900"></span>
+            <span className="w-3 h-3 rounded-full bg-red-400"></span>
+            <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+            <span className="w-3 h-3 rounded-full bg-green-400"></span>
          </div>
-         <span className="text-xs font-bold text-slate-500 font-mono ml-2">demo_ruang_kerja.app</span>
+         <span className="text-xs font-semibold text-muted font-mono ml-2">demo_ruang_kerja.app</span>
       </div>
 
       <div className="p-6 sm:p-8 relative z-10 bg-white">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-100">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
           <div>
-            <h3 className="text-base font-extrabold text-slate-900 m-0">Format Sitasi</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1 m-0 hidden sm:block">Pilih gaya output</p>
+            <h3 className="text-base font-bold text-slate-900 m-0">Format Sitasi</h3>
+            <p className="text-xs text-slate-500 mt-1 m-0 hidden sm:block">Pilih gaya output</p>
           </div>
           <div className="style-toggle pointer-events-none">
             <button className="style-toggle-btn active">📝 Footnote</button>
@@ -119,37 +119,37 @@ const AnimatedWorkspaceMock = () => {
         </div>
 
         <div className="form-group mb-5">
-          <label className="input-label text-xs text-slate-900 font-extrabold mb-2 block uppercase tracking-wider">Nomor DOI Referensi</label>
+          <label className="input-label text-xs text-slate-900 font-bold mb-2 block">Nomor DOI Referensi</label>
           <div className={`mock-input-wrap ${step >= 2 && step < 5 ? 'focused' : ''}`}>
-            <span className="mock-input-text text-slate-900 font-bold">{typedText}</span>
+            <span className="mock-input-text text-slate-900 font-medium">{typedText}</span>
             {step >= 2 && step < 4 && <span className="mock-caret"></span>}
-            {!typedText && step <= 1 && <span className="text-slate-400 font-semibold text-sm">Contoh: 10.1038/s41586...</span>}
+            {!typedText && step <= 1 && <span className="text-slate-400 opacity-80 text-sm">Contoh: 10.1038/s41586...</span>}
           </div>
         </div>
 
-        <button className={`btn-primary w-full py-4 text-sm uppercase tracking-wide transition-transform duration-200 ${step === 4 ? 'scale-95' : 'scale-100'}`}>
+        <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 4 ? 'scale-95' : 'scale-100'}`}>
           {step === 5 ? (
-            <span className="flex items-center gap-2 justify-center text-slate-900"><span className="loading-spinner w-4 h-4 border-slate-900"></span> Mengekstrak...</span>
+            <span className="flex items-center gap-2 justify-center text-white"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
         {/* RESULTS MOCK */}
         <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[800px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
-          <div className="result-block border-2 border-slate-900 rounded-xl p-5 relative bg-white solid-shadow-sm">
-            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-3">
-              <span className="text-xs font-extrabold text-slate-800">CATATAN KAKI</span>
-              <button className={`btn-copy-modern text-xs py-1 px-3 transition-transform ${step === 8 ? 'scale-95 bg-lime border-slate-900' : 'scale-100'}`}>
-                {step > 8 ? <><span className="text-slate-900 font-bold text-xs mr-1">✓</span><span className="text-slate-900">Disalin</span></> : <span className="text-slate-900">Salin</span>}
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-extrabold text-slate-500">CATATAN KAKI</span>
+              <button className={`btn-copy-modern text-xs py-1 px-2 transition-transform ${step === 8 ? 'scale-95 bg-white border-slate-800' : 'scale-100'}`}>
+                {step > 8 ? <><span className="text-green-600 font-bold text-xs mr-1">✓</span><span className="text-slate-800">Disalin</span></> : <span className="text-slate-800">Salin</span>}
               </button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
-          <div className="result-block border-2 border-slate-900 rounded-xl p-5 relative bg-white solid-shadow-sm">
-            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-3">
-              <span className="text-xs font-extrabold text-slate-800">APA 7TH EDITION</span>
-              <button className="btn-copy-modern text-xs py-1 px-3 scale-100 text-slate-800">Salin</button>
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-extrabold text-slate-500">APA 7TH EDITION</span>
+              <button className="btn-copy-modern text-xs py-1 px-2 scale-100 text-slate-800">Salin</button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020). The Architecture of Modern SaaS. <i>Nature</i>, 10-15. https://doi.org/10.1038/s41586-020-2649-2
@@ -166,24 +166,22 @@ const AnimatedWorkspaceMock = () => {
       </div>
 
       <style>{`
-        .mock-input-wrap { width: 100%; padding: 1rem 1.25rem; font-size: 0.95rem; background: #f8fafc; border: 2px solid var(--border-color); border-radius: 12px; min-height: 52px; display: flex; align-items: center; transition: 0.2s; }
-        .mock-input-wrap.focused { border-color: var(--primary); background: #ffffff; box-shadow: 0 4px 12px rgba(180, 244, 84, 0.2); }
+        .mock-input-wrap { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height: 52px; display: flex; align-items: center; transition: 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+        .mock-input-wrap.focused { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
         .mock-caret { display: inline-block; width: 2px; height: 18px; background: var(--primary); margin-left: 4px; animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
-        
         .fake-cursor { position: absolute; z-index: 50; transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
         .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
-        .cursor-step-1, .cursor-step-2 { top: 38%; left: 25%; opacity: 1; transform: scale(1); }
-        .cursor-step-3 { top: 55%; left: 50%; opacity: 1; transform: scale(1); }
-        .cursor-step-4, .cursor-step-5 { top: 55%; left: 50%; opacity: 1; transform: scale(0.9); }
-        .cursor-step-6, .cursor-step-7 { top: 82%; left: 45%; opacity: 1; transform: scale(1); }
-        .cursor-step-8 { top: 82%; left: 45%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-1, .cursor-step-2 { top: 35%; left: 25%; opacity: 1; transform: scale(1); }
+        .cursor-step-3 { top: 52%; left: 50%; opacity: 1; transform: scale(1); }
+        .cursor-step-4, .cursor-step-5 { top: 52%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-6, .cursor-step-7 { top: 80%; left: 45%; opacity: 1; transform: scale(1); }
+        .cursor-step-8 { top: 80%; left: 45%; opacity: 1; transform: scale(0.9); }
         .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
-        
         @media (max-width: 640px) {
            .cursor-step-1, .cursor-step-2 { top: 25%; left: 35%; }
            .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 38%; left: 50%; }
-           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 62%; left: 82%; }
+           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 58%; left: 80%; }
         }
       `}</style>
     </div>
@@ -210,7 +208,7 @@ export default function App() {
   const [inputMode, setInputMode] = useState("doi");
   const [citationStyle, setCitationStyle] = useState("footnote");
   
-  // Dashboard Sidebar State
+  // Dashboard Sidebar State (Mobile)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Form States
@@ -248,7 +246,12 @@ export default function App() {
           .fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
           .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
           .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
-          .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4");
+          .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6");
+
+        gsap.to(".float-1", { y: 280, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
+        gsap.to(".float-2", { y: 320, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
+        gsap.to(".float-3", { y: 250, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
 
         gsap.fromTo(".preview-card-anim", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 85%" } });
         gsap.fromTo(".step-card-anim", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } });
@@ -385,11 +388,7 @@ export default function App() {
     if (paper.authors && paper.authors.length > 0) {
       let firstAuthor = paper.authors[0].name.trim(); const parts = firstAuthor.split(" ").filter(Boolean);
       let family = "", given = "";
-      if (parts.length === 1) {
-        family = parts[0]; given = "";
-      } else {
-        family = parts.pop(); given = parts.join(" ");
-      }
+      if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); }
       fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
       if (paper.authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
     }
@@ -552,6 +551,11 @@ export default function App() {
   const ManualIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
   const HistoryIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>);
 
+  // Custom Solid/Artistic Icons for Floating Background
+  const FloatBook = () => (<svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bookGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6" /><stop offset="1" stopColor="#1d4ed8" /></linearGradient><linearGradient id="pageGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#ffffff" /><stop offset="1" stopColor="#f1f5f9" /></linearGradient><filter id="shadowBook"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.15" /></filter></defs><g filter="url(#shadowBook)"><path d="M32 16C24 16 16 20 10 24V56C16 52 24 48 32 48C40 48 48 52 54 56V24C48 20 40 16 32 16Z" fill="url(#pageGrad)" stroke="#e2e8f0" strokeWidth="2"/><path d="M32 16V48" stroke="#cbd5e1" strokeWidth="2"/><path d="M24 16V28" stroke="url(#bookGrad)" strokeWidth="6" strokeLinecap="round"/><rect x="18" y="14" width="8" height="20" fill="#ef4444" rx="2"/></g></svg>);
+  const FloatToga = () => (<svg width="90" height="90" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="togaGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#1e1b4b"/><stop offset="1" stopColor="#4c1d95"/></linearGradient><filter id="shadowToga"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.2" /></filter></defs><g filter="url(#shadowToga)"><path d="M32 16L8 28L32 40L56 28L32 16Z" fill="url(#togaGrad)" /><path d="M18 33V45C18 45 25 50 32 50C39 50 46 45 46 45V33" fill="none" stroke="url(#togaGrad)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/><path d="M52 30V44" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round"/><circle cx="52" cy="46" r="4" fill="#f59e0b"/></g></svg>);
+  const FloatFlash = () => (<svg width="70" height="70" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="flashGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#fef08a"/><stop offset="1" stopColor="#ea580c"/></linearGradient><filter id="shadowFlash"><feDropShadow dx="0" dy="6" stdDeviation="8" floodOpacity="0.25" floodColor="#ea580c" /></filter></defs><path d="M36 4L14 34H32L28 60L50 30H32L36 4Z" fill="url(#flashGrad)" filter="url(#shadowFlash)"/></svg>);
+
   const ShieldIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>);
   const SparklesIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>);
   const ZapIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
@@ -629,11 +633,20 @@ export default function App() {
       {/* --- VIEW 1: LANDING PAGE --- */}
       {currentView === "landing" && (
         <main className="main-content z-10 relative content-padding-top" ref={landingRef}>
-          {/* Topographic Background (Subtle Wavy SVG) */}
-          <div className="topo-bg"></div>
+          {/* Mesh Gradient Background */}
+          <div className="ambient-background">
+             <div className="ambient-blob blob-1"></div>
+             <div className="ambient-blob blob-2"></div>
+             <div className="ambient-blob blob-3"></div>
+          </div>
 
           {/* Hero Section */}
           <section id="hero" className="hero-section relative">
+            {/* Floating GSAP Elements - Sembunyi di HP, Animasi ke belakang terminal */}
+            <div className="floating-element float-1 hidden-mobile" style={{position: 'absolute', top: '10%', left: '8%', zIndex: 0}}><FloatBook /></div>
+            <div className="floating-element float-2 hidden-mobile" style={{position: 'absolute', top: '5%', right: '10%', zIndex: 0}}><FloatToga /></div>
+            <div className="floating-element float-3 hidden-mobile" style={{position: 'absolute', top: '40%', left: '12%', zIndex: 0}}><FloatFlash /></div>
+
             <div className="container text-center relative z-10">
               <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
                 <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
@@ -673,33 +686,16 @@ export default function App() {
           </section>
 
           {/* How It Works Section */}
-          <section className="steps-section py-16 bg-white border-y-2 border-slate-900 relative z-10">
-             <div className="container">
-                <h2 className="section-title text-center mb-4">Tiga Langkah Mudah</h2>
-                <p className="text-muted text-center max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
-                
-                <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-                   <div className="step-card-anim flex items-center p-6 bg-pale-yellow border-2 border-slate-900 rounded-2xl solid-shadow-sm">
-                      <div className="step-number bg-white border-2 border-slate-900 rounded-full w-12 h-12 flex items-center justify-center font-black text-xl mr-5 flex-shrink-0">1</div>
-                      <div className="text-left">
-                        <h4 className="font-extrabold text-slate-900 text-lg mb-1">Salin Tautan</h4>
-                        <p className="text-sm text-slate-700 font-medium">Dapatkan tautan (URL) atau nomor DOI dari jurnal/artikel yang ingin disitasi.</p>
-                      </div>
-                   </div>
-                   <div className="step-card-anim flex items-center p-6 bg-white border-2 border-slate-900 rounded-2xl solid-shadow-sm">
-                      <div className="step-number bg-white border-2 border-slate-900 rounded-full w-12 h-12 flex items-center justify-center font-black text-xl mr-5 flex-shrink-0">2</div>
-                      <div className="text-left">
-                        <h4 className="font-extrabold text-slate-900 text-lg mb-1">Sistem Memproses</h4>
-                        <p className="text-sm text-slate-700 font-medium">Tempelkan tautan ke dalam sistem kami, lalu klik tombol Generate.</p>
-                      </div>
-                   </div>
-                   <div className="step-card-anim flex items-center p-6 bg-white border-2 border-slate-900 rounded-2xl solid-shadow-sm">
-                      <div className="step-number bg-white border-2 border-slate-900 rounded-full w-12 h-12 flex items-center justify-center font-black text-xl mr-5 flex-shrink-0">3</div>
-                      <div className="text-left">
-                        <h4 className="font-extrabold text-slate-900 text-lg mb-1">Sitasi Selesai</h4>
-                        <p className="text-sm text-slate-700 font-medium">Salin hasil Footnote & Daftar Pustaka (APA 7) yang sudah terformat rapi.</p>
-                      </div>
-                   </div>
+          <section className="steps-section py-16 bg-surface-alt border-y border-color relative z-10">
+             <div className="container text-center">
+                <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
+                <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
+                <div className="steps-grid">
+                   <div className="step-card-anim step-card"><div className="step-icon">1</div><h4 className="font-bold text-lg mb-2">Salin Tautan</h4><p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p></div>
+                   <div className="step-card-anim step-connector hidden-mobile"></div>
+                   <div className="step-card-anim step-card"><div className="step-icon">2</div><h4 className="font-bold text-lg mb-2">Sistem Memproses</h4><p className="text-sm text-muted">Mesin ekstraksi kami akan memproses PDF/Link dan menarik data penting.</p></div>
+                   <div className="step-card-anim step-connector hidden-mobile"></div>
+                   <div className="step-card-anim step-card"><div className="step-icon">3</div><h4 className="font-bold text-lg mb-2">Selesai</h4><p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p></div>
                 </div>
              </div>
           </section>
@@ -709,20 +705,20 @@ export default function App() {
             <div className="container text-center">
               <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card-anim feature-card bg-lime border-2 border-slate-900 rounded-3xl solid-shadow-sm group-hover-effect">
-                  <div className="feature-icon-box text-slate-900 border-2 border-slate-900 bg-white"><ShieldIcon /></div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Anti-Cloudflare Bypass</h3>
-                  <p className="text-slate-800 font-medium mt-2 text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><ShieldIcon /></div>
+                  <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).</p>
                 </div>
-                <div className="feature-card-anim feature-card bg-pale-blue border-2 border-slate-900 rounded-3xl solid-shadow-sm group-hover-effect">
-                  <div className="feature-icon-box text-slate-900 border-2 border-slate-900 bg-white"><SparklesIcon /></div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Smart Metadata Recovery</h3>
-                  <p className="text-slate-800 font-medium mt-2 text-sm leading-relaxed">Jika struktur PDF berantakan, sistem akan melacak metadata yang tepat dari database global.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><SparklesIcon /></div>
+                  <h3 className="text-lg font-bold">Smart Metadata Recovery</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.</p>
                 </div>
-                <div className="feature-card-anim feature-card bg-pale-yellow border-2 border-slate-900 rounded-3xl solid-shadow-sm group-hover-effect">
-                  <div className="feature-icon-box text-slate-900 border-2 border-slate-900 bg-white"><ZapIcon /></div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Pemrosesan Batch</h3>
-                  <p className="text-slate-800 font-medium mt-2 text-sm leading-relaxed">Punya puluhan referensi? Tempelkan semua URL sekaligus dan dapatkan daftar urut abjad seketika.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><ZapIcon /></div>
+                  <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.</p>
                 </div>
               </div>
             </div>
@@ -731,39 +727,37 @@ export default function App() {
           {/* Pricing & Transparency */}
           <section className="pricing-section pb-24 relative z-10">
             <div className="container text-center">
-              <div className="pricing-card-anim pricing-card bg-lime border-2 border-slate-900 rounded-3xl solid-shadow-lg mx-auto relative overflow-hidden">
-                <div className="badge-pill mx-auto mb-4 bg-white text-slate-900 border-2 border-slate-900 font-bold text-xs relative z-10">Paling Diminati</div>
-                <h2 className="m-0 mb-3 text-3xl font-black text-slate-900 relative z-10 tracking-tight">Transparan. Pay-As-You-Go.</h2>
-                <p className="text-slate-800 font-medium m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
-                <div className="price-huge text-slate-900 relative z-10"><span className="currency font-bold">Rp</span>750<span className="suffix font-bold text-slate-700">/ Sitasi Sukses</span></div>
-                
-                <div className="pricing-divider border-slate-900 opacity-20 relative z-10"></div>
-                
+              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
+                <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
+                <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
+                <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
+                <div className="price-huge relative z-10"><span className="currency font-semibold">Rp</span>750<span className="suffix font-medium text-muted">/ Sitasi Sukses</span></div>
+                <div className="pricing-divider relative z-10"></div>
                 <ul className="pricing-list relative z-10">
-                  <li><div className="icon-wrap bg-white border border-slate-900 text-slate-900"><CheckIcon /></div><span className="text-slate-900 font-semibold">Gratis 5 Kredit untuk pengguna baru.</span></li>
-                  <li><div className="icon-wrap bg-white border border-slate-900 text-slate-900"><CheckIcon /></div><span className="text-slate-900 font-semibold">Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span></li>
-                  <li><div className="icon-wrap bg-white border border-slate-900 text-slate-900"><CheckIcon /></div><span className="text-slate-900 font-semibold">Mendukung format Footnote & APA 7th Edition.</span></li>
-                  <li><div className="icon-wrap bg-white border border-slate-900 text-slate-900"><CheckIcon /></div><span className="text-slate-900 font-semibold">Dukungan otomatis QRIS, e-Wallet, & VA.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Gratis 5 Kredit untuk pengguna baru.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Mendukung format Footnote & APA 7th Edition.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span></li>
                 </ul>
-                <button onClick={handleLoginAndEnter} className="btn-primary bg-slate-900 text-lime w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base font-bold transition-transform hover:scale-105 active:scale-95">
+                <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
                   Mulai Ruang Kerja Anda <ArrowRightIcon />
                 </button>
               </div>
             </div>
           </section>
 
-          <footer className="footer bg-white border-t-2 border-slate-900 relative z-20">
-            <div className="container footer-content py-8">
-              <div className="footer-brand flex flex-col items-center justify-center mb-5">
+          <footer className="footer relative z-20">
+            <div className="container footer-content">
+              <div className="footer-brand flex items-center justify-center mb-5">
                 <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
               </div>
-              <p className="mt-4 text-sm max-w-md mx-auto text-slate-600 font-medium leading-relaxed">
+              <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
                 Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
               </p>
-              <div className="mt-8 text-xs font-bold text-slate-400 flex flex-wrap justify-center gap-6 uppercase tracking-wider">
+              <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex flex-wrap justify-center gap-6">
                  <span>© {new Date().getFullYear()} FlashCite.</span>
-                 <a href="#" className="footer-link hover:text-slate-900 transition-colors">Kebijakan Privasi</a>
-                 <a href="#" className="footer-link hover:text-slate-900 transition-colors">Syarat & Ketentuan</a>
+                 <a href="#" className="footer-link">Kebijakan Privasi</a>
+                 <a href="#" className="footer-link">Syarat & Ketentuan</a>
               </div>
             </div>
           </footer>
@@ -772,21 +766,21 @@ export default function App() {
 
       {/* --- VIEW 2: WORKSPACE (DASHBOARD) --- */}
       {currentView === "tool" && user && (
-        <div className="dashboard-layout animate-fade-in bg-slate-50">
+        <div className="dashboard-layout animate-fade-in">
            {/* Mobile Header */}
-           <div className="mobile-dashboard-header hidden sm:hidden border-b-2 border-slate-900 bg-white">
-              <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn text-slate-900"><MenuIcon /></button>
-              <div className="logo-icon-wrap" style={{ height: '24px', width: 'auto' }}><VideoLogo /></div>
+           <div className="mobile-dashboard-header hidden sm:hidden">
+              <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><MenuIcon /></button>
+              <div className="logo-icon-wrap" style={{ height: '24px' }}><VideoLogo /></div>
            </div>
 
            {/* Mobile Sidebar Overlay */}
            {isSidebarOpen && <div className="sidebar-overlay sm:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
            {/* Sidebar */}
-           <aside className={`dashboard-sidebar bg-white border-r-2 border-slate-900 ${isSidebarOpen ? 'open' : ''}`}>
-              <div className="sidebar-header border-b-2 border-slate-900">
-                 <div className="logo-icon-wrap h-8"><VideoLogo /></div>
-                 <button className="mobile-close sm:hidden border-2 border-slate-900" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
+           <aside className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+              <div className="sidebar-header">
+                 <div className="logo-icon-wrap"><VideoLogo /></div>
+                 <button className="mobile-close sm:hidden" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
               </div>
               
               <nav className="sidebar-nav">
@@ -807,14 +801,14 @@ export default function App() {
                  </button>
               </nav>
 
-              <div className="sidebar-footer border-t-2 border-slate-900">
-                 <div className="credit-box bg-lime border-2 border-slate-900 solid-shadow-sm">
-                    <p className="credit-label text-slate-800">Sisa Token</p>
-                    <div className="credit-amount text-slate-900"><CoinIcon /> <span>{userData.credits || 0}</span></div>
-                    <button onClick={() => setShowTopupModal(true)} className="btn-topup bg-slate-900 text-lime font-bold border-2 border-slate-900 hover:bg-slate-800 transition-colors">Top Up Token</button>
+              <div className="sidebar-footer">
+                 <div className="credit-box">
+                    <p className="credit-label">Sisa Kredit</p>
+                    <div className="credit-amount"><CoinIcon /> <span>{userData.credits || 0}</span></div>
+                    <button onClick={() => setShowTopupModal(true)} className="btn-topup">Top Up Token</button>
                  </div>
-                 <button onClick={handleLogout} className="btn-logout text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 transition-colors">
-                    <LogoutIcon /> Keluar Ruang Kerja
+                 <button onClick={handleLogout} className="btn-logout">
+                    <LogoutIcon /> Keluar
                  </button>
               </div>
            </aside>
@@ -823,38 +817,38 @@ export default function App() {
            <main className="dashboard-main">
               <div className="dashboard-container">
                 <div className="tool-header mb-8 text-center sm:text-left">
-                  <h2 className="section-title m-0 tracking-tight text-slate-900">Ruang Kerja</h2>
-                  <p className="text-slate-600 text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
+                  <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
+                  <p className="text-muted text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
                 </div>
 
-                <div className="card border-2 border-slate-900 rounded-3xl mb-8 relative z-20 bg-white solid-shadow-md">
+                <div className="card glass-panel shadow-premium mb-8 relative z-20 border-0 bg-white">
                   <div className="card-body p-6 sm:p-8">
                     {/* TOGGLE CITATION STYLE */}
-                    <div className="flex items-center justify-between mb-8 pb-4 border-b-2 border-slate-100 flex-col-mobile">
+                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
                        <div className="mb-4 sm:mb-0 text-center sm:text-left">
-                         <h3 className="text-base font-extrabold text-slate-900 m-0">Format Sitasi</h3>
-                         <p className="text-xs text-slate-500 mt-1 font-semibold m-0">Pilih gaya output yang dihasilkan</p>
+                         <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
+                         <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
                        </div>
-                       <div className="style-toggle bg-slate-100 border-2 border-slate-200 rounded-xl p-1 w-full sm:w-auto flex gap-1">
-                          <button className={`style-toggle-btn w-full sm:w-auto ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
-                          <button className={`style-toggle-btn w-full sm:w-auto ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
+                       <div className="style-toggle w-full sm:w-auto">
+                          <button className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
+                          <button className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
                        </div>
                     </div>
 
                     {inputMode === "doi" && (
                       <div className="animate-fade-in">
                         <div className="form-group mb-5 relative">
-                          <label className="input-label text-slate-900 font-bold">Nomor DOI Referensi</label>
-                          <input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
+                          <label className="input-label">Nomor DOI Referensi</label>
+                          <input type="text" className="input-field-modern" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
                         </div>
                         {citationStyle === "footnote" && (
                           <div className="form-group mb-8 relative animate-fade-in">
-                            <label className="input-label text-slate-900 font-bold">Kota Terbit <span className="text-slate-400 font-medium">(Opsional)</span></label>
-                            <input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                            <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="btn-primary w-full py-4 text-base font-bold bg-slate-900 text-lime border-2 border-slate-900 shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]" onClick={fetchDOI} disabled={loading || !doiInput}>
-                          {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Token)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchDOI} disabled={loading || !doiInput}>
+                          {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
@@ -862,17 +856,17 @@ export default function App() {
                     {inputMode === "url" && (
                       <div className="animate-fade-in">
                         <div className="form-group mb-5 relative">
-                          <label className="input-label text-slate-900 font-bold">Tautan Artikel / PDF</label>
-                          <input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
+                          <label className="input-label">Tautan Artikel / PDF</label>
+                          <input type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
                         </div>
                         {citationStyle === "footnote" && (
                           <div className="form-group mb-8 relative animate-fade-in">
-                            <label className="input-label text-slate-900 font-bold">Kota Terbit <span className="text-slate-400 font-medium">(Opsional)</span></label>
-                            <input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                            <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="btn-primary w-full py-4 text-base font-bold bg-slate-900 text-lime border-2 border-slate-900 shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]" onClick={fetchURL} disabled={loading || !urlInput}>
-                          {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Token)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchURL} disabled={loading || !urlInput}>
+                          {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
@@ -880,29 +874,29 @@ export default function App() {
                     {inputMode === "manual" && (
                       <div className="animate-fade-in">
                         <div className="grid-2 gap-5">
-                          <div className="col-span-2 form-group"><label className="input-label text-slate-900 font-bold">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
-                          <div className="col-span-2 form-group"><label className="input-label text-slate-900 font-bold">Judul Artikel *</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
-                          <div className="form-group"><label className="input-label text-slate-900 font-bold">Nama Jurnal</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
-                          <div className="form-group"><label className="input-label text-slate-900 font-bold">Tahun Terbit *</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
-                          <div className="form-group"><label className="input-label text-slate-900 font-bold">Volume</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
-                          <div className="form-group"><label className="input-label text-slate-900 font-bold">Isu / Nomor</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
-                          <div className="form-group"><label className="input-label text-slate-900 font-bold">Halaman</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
+                          <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
+                          <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
+                          <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
+                          <div className="form-group"><label className="input-label">Tahun Terbit *</label><input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
+                          <div className="form-group"><label className="input-label">Volume</label><input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
+                          <div className="form-group"><label className="input-label">Isu / Nomor</label><input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
+                          <div className="form-group"><label className="input-label">Halaman</label><input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
                           {citationStyle === "footnote" && (
-                            <div className="form-group animate-fade-in"><label className="input-label text-slate-900 font-bold">Kota Terbit</label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
+                            <div className="form-group animate-fade-in"><label className="input-label">Kota Terbit</label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
                           )}
                         </div>
-                        <button className="btn-primary w-full py-4 mt-8 text-base font-bold bg-slate-900 text-lime border-2 border-slate-900 shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]" onClick={handleGenerateManual}>Generate Manual (1 Token)</button>
+                        <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>Generate Manual (1 Kredit)</button>
                       </div>
                     )}
 
                     {inputMode === "batch" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-5"><label className="input-label text-slate-900 font-bold">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field border-2 border-slate-300 focus:border-slate-900" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
+                        <div className="form-group mb-5"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
                         {citationStyle === "footnote" && (
-                          <div className="form-group mb-8 animate-fade-in"><label className="input-label text-slate-900 font-bold">Kota Terbit Global <span className="text-slate-400 font-medium">(Opsional)</span></label><input type="text" className="input-field-modern border-2 border-slate-300 focus:border-slate-900" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
+                          <div className="form-group mb-8 animate-fade-in"><label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
                         )}
-                        <button className="btn-primary w-full py-4 text-base font-bold bg-slate-900 text-lime border-2 border-slate-900 shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
-                          {loading ? "Memproses Batch..." : "Generate Semua (1 Token/Sukses)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                          {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
                         </button>
                       </div>
                     )}
@@ -911,26 +905,26 @@ export default function App() {
                     {inputMode === "history" && (
                       <div className="animate-fade-in history-container custom-scrollbar pr-3">
                         {history.length === 0 ? (
-                          <div className="text-center text-slate-400 font-semibold p-10 flex flex-col items-center">
-                            <span className="text-4xl mb-3 opacity-30">🗂️</span> Ruang riwayat Anda masih kosong.
+                          <div className="text-center text-muted p-10 flex flex-col items-center">
+                            <span className="text-4xl mb-3 opacity-20">🗂️</span> Ruang riwayat Anda masih kosong.
                           </div>
                         ) : (
                           history.map((item) => {
                             const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia.");
                             const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia.");
                             return (
-                              <div key={item.id} className="history-item mb-5 pb-5 border-b-2 border-slate-100 last-no-border">
+                              <div key={item.id} className="history-item mb-5 pb-5 border-b border-color last-no-border">
                                 <div className="flex justify-between items-center mb-3">
-                                  <span className="badge-pill bg-slate-100 text-slate-800 border-none font-bold text-xs px-3 py-1">{item.type}</span>
-                                  <span className="text-xs font-mono font-semibold text-slate-400">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
+                                  <span className="badge-pill text-xs px-2 py-0.5">{item.type}</span>
+                                  <span className="text-xs font-mono text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
                                 </div>
-                                <h4 className="m-0 mb-4 font-extrabold text-sm leading-snug truncate-2 text-slate-900">{item.title}</h4>
+                                <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">{item.title}</h4>
                                 <div className="flex gap-2 mt-4 flex-col-mobile">
-                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full border-2 border-slate-200 text-slate-700 hover:border-slate-900 hover:text-slate-900 font-bold" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
-                                    {copiedId === `hist-in-${item.id}` ? <><span className="text-green-600">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
+                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
+                                    {copiedId === `hist-in-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
                                   </button>
-                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full border-2 border-slate-200 text-slate-700 hover:border-slate-900 hover:text-slate-900 font-bold" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
-                                    {copiedId === `hist-dp-${item.id}` ? <><span className="text-green-600">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
+                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
+                                    {copiedId === `hist-dp-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
                                   </button>
                                 </div>
                               </div>
@@ -941,9 +935,9 @@ export default function App() {
                     )}
 
                     {error && (
-                      <div className="error-alert mt-8 p-4 bg-red-50 border-2 border-red-500 rounded-xl flex items-start">
-                        <div className="mt-0.5 text-red-600"><WarningIcon /></div> 
-                        <span className="leading-relaxed font-bold text-red-600 ml-2">{error}</span>
+                      <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
+                        <div className="mt-0.5"><WarningIcon /></div> 
+                        <span className="leading-relaxed font-medium">{error}</span>
                       </div>
                     )}
                   </div>
@@ -956,26 +950,26 @@ export default function App() {
 
                 {/* RESULTS AREA: SINGLE */}
                 {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
-                  <div className="card mt-8 animate-slide-up border-2 border-slate-900 rounded-3xl relative overflow-hidden bg-white solid-shadow-md">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none text-slate-900"><CheckIcon /></div>
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden bg-white border-0">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
                     <div className="card-body p-6 sm:p-8">
-                      <div className="result-block bg-slate-50 border-2 border-slate-100 rounded-xl p-5 relative">
-                        <div className="flex justify-between items-center border-b-2 border-slate-200 pb-3 mb-3">
-                          <span className="text-xs font-extrabold text-slate-500">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
-                          <button className="btn-copy-modern border-2 border-slate-200 hover:border-slate-900 font-bold text-xs py-1 px-3 bg-white" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
-                            {copiedId === "single-in" ? <><span className="text-green-600">✓</span> Disalin</> : <><span className="text-slate-800">Salin</span></>}
+                      <div className="result-block bg-slate-50 border-color">
+                        <div className="result-header">
+                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
+                          <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
+                            {copiedId === "single-in" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
                         </div>
-                        <div className="result-html p-0 text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
+                        <div className="result-html text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
                       </div>
-                      <div className="result-block mt-6 bg-slate-50 border-2 border-slate-100 rounded-xl p-5 relative">
-                        <div className="flex justify-between items-center border-b-2 border-slate-200 pb-3 mb-3">
-                          <span className="text-xs font-extrabold text-slate-500">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
-                          <button className="btn-copy-modern border-2 border-slate-200 hover:border-slate-900 font-bold text-xs py-1 px-3 bg-white" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
-                            {copiedId === "single-dp" ? <><span className="text-green-600">✓</span> Disalin</> : <><span className="text-slate-800">Salin</span></>}
+                      <div className="result-block mt-8 bg-slate-50 border-color">
+                        <div className="result-header">
+                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
+                          <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
+                            {copiedId === "single-dp" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
                         </div>
-                        <div className="result-html p-0 text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
+                        <div className="result-html text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
                       </div>
                     </div>
                   </div>
@@ -983,55 +977,55 @@ export default function App() {
 
                 {/* RESULTS AREA: BATCH */}
                 {!loading && batchResults.length > 0 && inputMode === "batch" && (
-                  <div className="card mt-8 animate-slide-up border-2 border-slate-900 rounded-3xl bg-white solid-shadow-md">
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success bg-white border-0">
                     <div className="card-body p-6 sm:p-8">
                       {batchSuccesses.length > 0 && (
                         <>
-                          <div className="flex items-center justify-between mb-4 border-b-2 border-slate-100 pb-3">
-                            <h3 className="text-base font-extrabold m-0 text-slate-900">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
+                          <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
+                            <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
                           </div>
                           {batchSuccesses.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
                             const copyId = `batch-in-${index}`;
                             return (
-                              <div className="result-block mb-5 bg-slate-50 border-2 border-slate-100 rounded-xl p-4" key={copyId}>
-                                <div className="flex justify-between items-center border-b-2 border-slate-200 pb-2 mb-3">
-                                  <span className="truncate font-mono font-bold text-xs text-slate-500">{r.line}</span>
-                                  <button className="btn-copy-modern border-2 border-slate-200 hover:border-slate-900 font-bold text-xs py-1 px-3 bg-white" onClick={() => handleCopy(content, copyId)}>
-                                    {copiedId === copyId ? <span className="text-green-600">✓</span> : <span className="text-slate-800">Salin</span>}
+                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b-color">
+                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                                  <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                    {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                <div className="result-html p-0 text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
+                                <div className="result-html text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
                               </div>
                             );
                           })}
                           
-                          <div className="flex items-center justify-between mt-10 mb-4 border-b-2 border-slate-100 pb-3">
-                            <h3 className="text-base font-extrabold m-0 text-slate-900">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
+                          <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
+                            <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
                           </div>
                           {sortedBatchDafpus.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
                             const copyId = `batch-dp-${index}`;
                             return (
-                              <div className="result-block mb-5 bg-slate-50 border-2 border-slate-100 rounded-xl p-4" key={copyId}>
-                                <div className="flex justify-between items-center border-b-2 border-slate-200 pb-2 mb-3">
-                                  <span className="truncate font-mono font-bold text-xs text-slate-500">{r.line}</span>
-                                  <button className="btn-copy-modern border-2 border-slate-200 hover:border-slate-900 font-bold text-xs py-1 px-3 bg-white" onClick={() => handleCopy(content, copyId)}>
-                                    {copiedId === copyId ? <span className="text-green-600">✓</span> : <span className="text-slate-800">Salin</span>}
+                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b-color">
+                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                                  <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                    {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                <div className="result-html p-0 text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
+                                <div className="result-html text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
                               </div>
                             );
                           })}
                         </>
                       )}
                       {batchErrors.length > 0 && (
-                        <div className="error-alert mt-8 p-5 bg-red-50 border-2 border-red-500 rounded-xl">
-                          <strong className="flex items-center gap-2 mb-3 text-red-600 font-bold"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
-                          <ul className="m-0 pl-5 text-red-600 font-medium text-sm space-y-2 opacity-90">
+                        <div className="error-alert mt-8 p-5 bg-error-subtle border-error border rounded-lg">
+                          <strong className="flex items-center gap-2 mb-3 text-error"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
+                          <ul className="m-0 pl-5 text-error text-sm space-y-2 opacity-90">
                             {batchErrors.map((err, i) => (
-                              <li key={i} className="break-all"><span className="font-mono text-xs font-bold mr-2">{err.line}</span><br className="sm:hidden" />{err.error}</li>
+                              <li key={i} className="break-all"><span className="font-mono text-xs font-semibold mr-2">{err.line}</span><br className="sm:hidden" />{err.error}</li>
                             ))}
                           </ul>
                         </div>
@@ -1046,37 +1040,45 @@ export default function App() {
 
       {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
-        html, body, #root { margin: 0 !important; padding: 0 !important; width: 100%; min-height: 100vh; background-color: var(--bg-body); overflow-x: hidden; scroll-behavior: smooth; }
+        html, body, #root {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100%;
+          min-height: 100vh;
+          background-color: var(--bg-body); 
+          overflow-x: hidden;
+        }
 
         .app-wrapper {
           --bg-body: #f8fafc;
-          --bg-surface-solid: #ffffff;
+          --bg-surface: rgba(255, 255, 255, 1);
           --bg-surface-hover: #f1f5f9;
-          --bg-surface-alt: #f8fafc;
+          --bg-surface-alt: transparent;
+          --bg-surface-solid: #ffffff;
           
           --text-main: #0f172a;
           --text-muted: #64748b;
           
-          --border-color: #0f172a;
+          --border-color: rgba(15, 23, 42, 0.08);
+          --border-focus: rgba(15, 23, 42, 0.8);
           
           --primary: #0f172a;
           --primary-hover: #1e293b;
+          --primary-subtle: rgba(15, 23, 42, 0.03);
+          --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
           
-          --lime: #b4f454;
-          --pale-blue: #e0f2fe;
-          --pale-yellow: #fef9c3;
-          --pale-mint: #dcfce7;
-          
+          --success-light: #f0fdf4;
           --success: #16a34a;
+          --success-border: #22c55e;
           --error-bg: #fef2f2;
           --error-text: #dc2626;
 
           --nav-bg: #ffffff; 
           --skeleton-bg: #e2e8f0;
-          --skeleton-hl: #f8fafc;
+          --skeleton-hl: #f1f5f9;
 
           --radius-sm: 8px;
           --radius-md: 16px;
@@ -1095,53 +1097,94 @@ export default function App() {
         .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
 
         /* PATTERN & AMBIENT BACKGROUND GLOW */
-        .topo-bg {
-          position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; opacity: 0.4;
-          background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23cbd5e1' fill-opacity='0.5' fill-rule='evenodd'/%3E%3C/svg%3E");
+        .pattern-bg {
+          background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+          background-size: 24px 24px;
         }
         
-        .ambient-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; pointer-events: none; }
-        .ambient-blob { position: absolute; filter: blur(100px); opacity: 0.6; border-radius: 50%; animation: floatBlob 25s infinite alternate; }
-        .blob-1 { top: -5%; left: -5%; width: 55vw; height: 55vw; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); }
-        .blob-2 { bottom: -10%; right: -5%; width: 65vw; height: 65vw; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%); animation-delay: -5s; }
-        .blob-3 { top: 40%; left: 60%; width: 45vw; height: 45vw; background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%); animation-delay: -12s; }
-        @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(8%, 12%) scale(1.15); } 100% { transform: translate(-8%, -12%) scale(0.9); } }
+        .ambient-background {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          overflow: hidden; z-index: 0; pointer-events: none;
+        }
+        .ambient-blob {
+          position: absolute; filter: blur(100px); opacity: 0.7;
+          border-radius: 50%; animation: floatBlob 25s infinite alternate;
+        }
+        .blob-1 {
+          top: -5%; left: -5%; width: 55vw; height: 55vw;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
+        }
+        .blob-2 {
+          bottom: -10%; right: -5%; width: 65vw; height: 65vw;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          animation-delay: -5s;
+        }
+        .blob-3 {
+          top: 40%; left: 60%; width: 45vw; height: 45vw;
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          animation-delay: -12s;
+        }
+        
+        @keyframes floatBlob {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(8%, 12%) scale(1.15); }
+          100% { transform: translate(-8%, -12%) scale(0.9); }
+        }
 
         /* GLASSMORPHISM & SHADOWS */
-        .glass-panel { background: var(--bg-surface-solid); border: 2px solid var(--border-color); border-radius: var(--radius-md); }
-        .app-shadow { box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .solid-shadow-sm { box-shadow: 4px 4px 0px var(--border-color); }
-        .solid-shadow-md { box-shadow: 6px 6px 0px var(--border-color); }
-        .solid-shadow-lg { box-shadow: 8px 8px 0px var(--border-color); }
+        .glass-panel { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+        .shadow-premium { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.03), 0 1px 4px -1px rgba(0, 0, 0, 0.02); }
+        .shadow-glow { box-shadow: 0 0 20px rgba(0, 0, 0, 0.08); }
+        .shadow-premium-glow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06), 0 0 40px -10px var(--border-color); }
 
         /* UTILS */
-        .bg-lime { background-color: var(--lime); } .text-lime { color: var(--lime); }
-        .bg-pale-blue { background-color: var(--pale-blue); } 
-        .bg-pale-yellow { background-color: var(--pale-yellow); }
-        .bg-pale-mint { background-color: var(--pale-mint); }
-        
         .text-center { text-align: center; } .text-left { text-align: left; }
-        .text-gradient { background: linear-gradient(135deg, #0f172a 0%, #475569 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; } .flex-shrink-0 { flex-shrink: 0; }
+        .text-gradient { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
         .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
-        .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
-        .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
+        .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
+        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
+        .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } 
+        .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
         .p-1 { padding: 0.25rem; } .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
         .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; }
         .pt-5 { padding-top: 1.25rem; } .pt-8 { padding-top: 2rem; } .pt-20 { padding-top: 5rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
         .w-full { width: 100%; } .w-max { width: max-content; } .w-auto { width: auto; }
+        .border-b { border-bottom: 1px solid var(--border-color); } .border-t { border-top: 1px solid var(--border-color); } .border-y { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .border-r { border-right: 1px solid var(--border-color); } .border-l-apa { border-left: 3px solid var(--text-muted) !important; }
+        .border-color { border-color: var(--border-color); } .border-main { border-color: var(--text-main); }
+        .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-xl { border-radius: 12px; } .rounded-lg { border-radius: var(--radius-sm); }
+        .bg-subtle { background: var(--bg-surface-hover); } .bg-surface-solid { background: var(--bg-surface-solid); } .bg-surface-hover { background: var(--bg-surface-hover); } .bg-surface-alt { background: var(--bg-surface-alt); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .bg-primary { background: var(--primary); } .bg-primary-subtle { background: var(--primary-subtle); } .bg-white { background: #ffffff; }
+        .bg-slate-50 { background-color: #f8fafc; } .bg-slate-100 { background-color: #f1f5f9; }
+        .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-4xl { font-size: 2.25rem; }
+        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); } .text-body { color: var(--bg-surface-solid); }
+        .text-slate-900 { color: #0f172a; } .text-slate-800 { color: #1e293b; } .text-slate-600 { color: #475569; } .text-slate-500 { color: #64748b; } .text-slate-400 { color: #94a3b8; }
+        .text-green-600 { color: #16a34a; } .text-red-600 { color: #dc2626; } .text-white { color: #ffffff; }
+        .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
+        .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
         .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
         .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
-        .pointer-events-none { pointer-events: none; } .pointer-events-auto { pointer-events: auto; }
-        .break-all { word-break: break-all; } .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .pointer-events-none { pointer-events: none; }
+        .break-all { word-break: break-all; }
+        .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; }
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .border-t-success { border-top: 3px solid var(--success-border); }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; } .transition-all { transition: all 0.2s; } .transition-transform { transition: transform 0.2s; }
-        .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; } .ease-in-out { transition-timing-function: ease-in-out; }
+        .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; }
+        .ease-in-out { transition-timing-function: ease-in-out; }
         .scale-95 { transform: scale(0.95); } .scale-100 { transform: scale(1); }
+        .translate-y-0 { transform: translateY(0); } .translate-y-4 { transform: translateY(1rem); }
         .h-0 { height: 0; } .h-auto { height: auto; }
 
         /* FIXED NAVBAR LANDING PAGE */
@@ -1154,163 +1197,168 @@ export default function App() {
           pointer-events: auto; 
           width: 100%; max-width: 800px; 
           background: var(--nav-bg); 
-          border: 2px solid var(--border-color); 
+          border: 1px solid var(--border-color); 
           border-radius: 100px;
-          padding: 0.6rem 0.6rem 0.6rem 1.5rem; 
-          box-shadow: 4px 4px 0px var(--border-color);
+          padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
-        /* LOGO FIX (TIDAK ADA ASPECT RATIO AGAR PROPORSIONAL) */
-        .logo-icon-wrap { height: 36px; width: auto; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
+        .logo-icon-wrap { height: 36px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
         .footer-logo { height: 64px; justify-content: center; }
-        .video-logo-asset { width: auto; height: 100%; display: block; object-fit: contain; }
-        
+        .video-logo-asset { width: auto; height: 100%; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
+        
         .credit-badge {
           display: flex; align-items: center; gap: 6px;
           background: var(--bg-surface-hover); color: var(--text-main);
-          padding: 0 14px; height: 40px; border-radius: 50px; font-size: 0.85rem; font-weight: 800;
-          cursor: pointer; border: 2px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
+          padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
+          cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
         }
-        .credit-badge:hover { background: var(--bg-surface-solid); box-shadow: 2px 2px 0px var(--border-color); transform: translateY(-2px); }
+        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-hover); }
 
         .content-padding-top { padding-top: 100px; }
 
         /* BUTTONS */
         .btn-primary {
-          background: var(--primary); color: #ffffff;
-          border: 2px solid var(--border-color); border-radius: 100px; font-weight: 800; font-size: 0.95rem;
+          background: var(--primary); color: var(--bg-surface-solid);
+          border: 1px solid transparent; border-radius: 100px; font-weight: 600; font-size: 0.95rem;
           padding: 0.875rem 1.75rem !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          letter-spacing: 0.02em; box-shadow: 3px 3px 0px var(--border-color);
+          letter-spacing: -0.01em;
         }
-        .btn-primary:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border-color); }
-        .btn-primary:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0px var(--border-color); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: scale(1.02); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .btn-secondary {
-          background: var(--bg-surface-solid); color: var(--text-main); border: 2px solid var(--border-color);
-          border-radius: 100px; font-weight: 800; font-size: 0.85rem;
-          padding: 0.6rem 1.25rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; box-shadow: 2px 2px 0px var(--border-color);
+          background: var(--bg-surface-solid); color: var(--text-main); border: 1px solid var(--border-color);
+          border-radius: 100px; font-weight: 600; font-size: 0.85rem;
+          padding: 0.6rem 1.25rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn-secondary:hover { background: var(--bg-surface-hover); transform: translate(-1px, -1px); box-shadow: 3px 3px 0px var(--border-color); }
-        .btn-secondary:active { transform: translate(1px, 1px); box-shadow: 0px 0px 0px var(--border-color); }
-        .btn-sm { height: 40px; padding: 0 1.25rem !important; font-size: 0.85rem; }
+        .btn-secondary:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
+        .btn-sm { height: 36px; padding: 0 1.25rem !important; font-size: 0.85rem; }
         .btn-lg { padding: 1.125rem 2.5rem !important; font-size: 1.05rem; }
 
         /* HERO SECTION */
         .hero-section { padding: 4rem 0 5rem; }
-        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 800; background: var(--bg-surface-solid); border: 2px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 2px 2px 0px var(--border-color); }
+        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface-solid); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
         @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
         
-        .hero-title { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 800; line-height: 1.05; margin: 0; letter-spacing: -0.05em; position: relative; z-index: 10; color: var(--slate-900); }
+        .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; }
         .hero-title-line { overflow: hidden; }
         .title-word { display: inline-block; padding-right: 0.2em; }
-        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 500; position: relative; z-index: 10; }
+        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
+        .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.08; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
         
         /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--bg-surface-solid); background-color: var(--skeleton-bg); margin-left: -10px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-surface-solid); background-color: var(--skeleton-bg); margin-left: -8px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .avatar:nth-child(1) { background-image: url('https://i.pravatar.cc/100?img=1'); margin-left: 0; z-index: 3; }
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
 
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 3px solid var(--border-color); border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+        /* PREVIEW MOCK COMPONENT */
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--bg-surface-solid); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .preview-section { background: transparent; }
 
         /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
         .step-card { flex: 1; text-align: center; padding: 0 1rem; z-index: 2; position: relative; }
-        .step-icon { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 2px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1.25rem; color: var(--primary); box-shadow: 3px 3px 0px var(--border-color); }
-        .step-connector { flex: 1; height: 2px; background: var(--border-color); margin-top: 24px; z-index: 1; }
+        .step-icon { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1.25rem; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .step-connector { flex: 1; height: 1px; background: var(--border-color); margin-top: 24px; z-index: 1; }
 
         /* FEATURES SECTION */
-        .section-title { font-size: clamp(1.75rem, 3vw, 3rem); font-weight: 800; letter-spacing: -0.04em; position: relative; z-index: 2; color: #0f172a; }
+        .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; position: relative; z-index: 2; }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; position: relative; z-index: 2;}
-        .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-        .group-hover-effect:hover { transform: translateY(-8px); box-shadow: 8px 8px 0px var(--border-color); }
-        .feature-icon-box { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); solid-shadow-sm }
+        .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
+        .group-hover-effect:hover { transform: translateY(-8px); border-color: var(--text-muted); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1); }
+        .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
         /* PRICING SECTION */
-        .pricing-card { max-width: 480px; padding: 3rem 2.5rem; z-index: 2; box-sizing: border-box;}
-        .price-huge { font-size: 4rem; font-weight: 800; display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.05em; gap: 8px; }
+        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative; box-sizing: border-box;}
+        .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
+        .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
-        .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; font-weight: 600; }
-        .pricing-divider { height: 2px; width: 100%; border-top: 2px dashed var(--border-color); margin: 2rem 0; opacity: 0.3; }
+        .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
+        .pricing-divider { height: 1px; width: 100%; background: var(--border-color); margin: 2rem 0; }
         .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 16px; }
-        .pricing-list li { font-size: 1rem; display: flex; gap: 14px; align-items: flex-start; color: var(--text-main); font-weight: 500; }
-        .icon-wrap { border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; box-shadow: 2px 2px 0px var(--border-color); }
-        .icon-wrap svg { width: 14px; height: 14px; stroke-width: 3.5; }
+        .pricing-list li { font-size: 0.95rem; display: flex; gap: 14px; align-items: flex-start; color: var(--text-main); }
+        .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+        .icon-wrap svg { width: 13px; height: 13px; stroke-width: 3.5; }
 
         /* DASHBOARD WORKSPACE */
         .dashboard-layout { display: flex; min-height: 100vh; position: relative; z-index: 10; }
         
         /* SIDEBAR DESKTOP */
         .dashboard-sidebar { 
-           width: 280px; background: #ffffff; border-right: 2px solid var(--border-color); 
+           width: 260px; background: #ffffff; border-right: 1px solid var(--border-color); 
            display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; 
            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .sidebar-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        .sidebar-nav { flex: 1; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-nav { flex: 1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; }
         .nav-item { 
-           display: flex; align-items: center; gap: 12px; width: 100%; padding: 0.875rem 1rem; border: 2px solid transparent; background: transparent; 
-           text-align: left; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); border-radius: 12px; cursor: pointer; transition: 0.2s; font-family: inherit;
+           display: flex; align-items: center; gap: 12px; width: 100%; padding: 0.875rem 1rem; border: none; background: transparent; 
+           text-align: left; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: inherit;
         }
         .nav-item:hover { background: var(--bg-surface-hover); color: var(--text-main); }
-        .nav-item.active { background: var(--lime); border-color: var(--border-color); color: var(--text-main); box-shadow: 3px 3px 0px var(--border-color); transform: translate(-1px, -1px); }
+        .nav-item.active { background: var(--bg-surface-hover); color: var(--primary); font-weight: 700; }
         
-        .sidebar-footer { padding: 1.25rem; }
-        .credit-box { padding: 1.25rem; border-radius: 16px; margin-bottom: 1rem; text-align: center; }
-        .credit-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.5rem; }
-        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.75rem; font-weight: 800; margin-bottom: 1rem; }
-        .btn-topup { width: 100%; padding: 0.875rem; border-radius: 100px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 3px 3px 0px var(--border-color); }
-        .btn-topup:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border-color); }
-        .btn-logout { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0.875rem; background: transparent; border: 2px solid transparent; font-size: 0.9rem; font-weight: 700; cursor: pointer; border-radius: 100px; transition: 0.2s; }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid var(--border-color); }
+        .credit-box { padding: 1rem; background: var(--bg-surface-hover); border-radius: 12px; margin-bottom: 1rem; text-align: center; border: 1px solid var(--border-color); }
+        .credit-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.5rem; }
+        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 1rem; }
+        .btn-topup { width: 100%; padding: 0.75rem; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-topup:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-logout { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0.75rem; background: transparent; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .btn-logout:hover { background: #fef2f2; color: #dc2626; }
 
-        .dashboard-main { flex: 1; margin-left: 280px; padding: 3rem 2.5rem; min-height: 100vh; }
-        .dashboard-container { max-width: 800px; margin: 0 auto; }
+        .dashboard-main { flex: 1; margin-left: 260px; padding: 2.5rem; min-height: 100vh; }
+        .dashboard-container { max-width: 760px; margin: 0 auto; }
         
         /* CITATION STYLE TOGGLE */
-        .style-toggle-btn { background: transparent; border: 2px solid transparent; padding: 8px 16px; font-size: 0.85rem; font-weight: 800; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+        .style-toggle { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; }
+        .style-toggle-btn { background: transparent; border: none; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
         .style-toggle-btn:hover:not(.active) { color: var(--text-main); }
-        .style-toggle-btn.active { background: #ffffff; color: var(--text-main); border-color: var(--border-color); box-shadow: 2px 2px 0px var(--border-color); }
+        .style-toggle-btn.active { background: #ffffff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
         /* FORMS MODERN */
-        .input-label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.02em; }
-        .input-field-modern { width: 100%; padding: 1rem 1.25rem; font-size: 0.95rem; font-weight: 600; color: var(--text-main); background: #ffffff; border-radius: 12px; outline: none; transition: all 0.2s; font-family: inherit; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .input-field-modern::placeholder { color: #94a3b8; font-weight: 500; }
+        .input-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
+        .input-field-modern { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: all 0.2s; font-family: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+        .input-field-modern::placeholder { color: var(--text-muted); opacity: 0.6; }
+        .input-field-modern:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
         .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
 
         /* RESULTS AREA & HISTORY */
         .result-block { overflow: hidden; }
-        .result-html { padding: 1.25rem 0 0 0; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
-        .btn-copy-modern { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; border-radius: 8px; font-weight: 800;}
-        .btn-copy-modern:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0px var(--border-color); }
-        
+        .result-header { padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .result-html { padding: 1rem; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
+        .btn-copy-modern { background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; }
+        .btn-copy-modern:hover { background: var(--bg-surface-hover); border-color: var(--text-main); }
+        .btn-sm-padding { padding: 6px; }
         .history-container { max-height: 600px; overflow-y: auto; }
         
         /* CUSTOM SCROLLBAR */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; border: 2px solid #ffffff; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-        .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 2px solid var(--border-color); box-shadow: 8px 8px 0px var(--border-color); overflow: hidden; }
-        .modal-header { padding: 1.5rem; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; }
-        .btn-close-modal { background: var(--bg-surface-hover); border: 2px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; box-shadow: 2px 2px 0px var(--border-color); }
-        .btn-close-modal:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0px var(--border-color); }
+        .btn-close-modal { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
+        .btn-close-modal:hover { background: var(--bg-surface-hover); color: var(--text-main); }
         .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-        .btn-package { background: var(--bg-surface-hover); border: 2px solid var(--border-color); border-radius: 12px; padding: 1rem 0.5rem; font-weight: 800; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease; text-align: center; box-shadow: 2px 2px 0px var(--border-color); }
-        .btn-package:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0px var(--border-color); color: var(--text-main); }
-        .btn-package.active { background: var(--lime); color: var(--text-main); transform: translate(1px, 1px); box-shadow: 0px 0px 0px var(--border-color); }
-        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: 12px; border: 2px solid var(--border-color); }
-        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 1rem 1.5rem; border-radius: 100px; font-weight: 700; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 2px solid var(--border-color); }
+        .btn-package { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.875rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+        .btn-package:hover { border-color: var(--border-focus); color: var(--text-main); }
+        .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
         
         /* TRUE SHIMMER SKELETON */
         .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
@@ -1319,7 +1367,7 @@ export default function App() {
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* FOOTER */
-        .footer { padding: 4rem 0 2rem; text-align: center; margin-top: auto; }
+        .footer { padding: 4rem 0 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; background-color: var(--bg-surface-solid); position: relative; z-index: 10; }
         .footer-link { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
         .footer-link:hover { color: var(--text-main); text-decoration: underline; }
 
@@ -1335,34 +1383,33 @@ export default function App() {
         /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 768px) {
           .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6rem; }
-          .dashboard-sidebar { transform: translateX(-100%); width: 300px; box-shadow: 10px 0 30px rgba(0,0,0,0.1); }
+          .dashboard-sidebar { transform: translateX(-100%); width: 280px; }
           .dashboard-sidebar.open { transform: translateX(0); }
-          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 70px; background: #ffffff; z-index: 900; padding: 0 1.5rem; border-bottom: 2px solid var(--border-color); }
+          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 64px; background: #ffffff; z-index: 900; padding: 0 1.5rem; border-bottom: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
           .mobile-menu-btn { background: transparent; border: none; color: var(--text-main); padding: 4px; margin-left: -4px; cursor: pointer; }
-          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.4); z-index: 950; backdrop-filter: blur(2px); }
+          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 950; backdrop-filter: blur(2px); }
           .mobile-close { background: var(--bg-surface-hover); border: none; padding: 6px; border-radius: 50%; color: var(--text-main); cursor: pointer; }
           
           .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
-          .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 2px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
+          .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
           /* Landing Page Navbar Mobile Fix */
-          .navbar { padding: 0.6rem 0.6rem 0.6rem 1.25rem; border-radius: 100px; }
+          .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
-          .footer-logo { height: 40px; }
-          .btn-primary.btn-sm { font-size: 0.8rem; padding: 0 1.25rem !important; height: 36px; border-radius: 100px; }
+          .footer-logo { height: 44px; }
+          .btn-primary.btn-sm { font-size: 0.75rem; padding: 0 1rem !important; height: 32px; border-radius: 8px; }
           
-          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-lg); border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); box-sizing: border-box; }
-          .price-huge { font-size: 3rem; flex-wrap: wrap; text-align: center; }
-          .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.9rem; }
-          .hero-title { font-size: clamp(2.5rem, 8vw, 3rem); }
+          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-md); border-left: none; border-right: none; box-sizing: border-box; }
+          .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
+          .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
+          .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .style-toggle-btn { flex: 1; justify-content: center; }
           .flex-col-mobile { flex-direction: column; align-items: flex-start; }
-          .steps-grid { flex-direction: column; gap: 1.5rem; }
+          .steps-grid { flex-direction: column; gap: 2rem; }
         }
       `}</style>
     </div>
   );
 }
-
