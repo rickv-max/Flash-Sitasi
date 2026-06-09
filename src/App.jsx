@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
+import { increment } from "firebase/firestore";
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithCustomToken,
-  signInAnonymously,
   onAuthStateChanged,
   signOut,
 } from "firebase/auth";
@@ -20,18 +19,17 @@ import {
   collection,
   addDoc,
   onSnapshot,
-  increment,
 } from "firebase/firestore";
 
 // Register GSAP Plugin
 gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
-// ⚠️ ENVIRONMENT VARIABLES CONFIGURATION
+// ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
 // ============================================================================
 const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 
-let firebaseConfig = {
+const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: env.VITE_FIREBASE_PROJECT_ID,
@@ -39,11 +37,6 @@ let firebaseConfig = {
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: env.VITE_FIREBASE_APP_ID,
 };
-
-// Prioritize environment injected config if available
-if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-  firebaseConfig = JSON.parse(__firebase_config);
-}
 
 const BAYAR_GG_API_KEY = env.VITE_BAYAR_GG_API_KEY;
 
@@ -57,16 +50,9 @@ if (firebaseConfig.apiKey) {
   } catch (error) {
     console.warn("Konfigurasi Firebase gagal dimuat:", error);
   }
+} else {
+  console.warn("API Key Firebase belum diset di .env");
 }
-
-// App ID Identifier for strict paths
-const appId = typeof __app_id !== 'undefined' ? __app_id : (firebaseConfig.appId || 'default-app-id');
-
-// ============================================================================
-// FIREBASE PATH HELPERS (STRICT ISOLATION)
-// ============================================================================
-const getProfileRef = (uid) => doc(db, 'artifacts', appId, 'users', uid, 'profile', 'data');
-const getHistoryRef = (uid) => collection(db, 'artifacts', appId, 'users', uid, 'history');
 
 // ============================================================================
 // ANIMATED MOCK WORKSPACE COMPONENT (HERO SHOWCASE)
@@ -172,6 +158,7 @@ const AnimatedWorkspaceMock = () => {
         </div>
       </div>
 
+      {/* FAKE CURSOR */}
       <div className={`fake-cursor cursor-step-${step}`}>
         <svg width="28" height="34" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#0f172a" stroke="#ffffff" strokeWidth="2.5"/>
@@ -204,6 +191,7 @@ const AnimatedWorkspaceMock = () => {
 // ============================================================================
 // MAIN APPLICATION COMPONENT
 // ============================================================================
+
 export default function App() {
   const [currentView, setCurrentView] = useState("landing");
   const landingRef = useRef(null);
@@ -282,84 +270,40 @@ export default function App() {
     setNotification(msg); setTimeout(() => setNotification(""), 3000);
   };
 
-  // --- FIREBASE AUTH (STRICT INIT) ---
+  // --- FIREBASE AUTH & REALTIME DATA ---
   useEffect(() => {
     if (!auth) return;
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Auth init error:", error);
-      }
-    };
-    initAuth();
-    
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => { setUser(currentUser); });
     return () => unsubscribeAuth();
   }, []);
 
-  // --- REALTIME FIRESTORE DATA (STRICT PATHS & ERROR HANDLED) ---
   useEffect(() => {
     if (!user || !db) return;
-    
-    const profileRef = getProfileRef(user.uid);
-    const unsubProfile = onSnapshot(profileRef, 
-      (docSnap) => { 
-        if (docSnap.exists()) setUserData(docSnap.data()); 
-      },
-      (error) => {
-        console.error("Profile sync error. Check security rules/paths:", error);
-      }
-    );
-    
-    const historyRef = getHistoryRef(user.uid);
-    const unsubHistory = onSnapshot(historyRef, 
-      (snapshot) => {
-        const histData = [];
-        snapshot.forEach((doc) => histData.push({ id: doc.id, ...doc.data() }));
-        histData.sort((a, b) => b.timestamp - a.timestamp);
-        setHistory(histData);
-      },
-      (error) => {
-        console.error("History sync error. Check security rules/paths:", error);
-      }
-    );
-    
+    const profileRef = doc(db, "users", user.uid);
+    const unsubProfile = onSnapshot(profileRef, (docSnap) => { if (docSnap.exists()) setUserData(docSnap.data()); });
+    const historyRef = collection(db, "users", user.uid, "history");
+    const unsubHistory = onSnapshot(historyRef, (snapshot) => {
+      const histData = [];
+      snapshot.forEach((doc) => histData.push({ id: doc.id, ...doc.data() }));
+      histData.sort((a, b) => b.timestamp - a.timestamp);
+      setHistory(histData);
+    });
     return () => { unsubProfile(); unsubHistory(); };
   }, [user]);
 
   // --- AUTH HANDLERS ---
   const handleLoginAndEnter = async () => {
+    if (user) { setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (!auth) return showNotification("Error: Konfigurasi API Key di .env belum diset.");
-    
     setLoading(true);
+    const provider = new GoogleAuthProvider();
     try {
-      let loggedUser = user;
-      
-      // Provide fallback popup login if absolutely no custom token/anon user exists
-      if (!loggedUser) {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        loggedUser = result.user;
-      }
-      
-      // Initialize Strict Profile Path Document
-      const profileRef = getProfileRef(loggedUser.uid);
+      const result = await signInWithPopup(auth, provider);
+      const loggedUser = result.user;
+      const profileRef = doc(db, "users", loggedUser.uid);
       const profileSnap = await getDoc(profileRef);
-      
       if (!profileSnap.exists()) {
-        await setDoc(profileRef, { 
-          credits: 5, 
-          createdAt: Date.now(), 
-          email: loggedUser.email || "anon", 
-          name: loggedUser.displayName || "User" 
-        });
+        await setDoc(profileRef, { credits: 5, createdAt: Date.now(), email: loggedUser.email, name: loggedUser.displayName });
         showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
       } else {
         const existingData = profileSnap.data();
@@ -368,14 +312,8 @@ export default function App() {
           showNotification("Bonus 5 Kredit berhasil ditambahkan.");
         }
       }
-      setCurrentView("tool"); 
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (e) { 
-      setError("Login gagal. Terjadi kendala saat autentikasi."); 
-      console.error(e);
-    } finally { 
-      setLoading(false); 
-    }
+      setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) { setError("Login via Google dibatalkan atau gagal."); } finally { setLoading(false); }
   };
 
   const handleLogout = async () => {
@@ -388,67 +326,39 @@ export default function App() {
   // --- PAYMENT HANDLER ---
   const processPayment = async () => {
     if (topupAmount < 1) return showNotification("Minimal pembelian 1 kredit.");
-    setIsPaying(true); 
-    const price = topupAmount * 750;
-    
+    setIsPaying(true); const price = topupAmount * 750;
     try {
       const response = await fetch("/api/create-payment", {
-        method: "POST", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          amount: price, 
-          description: `Top Up ${topupAmount} Kredit FlashCite`, 
-          customer_name: user?.displayName || "Pengguna", 
-          customer_email: user?.email || "", 
-          payment_method: "qris", 
-          redirect_url: window.location.href 
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: price, description: `Top Up ${topupAmount} Kredit FlashCite`, customer_name: user.displayName || "Pengguna", customer_email: user.email || "", payment_method: "qris", redirect_url: window.location.href }),
       });
-      
-      if (!response.ok) {
-        throw new Error("Gagal terhubung ke server pembayaran (Endpoint API tidak tersedia)");
-      }
-      
       const data = await response.json();
-      if (data.success && data.data?.payment_url) { 
-        window.location.href = data.data.payment_url; 
-      } else { 
-        throw new Error(data.message || "Gagal membuat ID pembayaran"); 
-      }
-    } catch (err) { 
-      showNotification(err.message || "Error saat menghubungi Gateway Payment."); 
-    } finally { 
-      setIsPaying(false); 
-    }
+      if (data.success && data.data?.payment_url) { window.location.href = data.data.payment_url; } 
+      else { throw new Error(data.message || "Gagal membuat pembayaran"); }
+    } catch (err) { showNotification(err.message || "Error payment."); } finally { setIsPaying(false); }
   };
 
   const deductCredit = async (amount = 1) => {
     if (!user || !db) return false;
     const currentCredits = userData.credits || 0;
     if (currentCredits < amount) { setShowTopupModal(true); return false; }
-    
-    // Updated to strict profile reference
-    await updateDoc(getProfileRef(user.uid), { credits: increment(-amount) });
+    await updateDoc(doc(db, "users", user.uid), { credits: increment(-amount) });
     return true;
   };
 
   const refundCredit = async (amount = 1) => {
     if (!user || !db) return;
-    
-    // Updated to strict profile reference
-    await updateDoc(getProfileRef(user.uid), { credits: increment(amount) });
+    await updateDoc(doc(db, "users", user.uid), { credits: increment(amount) });
   };
 
   const saveToHistory = async (meta, fn, dp, apaIn, apaRf, inputVal, type) => {
     if (!user || !db) return;
-    
-    // Updated to strict history collection reference
-    await addDoc(getHistoryRef(user.uid), {
+    await addDoc(collection(db, "users", user.uid, "history"), {
       type, input: inputVal, title: meta.title, footnote: fn, dafpus: dp, apaInText: apaIn, apaRef: apaRf, timestamp: Date.now(),
     });
   };
 
-  // --- SCRAPING ENGINE (Retained and robust as-is) ---
+  // --- SCRAPING ENGINE ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -610,11 +520,7 @@ export default function App() {
       const line = lines[i]; const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
       try { let meta = isDoi ? await processDOI(line) : await processURL(line); results.push({ status: "success", line, meta }); successfulParses++; const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch"); } catch (err) { results.push({ status: "error", line, error: err.message }); }
     }
-    if (successfulParses > 0) { 
-        // Updated to strict profile reference
-        const profileRef = getProfileRef(user.uid); 
-        await updateDoc(profileRef, { credits: currentCredits - successfulParses }); 
-    }
+    if (successfulParses > 0) { const profileRef = doc(db, "users", user.uid); await updateDoc(profileRef, { credits: currentCredits - successfulParses }); }
     setBatchResults(results); setLoading(false);
   };
 
@@ -666,7 +572,7 @@ export default function App() {
 
   return (
     <div className="app-wrapper pattern-bg" ref={appRef}>
-      {(!firebaseConfig.apiKey && typeof __firebase_config === 'undefined') && (
+      {!firebaseConfig.apiKey && (
         <div className="env-warning">⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.</div>
       )}
 
@@ -1132,11 +1038,11 @@ export default function App() {
         </div>
       )}
 
-      {/* --- CSS STYLING & VARIABLES ISOLATION --- */}
+      {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-        /* FORCE LIGHT MODE */
+        /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
         html, body, #root {
           margin: 0 !important;
           padding: 0 !important;
@@ -1190,6 +1096,7 @@ export default function App() {
         * { box-sizing: border-box; }
         .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
 
+        /* PATTERN & AMBIENT BACKGROUND GLOW */
         .pattern-bg {
           background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
           background-size: 24px 24px;
@@ -1203,9 +1110,20 @@ export default function App() {
           position: absolute; filter: blur(100px); opacity: 0.7;
           border-radius: 50%; animation: floatBlob 25s infinite alternate;
         }
-        .blob-1 { top: -5%; left: -5%; width: 55vw; height: 55vw; background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); }
-        .blob-2 { bottom: -10%; right: -5%; width: 65vw; height: 65vw; background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); animation-delay: -5s; }
-        .blob-3 { top: 40%; left: 60%; width: 45vw; height: 45vw; background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); animation-delay: -12s; }
+        .blob-1 {
+          top: -5%; left: -5%; width: 55vw; height: 55vw;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
+        }
+        .blob-2 {
+          bottom: -10%; right: -5%; width: 65vw; height: 65vw;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          animation-delay: -5s;
+        }
+        .blob-3 {
+          top: 40%; left: 60%; width: 45vw; height: 45vw;
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          animation-delay: -12s;
+        }
         
         @keyframes floatBlob {
           0% { transform: translate(0, 0) scale(1); }
@@ -1213,11 +1131,13 @@ export default function App() {
           100% { transform: translate(-8%, -12%) scale(0.9); }
         }
 
+        /* GLASSMORPHISM & SHADOWS */
         .glass-panel { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
         .shadow-premium { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.03), 0 1px 4px -1px rgba(0, 0, 0, 0.02); }
         .shadow-glow { box-shadow: 0 0 20px rgba(0, 0, 0, 0.08); }
         .shadow-premium-glow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06), 0 0 40px -10px var(--border-color); }
 
+        /* UTILS */
         .text-center { text-align: center; } .text-left { text-align: left; }
         .text-gradient { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; }
@@ -1267,6 +1187,7 @@ export default function App() {
         .translate-y-0 { transform: translateY(0); } .translate-y-4 { transform: translateY(1rem); }
         .h-0 { height: 0; } .h-auto { height: auto; }
 
+        /* FIXED NAVBAR LANDING PAGE */
         .navbar-wrapper {
           position: fixed; top: 1.5rem; z-index: 1000; left: 0; right: 0;
           padding: 0 1.5rem; display: flex; justify-content: center;
@@ -1298,6 +1219,7 @@ export default function App() {
 
         .content-padding-top { padding-top: 100px; }
 
+        /* BUTTONS */
         .btn-primary {
           background: var(--primary); color: var(--bg-surface-solid);
           border: 1px solid transparent; border-radius: 100px; font-weight: 600; font-size: 0.95rem;
@@ -1317,6 +1239,7 @@ export default function App() {
         .btn-sm { height: 36px; padding: 0 1.25rem !important; font-size: 0.85rem; }
         .btn-lg { padding: 1.125rem 2.5rem !important; font-size: 1.05rem; }
 
+        /* HERO SECTION */
         .hero-section { padding: 4rem 0 5rem; }
         .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface-solid); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
@@ -1328,20 +1251,24 @@ export default function App() {
         .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
         .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.08; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
         
+        /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
         .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-surface-solid); background-color: var(--skeleton-bg); margin-left: -8px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .avatar:nth-child(1) { background-image: url('https://i.pravatar.cc/100?img=1'); margin-left: 0; z-index: 3; }
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
 
+        /* PREVIEW MOCK COMPONENT */
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--bg-surface-solid); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
         .step-card { flex: 1; text-align: center; padding: 0 1rem; z-index: 2; position: relative; }
         .step-icon { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1.25rem; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .step-connector { flex: 1; height: 1px; background: var(--border-color); margin-top: 24px; z-index: 1; }
 
+        /* FEATURES SECTION */
         .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; position: relative; z-index: 2; }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; position: relative; z-index: 2;}
         .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
@@ -1349,6 +1276,7 @@ export default function App() {
         .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
+        /* PRICING SECTION */
         .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative; box-sizing: border-box;}
         .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
@@ -1360,8 +1288,10 @@ export default function App() {
         .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
         .icon-wrap svg { width: 13px; height: 13px; stroke-width: 3.5; }
 
+        /* DASHBOARD WORKSPACE */
         .dashboard-layout { display: flex; min-height: 100vh; position: relative; z-index: 10; }
         
+        /* SIDEBAR DESKTOP */
         .dashboard-sidebar { 
            width: 260px; background: #ffffff; border-right: 1px solid var(--border-color); 
            display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; 
@@ -1388,17 +1318,20 @@ export default function App() {
         .dashboard-main { flex: 1; margin-left: 260px; padding: 2.5rem; min-height: 100vh; }
         .dashboard-container { max-width: 760px; margin: 0 auto; }
         
+        /* CITATION STYLE TOGGLE */
         .style-toggle { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; }
         .style-toggle-btn { background: transparent; border: none; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
         .style-toggle-btn:hover:not(.active) { color: var(--text-main); }
         .style-toggle-btn.active { background: #ffffff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
+        /* FORMS MODERN */
         .input-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
         .input-field-modern { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: all 0.2s; font-family: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
         .input-field-modern::placeholder { color: var(--text-muted); opacity: 0.6; }
         .input-field-modern:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
         .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
 
+        /* RESULTS AREA & HISTORY */
         .result-block { overflow: hidden; }
         .result-header { padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; }
         .result-html { padding: 1rem; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
@@ -1407,11 +1340,13 @@ export default function App() {
         .btn-sm-padding { padding: 6px; }
         .history-container { max-height: 600px; overflow-y: auto; }
         
+        /* CUSTOM SCROLLBAR */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+        /* MODALS & ALERTS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
@@ -1425,15 +1360,18 @@ export default function App() {
         .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
         .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
         
+        /* TRUE SHIMMER SKELETON */
         .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
         .skeleton-box { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); width: 100%; }
         .w-40 { width: 10rem; } .w-48 { width: 12rem; } .h-24 { height: 6rem; } .h-20 { height: 5rem; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+        /* FOOTER */
         .footer { padding: 4rem 0 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; background-color: var(--bg-surface-solid); position: relative; z-index: 10; }
         .footer-link { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
         .footer-link:hover { color: var(--text-main); text-decoration: underline; }
 
+        /* ANIMATIONS */
         .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
         .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animate-slide-up-fade { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -1442,6 +1380,7 @@ export default function App() {
         @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
+        /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 768px) {
           .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6rem; }
           .dashboard-sidebar { transform: translateX(-100%); width: 280px; }
@@ -1455,6 +1394,7 @@ export default function App() {
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
+          /* Landing Page Navbar Mobile Fix */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
