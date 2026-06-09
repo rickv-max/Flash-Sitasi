@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "https://esm.sh/gsap"; // Saat di lokal/GitHub, gunakan: import gsap from "gsap";
+import gsap from "gsap"; // Saat di lokal/GitHub, gunakan: import gsap from "gsap";
 import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // Saat di lokal: import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
