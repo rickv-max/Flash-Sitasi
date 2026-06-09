@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import gsap from "gsap"; // Saat di lokal/GitHub, gunakan: import gsap from "gsap";
-import { ScrollTrigger } from "https://esm.sh/gsap/ScrollTrigger"; // Saat di lokal: import { ScrollTrigger } from "gsap/ScrollTrigger";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
 import { increment } from "firebase/firestore";
 import {
@@ -80,12 +80,12 @@ const AnimatedWorkspaceMock = () => {
           if (i === targetText.length) {
             clearInterval(typeInterval);
             timeouts.push(setTimeout(() => setStep(3), 500)); 
-            timeouts.push(setTimeout(() => setStep(4), 1000));
-            timeouts.push(setTimeout(() => setStep(5), 1200));
-            timeouts.push(setTimeout(() => setStep(6), 2800));
-            timeouts.push(setTimeout(() => setStep(7), 3600));
-            timeouts.push(setTimeout(() => setStep(8), 4200));
-            timeouts.push(setTimeout(() => runSequence(), 7000));
+            timeouts.push(setTimeout(() => setStep(4), 1200));
+            timeouts.push(setTimeout(() => setStep(5), 1400));
+            timeouts.push(setTimeout(() => setStep(6), 3500));
+            timeouts.push(setTimeout(() => setStep(7), 4500));
+            timeouts.push(setTimeout(() => setStep(8), 5100));
+            timeouts.push(setTimeout(() => runSequence(), 8000));
           }
         }, 40);
       }, 1900));
@@ -96,61 +96,62 @@ const AnimatedWorkspaceMock = () => {
   }, []);
 
   return (
-    <div className="mock-workspace neu-flat rounded-2xl mx-auto max-w-3xl overflow-hidden relative z-20">
-      <div className="preview-header px-4 py-3 flex items-center gap-3">
+    <div className="mock-workspace glass-panel relative text-left bg-surface-solid border border-color rounded-xl shadow-premium-glow mx-auto max-w-3xl overflow-hidden z-20">
+      <div className="preview-header bg-surface-alt border-b border-color px-4 py-3 flex items-center gap-3">
          <div className="flex gap-2">
-            <span className="w-2.5 h-2.5 rounded-full neu-pressed"></span>
-            <span className="w-2.5 h-2.5 rounded-full neu-pressed"></span>
-            <span className="w-2.5 h-2.5 rounded-full neu-pressed"></span>
+            <span className="w-3 h-3 rounded-full bg-red-400"></span>
+            <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+            <span className="w-3 h-3 rounded-full bg-green-400"></span>
          </div>
-         <span className="text-[10px] font-bold text-muted font-mono ml-2 uppercase tracking-widest">Ruang Kerja App</span>
+         <span className="text-xs font-semibold text-muted font-mono ml-2">demo_ruang_kerja.app</span>
       </div>
 
-      <div className="p-5 sm:p-8 relative z-10">
-        <div className="flex items-center justify-between mb-6 pb-5 border-b border-neu-divider flex-col sm:flex-row gap-4 sm:gap-0">
-          <div className="w-full sm:w-auto text-center sm:text-left">
-            <h3 className="text-sm font-extrabold text-main m-0">Format Sitasi</h3>
+      <div className="p-6 sm:p-8 relative z-10 bg-white">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 m-0">Format Sitasi</h3>
+            <p className="text-xs text-slate-500 mt-1 m-0 hidden sm:block">Pilih gaya output</p>
           </div>
-          <div className="style-toggle neu-pressed pointer-events-none p-1.5 flex gap-1 rounded-xl w-full sm:w-auto justify-center">
-            <button className="neu-button text-primary px-4 py-2 text-[11px] active font-bold flex-1 sm:flex-none whitespace-nowrap">📝 Footnote</button>
-            <button className="text-muted font-bold px-4 py-2 text-[11px] flex-1 sm:flex-none whitespace-nowrap">📑 APA 7</button>
+          <div className="style-toggle pointer-events-none">
+            <button className="style-toggle-btn active">📝 Footnote</button>
+            <button className="style-toggle-btn">📑 APA 7</button>
           </div>
         </div>
 
-        <div className="form-group mb-6">
-          <label className="input-label text-[10px] font-extrabold mb-2 block uppercase tracking-wider text-muted">Nomor DOI Referensi</label>
-          <div className={`neu-pressed px-4 min-h-[50px] flex items-center rounded-xl transition-all ${step >= 2 && step < 5 ? 'border-primary shadow-inner-blue' : 'border-transparent'}`} style={{borderWidth: '1px'}}>
-            <span className="text-main font-bold text-sm sm:text-base truncate">{typedText}</span>
+        <div className="form-group mb-5">
+          <label className="input-label text-xs text-slate-900 font-bold mb-2 block">Nomor DOI Referensi</label>
+          <div className={`mock-input-wrap ${step >= 2 && step < 5 ? 'focused' : ''}`}>
+            <span className="mock-input-text text-slate-900 font-medium">{typedText}</span>
             {step >= 2 && step < 4 && <span className="mock-caret"></span>}
-            {!typedText && step <= 1 && <span className="text-muted opacity-60 text-xs sm:text-sm font-medium">Contoh: 10.1038/s41586...</span>}
+            {!typedText && step <= 1 && <span className="text-slate-400 opacity-80 text-sm">Contoh: 10.1038/s41586...</span>}
           </div>
         </div>
 
-        <button className={`neu-button w-full min-h-[52px] py-4 text-xs sm:text-sm uppercase tracking-wider font-extrabold text-primary rounded-xl transition-transform duration-200 flex items-center justify-center ${step === 4 ? 'scale-[0.98]' : 'scale-100'}`}>
+        <button className={`btn-primary w-full py-3 shadow-glow transition-transform duration-200 ${step === 4 ? 'scale-95' : 'scale-100'}`}>
           {step === 5 ? (
-            <span className="flex items-center gap-2 justify-center text-primary"><span className="loading-spinner w-4 h-4 border-primary"></span> Mengekstrak...</span>
+            <span className="flex items-center gap-2 justify-center text-white"><span className="loading-spinner w-4 h-4 border-white"></span> Mengekstrak Metadata...</span>
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
         {/* RESULTS MOCK */}
-        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-5 transition-all duration-700 ease-out overflow-hidden ${step >= 6 ? 'opacity-100 max-h-[600px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
-          <div className="result-block neu-pressed rounded-2xl p-5 relative">
-            <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
-              <span className="text-[10px] sm:text-xs font-extrabold text-muted">CATATAN KAKI</span>
-              <button className={`neu-button text-[10px] py-1.5 px-3 font-bold rounded-md ${step === 8 ? 'text-success' : 'text-primary'}`}>
-                {step > 8 ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
+        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[800px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-extrabold text-slate-500">CATATAN KAKI</span>
+              <button className={`btn-copy-modern text-xs py-1 px-2 transition-transform ${step === 8 ? 'scale-95 bg-white border-slate-800' : 'scale-100'}`}>
+                {step > 8 ? <><span className="text-green-600 font-bold text-xs mr-1">✓</span><span className="text-slate-800">Disalin</span></> : <span className="text-slate-800">Salin</span>}
               </button>
             </div>
-            <p className="text-xs sm:text-sm m-0 leading-relaxed text-main font-medium">
+            <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
-          <div className="result-block neu-pressed rounded-2xl p-5 relative">
-            <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
-              <span className="text-[10px] sm:text-xs font-extrabold text-muted">APA 7TH EDITION</span>
-              <button className="neu-button text-[10px] py-1.5 px-3 font-bold rounded-md text-primary">Salin</button>
+          <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
+            <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
+              <span className="text-xs font-extrabold text-slate-500">APA 7TH EDITION</span>
+              <button className="btn-copy-modern text-xs py-1 px-2 scale-100 text-slate-800">Salin</button>
             </div>
-            <p className="text-xs sm:text-sm m-0 leading-relaxed text-main font-medium">
+            <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
               Smith, J. (2020). The Architecture of Modern SaaS. <i>Nature</i>, 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
@@ -159,32 +160,28 @@ const AnimatedWorkspaceMock = () => {
 
       {/* FAKE CURSOR */}
       <div className={`fake-cursor cursor-step-${step}`}>
-        <svg width="24" height="24" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#1e293b" stroke="#ffffff" strokeWidth="2.5"/>
+        <svg width="28" height="34" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#0f172a" stroke="#ffffff" strokeWidth="2.5"/>
         </svg>
       </div>
 
       <style>{`
+        .mock-input-wrap { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height: 52px; display: flex; align-items: center; transition: 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+        .mock-input-wrap.focused { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
         .mock-caret { display: inline-block; width: 2px; height: 18px; background: var(--primary); margin-left: 4px; animation: blink 1s step-end infinite; }
-        .shadow-inner-blue { box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5); }
         @keyframes blink { 50% { opacity: 0; } }
-        
-        .fake-cursor { position: absolute; z-index: 50; transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2)); }
-        
-        /* Desktop Cursor Routing */
+        .fake-cursor { position: absolute; z-index: 50; transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
         .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
-        .cursor-step-1, .cursor-step-2 { top: 44%; left: 25%; opacity: 1; }
-        .cursor-step-3 { top: 58%; left: 50%; opacity: 1; }
-        .cursor-step-4, .cursor-step-5 { top: 58%; left: 50%; opacity: 1; transform: scale(0.9); }
-        .cursor-step-6, .cursor-step-7 { top: 82%; left: 45%; opacity: 1; transform: scale(1); }
-        .cursor-step-8 { top: 82%; left: 45%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-1, .cursor-step-2 { top: 35%; left: 25%; opacity: 1; transform: scale(1); }
+        .cursor-step-3 { top: 52%; left: 50%; opacity: 1; transform: scale(1); }
+        .cursor-step-4, .cursor-step-5 { top: 52%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-6, .cursor-step-7 { top: 80%; left: 45%; opacity: 1; transform: scale(1); }
+        .cursor-step-8 { top: 80%; left: 45%; opacity: 1; transform: scale(0.9); }
         .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
-        
-        /* Mobile Cursor Routing */
         @media (max-width: 640px) {
-           .cursor-step-1, .cursor-step-2 { top: 52%; left: 35%; }
-           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 62%; left: 50%; }
-           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 72%; left: 80%; }
+           .cursor-step-1, .cursor-step-2 { top: 25%; left: 35%; }
+           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 38%; left: 50%; }
+           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 58%; left: 80%; }
         }
       `}</style>
     </div>
@@ -211,8 +208,10 @@ export default function App() {
   const [inputMode, setInputMode] = useState("doi");
   const [citationStyle, setCitationStyle] = useState("footnote");
   
+  // Dashboard Sidebar State (Mobile)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Form States
   const [doiInput, setDoiInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [batchInput, setBatchInput] = useState("");
@@ -244,15 +243,20 @@ export default function App() {
         const tl = gsap.timeline();
         
         tl.fromTo(".navbar-wrapper", { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-          .fromTo(".hero-badge", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
-          .fromTo(".title-word", { opacity: 0, y: 30, filter: "blur(8px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
+          .fromTo(".hero-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          .fromTo(".title-word", { opacity: 0, y: 30, rotationX: 20 }, { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.08, ease: "power3.out" }, "-=0.3")
           .fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.4")
-          .fromTo(".hero-cta", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4");
+          .fromTo(".hero-cta", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, "-=0.4")
+          .fromTo(".floating-element", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 1, stagger: 0.2, ease: "back.out(1.2)" }, "-=0.6");
+
+        gsap.to(".float-1", { y: 280, rotation: 15, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1 } });
+        gsap.to(".float-2", { y: 320, rotation: -20, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 1.5 } });
+        gsap.to(".float-3", { y: 250, rotation: 25, ease: "none", scrollTrigger: { trigger: ".hero-section", start: "top top", end: "bottom top", scrub: 0.8 } });
 
         gsap.fromTo(".preview-card-anim", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".preview-section", start: "top 85%" } });
-        gsap.fromTo(".step-card-anim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } });
+        gsap.fromTo(".step-card-anim", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", scrollTrigger: { trigger: ".steps-section", start: "top 80%" } });
         gsap.fromTo(".feature-card-anim", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: "power2.out", scrollTrigger: { trigger: ".features-section", start: "top 80%" } });
-        gsap.fromTo(".pricing-card-anim", { opacity: 0, scale: 0.9, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: "back.out(1.2)", scrollTrigger: { trigger: ".pricing-section", start: "top 85%" } });
+        gsap.fromTo(".pricing-card-anim", { opacity: 0, scale: 0.95, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: ".pricing-section", start: "top 85%" } });
       }, appRef);
       return () => ctx.revert();
     }
@@ -354,7 +358,7 @@ export default function App() {
     });
   };
 
-  // --- SCRAPING ENGINE (Dipertahankan seperti semula) ---
+  // --- SCRAPING ENGINE ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -384,11 +388,7 @@ export default function App() {
     if (paper.authors && paper.authors.length > 0) {
       let firstAuthor = paper.authors[0].name.trim(); const parts = firstAuthor.split(" ").filter(Boolean);
       let family = "", given = "";
-      if (parts.length === 1) {
-        family = parts[0]; given = "";
-      } else {
-        family = parts.pop(); given = parts.join(" ");
-      }
+      if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); }
       fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
       if (paper.authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
     }
@@ -533,17 +533,8 @@ export default function App() {
     if (success) { setCopiedId(targetCopyId); setTimeout(() => setCopiedId(null), 2000); }
   };
 
-  // --- Derived Variables for Batch ---
-  const batchSuccesses = batchResults.filter((r) => r.status === "success");
-  const batchErrors = batchResults.filter((r) => r.status === "error");
-  const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => {
-    const authorA = a.meta?.authorDafpus?.replace(/<[^>]+>/g, "").trim().toLowerCase() || "";
-    const authorB = b.meta?.authorDafpus?.replace(/<[^>]+>/g, "").trim().toLowerCase() || "";
-    return authorA.localeCompare(authorB);
-  });
-
   // --- SVGs & ICONS ---
-  const VideoLogo = () => (<video src="/logo.mp4" autoPlay loop muted playsInline className="video-logo-asset" style={{ mixBlendMode: 'multiply' }} />);
+  const VideoLogo = () => (<video src="/logo.mp4" autoPlay loop muted playsInline className="video-logo-asset" />);
   const CheckIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg>);
   const CopyIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>);
   const WarningIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
@@ -553,24 +544,34 @@ export default function App() {
   const MenuIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="24" width="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>);
   const LogoutIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>);
   
+  // Custom Sidebar Icons
   const DoiIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>);
   const LinkIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>);
   const BatchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>);
   const ManualIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
   const HistoryIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="18" width="18"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>);
 
+  // Custom Solid/Artistic Icons for Floating Background
+  const FloatBook = () => (<svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bookGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6" /><stop offset="1" stopColor="#1d4ed8" /></linearGradient><linearGradient id="pageGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#ffffff" /><stop offset="1" stopColor="#f1f5f9" /></linearGradient><filter id="shadowBook"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.15" /></filter></defs><g filter="url(#shadowBook)"><path d="M32 16C24 16 16 20 10 24V56C16 52 24 48 32 48C40 48 48 52 54 56V24C48 20 40 16 32 16Z" fill="url(#pageGrad)" stroke="#e2e8f0" strokeWidth="2"/><path d="M32 16V48" stroke="#cbd5e1" strokeWidth="2"/><path d="M24 16V28" stroke="url(#bookGrad)" strokeWidth="6" strokeLinecap="round"/><rect x="18" y="14" width="8" height="20" fill="#ef4444" rx="2"/></g></svg>);
+  const FloatToga = () => (<svg width="90" height="90" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="togaGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#1e1b4b"/><stop offset="1" stopColor="#4c1d95"/></linearGradient><filter id="shadowToga"><feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.2" /></filter></defs><g filter="url(#shadowToga)"><path d="M32 16L8 28L32 40L56 28L32 16Z" fill="url(#togaGrad)" /><path d="M18 33V45C18 45 25 50 32 50C39 50 46 45 46 45V33" fill="none" stroke="url(#togaGrad)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/><path d="M52 30V44" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round"/><circle cx="52" cy="46" r="4" fill="#f59e0b"/></g></svg>);
+  const FloatFlash = () => (<svg width="70" height="70" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="flashGrad" x1="0" y1="0" x2="64" y2="64"><stop stopColor="#fef08a"/><stop offset="1" stopColor="#ea580c"/></linearGradient><filter id="shadowFlash"><feDropShadow dx="0" dy="6" stdDeviation="8" floodOpacity="0.25" floodColor="#ea580c" /></filter></defs><path d="M36 4L14 34H32L28 60L50 30H32L36 4Z" fill="url(#flashGrad)" filter="url(#shadowFlash)"/></svg>);
+
   const ShieldIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>);
   const SparklesIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>);
   const ZapIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
 
+  const batchSuccesses = batchResults.filter((r) => r.status === "success");
+  const batchErrors = batchResults.filter((r) => r.status === "error");
+  const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus));
+
   const SkeletonLoader = () => (
-    <div className="mt-8 sm:mt-10 neu-flat rounded-3xl">
-      <div className="p-6 sm:p-10"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
+    <div className="card mt-6 glass-panel animate-fade-in">
+      <div className="p-6"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
     </div>
   );
 
   return (
-    <div className="app-wrapper" ref={appRef}>
+    <div className="app-wrapper pattern-bg" ref={appRef}>
       {!firebaseConfig.apiKey && (
         <div className="env-warning">⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.</div>
       )}
@@ -579,27 +580,27 @@ export default function App() {
 
       {showTopupModal && (
         <div className="modal-overlay">
-          <div className="modal-box animate-scale-in neu-flat">
+          <div className="modal-box animate-scale-in">
             <div className="modal-header">
-              <h3 className="m-0 flex items-center gap-2 text-lg font-extrabold text-main"><CoinIcon /> Top Up Kredit</h3>
-              <button className="btn-close-modal neu-button" onClick={() => setShowTopupModal(false)}><CloseIcon /></button>
+              <h3 className="m-0 flex items-center gap-2 text-lg font-bold"><CoinIcon /> Top Up Kredit</h3>
+              <button className="btn-close-modal" onClick={() => setShowTopupModal(false)}><CloseIcon /></button>
             </div>
             <div className="modal-body">
-              <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750.</p>
+              <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750. Bebas hambatan, bebas stres.</p>
               <div className="grid-packages mb-5">
                 {[50, 75, 100, 125].map((amt) => (
-                  <button key={amt} className={`neu-button py-4 text-sm font-bold min-h-[50px] ${topupAmount === amt ? "active text-primary" : "text-muted"}`} onClick={() => setTopupAmount(amt)}>{amt} Kredit</button>
+                  <button key={amt} className={`btn-package ${topupAmount === amt ? "active" : ""}`} onClick={() => setTopupAmount(amt)}>{amt} Kredit</button>
                 ))}
               </div>
               <div className="form-group">
-                <label className="input-label">Nomor Custom:</label>
-                <input type="number" min="1" className="input-field-modern neu-pressed" value={topupAmount} onChange={(e) => setTopupAmount(parseInt(e.target.value) || 0)} />
+                <label className="text-xs font-bold text-muted uppercase tracking-wide mb-2 block">Nominal Custom:</label>
+                <input type="number" min="1" className="input-field-modern" value={topupAmount} onChange={(e) => setTopupAmount(parseInt(e.target.value) || 0)} />
               </div>
-              <div className="price-tag mt-6 neu-pressed p-4 rounded-xl flex justify-between items-center">
-                <span className="text-muted font-bold text-sm">Total:</span>
-                <span className="font-black text-xl text-primary">Rp {(topupAmount * 750).toLocaleString("id-ID")}</span>
+              <div className="price-tag mt-6">
+                <span className="text-muted font-medium text-sm">Total Pembayaran</span>
+                <span className="font-extrabold text-xl text-main">Rp {(topupAmount * 750).toLocaleString("id-ID")}</span>
               </div>
-              <button className="neu-button w-full mt-8 py-4 sm:py-5 min-h-[56px] text-primary font-extrabold flex items-center justify-center" onClick={processPayment} disabled={isPaying}>
+              <button className="btn-primary w-full mt-6 py-3.5 shadow-glow" onClick={processPayment} disabled={isPaying}>
                 {isPaying ? "Menghubungkan..." : "Bayar via Bayar.gg"}
               </button>
             </div>
@@ -610,18 +611,18 @@ export default function App() {
       {/* --- LANDING PAGE NAVBAR --- */}
       {currentView === "landing" && (
         <div className="navbar-wrapper">
-          <nav className="navbar neu-flat rounded-full">
+          <nav className="navbar">
             <div className="nav-container">
               <div className="nav-logo" onClick={() => { setCurrentView("landing"); window.scrollTo(0, 0); }}>
                 <div className="logo-icon-wrap"><VideoLogo /></div>
               </div>
               <div className="nav-actions">
                 {!user ? (
-                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold text-primary flex items-center whitespace-nowrap" disabled={loading}>
+                  <button onClick={handleLoginAndEnter} className="btn-primary btn-sm" disabled={loading}>
                     {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
                   </button>
                 ) : (
-                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold text-primary flex items-center whitespace-nowrap">Buka Ruang Kerja</button>
+                  <button onClick={handleLoginAndEnter} className="btn-primary btn-sm">Buka Ruang Kerja</button>
                 )}
               </div>
             </div>
@@ -632,160 +633,128 @@ export default function App() {
       {/* --- VIEW 1: LANDING PAGE --- */}
       {currentView === "landing" && (
         <main className="main-content z-10 relative content-padding-top" ref={landingRef}>
+          {/* Mesh Gradient Background */}
+          <div className="ambient-background">
+             <div className="ambient-blob blob-1"></div>
+             <div className="ambient-blob blob-2"></div>
+             <div className="ambient-blob blob-3"></div>
+          </div>
 
           {/* Hero Section */}
-          <section id="hero" className="hero-section relative overflow-hidden">
-            
-            {/* HERO FLOATING DECORATIONS (Desktop Only) */}
-            <div className="floating-element float-1 hidden sm:block absolute top-[10%] left-[8%] z-0">
-               <div className="w-20 h-20 rounded-3xl neu-flat flex items-center justify-center opacity-70">
-                 <span className="text-4xl text-primary">📑</span>
-               </div>
-            </div>
-            <div className="floating-element float-2 hidden sm:block absolute top-[25%] right-[10%] z-0">
-               <div className="w-24 h-24 rounded-full neu-flat flex items-center justify-center opacity-70">
-                 <span className="text-5xl text-primary">🎓</span>
-               </div>
-            </div>
-            <div className="floating-element float-3 hidden sm:block absolute top-[60%] left-[15%] z-0">
-               <div className="w-16 h-16 rounded-xl neu-flat flex items-center justify-center opacity-70">
-                 <span className="text-3xl text-primary">⚡</span>
-               </div>
-            </div>
+          <section id="hero" className="hero-section relative">
+            {/* Floating GSAP Elements - Sembunyi di HP, Animasi ke belakang terminal */}
+            <div className="floating-element float-1 hidden-mobile" style={{position: 'absolute', top: '10%', left: '8%', zIndex: 0}}><FloatBook /></div>
+            <div className="floating-element float-2 hidden-mobile" style={{position: 'absolute', top: '5%', right: '10%', zIndex: 0}}><FloatToga /></div>
+            <div className="floating-element float-3 hidden-mobile" style={{position: 'absolute', top: '40%', left: '12%', zIndex: 0}}><FloatFlash /></div>
 
-            <div className="container text-center relative z-10 px-4">
-              <div className="hero-badge neu-flat mx-auto mb-6 sm:mb-8 px-5 py-2 rounded-full flex items-center gap-2 w-max text-xs sm:text-sm font-bold text-muted">
+            <div className="container text-center relative z-10">
+              <div className="hero-badge badge-pill mx-auto mb-6 flex items-center gap-2 w-max">
                 <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
               </div>
               
               <h1 className="hero-title" style={{ perspective: "1000px" }}>
                 <div className="hero-title-line">
-                  <span className="title-word inline-block">Ekstrak</span> <span className="title-word inline-block">Referensi</span>
+                  <span className="title-word inline-block">Ekstrak</span> <span className="title-word inline-block">Referensi</span> <span className="title-word inline-block">Jurnal</span>
                 </div>
                 <div className="hero-title-line">
-                  <span className="title-word inline-block">Jurnal</span> <span className="text-primary title-word inline-block">Dalam</span>
-                </div>
-                <div className="hero-title-line">
-                  <span className="text-primary title-word inline-block">Hitungan</span> <span className="text-primary title-word inline-block">Detik.</span>
+                  <span className="text-gradient title-word inline-block">Dalam</span> <span className="text-gradient title-word inline-block">Hitungan</span> <span className="text-gradient title-word inline-block">Detik.</span>
                 </div>
               </h1>
               
-              <p className="hero-subtitle mx-auto mt-5 sm:mt-6 text-muted">
+              <p className="hero-subtitle mx-auto mt-6">
                 Berhenti menyusun daftar pustaka secara manual. Sistem mengekstrak metadata
                 dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan presisi tinggi.
               </p>
               
-              <div className="hero-cta mt-10 sm:mt-12 w-full max-w-sm mx-auto px-4 sm:px-0">
-                <button onClick={handleLoginAndEnter} className="neu-button px-6 sm:px-8 py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary w-full flex items-center justify-center" disabled={loading}>
+              <div className="hero-cta mt-10">
+                <button onClick={handleLoginAndEnter} className="btn-primary btn-lg shadow-glow" disabled={loading}>
                   {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
                 </button>
-                <div className="hero-trusted mt-8 flex items-center justify-center gap-3">
+                <div className="hero-trusted mt-6 flex items-center justify-center gap-3">
                   <div className="avatar-group flex"><div className="avatar"></div><div className="avatar"></div><div className="avatar"></div></div>
-                  <p className="text-[10px] sm:text-xs text-muted font-bold m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
+                  <p className="text-xs text-muted font-medium m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Animated Mock Workspace (Hero Showcase) */}
-          <section className="preview-section mt-10 sm:mt-16 pb-16 sm:pb-24 relative z-20">
-            <div className="container preview-card-anim px-4 sm:px-6">
+          <section className="preview-section mt-12 pb-24 relative z-20">
+            <div className="container preview-card-anim">
                <AnimatedWorkspaceMock />
             </div>
           </section>
 
           {/* How It Works Section */}
-          <section className="steps-section py-16 sm:py-24 relative z-10">
-             <div className="container px-4">
-                <h2 className="section-title text-center mb-4">Tiga Langkah Mudah</h2>
-                <p className="text-muted font-medium text-center max-w-md mx-auto mb-12 sm:mb-16 text-sm sm:text-base leading-relaxed">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
-                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">1</div>
-                      <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Salin Tautan</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Dapatkan tautan (URL) atau nomor DOI dari jurnal/artikel yang ingin disitasi.</p>
-                      </div>
-                   </div>
-                   
-                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">2</div>
-                      <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Sistem Memproses</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Tempelkan tautan ke dalam sistem kami, lalu klik tombol Generate.</p>
-                      </div>
-                   </div>
-                   
-                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">3</div>
-                      <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Sitasi Selesai</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Salin hasil Footnote & Daftar Pustaka (APA 7) yang sudah terformat rapi.</p>
-                      </div>
-                   </div>
+          <section className="steps-section py-16 bg-surface-alt border-y border-color relative z-10">
+             <div className="container text-center">
+                <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
+                <p className="text-muted max-w-md mx-auto mb-12">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
+                <div className="steps-grid">
+                   <div className="step-card-anim step-card"><div className="step-icon">1</div><h4 className="font-bold text-lg mb-2">Salin Tautan</h4><p className="text-sm text-muted">Salin URL jurnal dari browser atau nomor DOI artikel yang dituju.</p></div>
+                   <div className="step-card-anim step-connector hidden-mobile"></div>
+                   <div className="step-card-anim step-card"><div className="step-icon">2</div><h4 className="font-bold text-lg mb-2">Sistem Memproses</h4><p className="text-sm text-muted">Mesin ekstraksi kami akan memproses PDF/Link dan menarik data penting.</p></div>
+                   <div className="step-card-anim step-connector hidden-mobile"></div>
+                   <div className="step-card-anim step-card"><div className="step-icon">3</div><h4 className="font-bold text-lg mb-2">Selesai</h4><p className="text-sm text-muted">Dapatkan hasil sitasi sempurna yang siap disalin ke karya ilmiah Anda.</p></div>
                 </div>
              </div>
           </section>
 
           {/* Features Detail */}
-          <section id="features" className="features-section py-16 sm:py-24 relative z-10">
-            <div className="container text-center px-4">
-              <h2 className="section-title mb-12 sm:mb-16">Dibangun untuk Kecepatan & Presisi</h2>
+          <section id="features" className="features-section pt-20 pb-16 relative z-10">
+            <div className="container text-center">
+              <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><ShieldIcon /></div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-main">Anti-Cloudflare Bypass</h3>
-                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><ShieldIcon /></div>
+                  <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).</p>
                 </div>
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><SparklesIcon /></div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-main">Smart Metadata Recovery</h3>
-                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Jika struktur PDF berantakan, sistem akan melacak metadata yang tepat dari database global.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><SparklesIcon /></div>
+                  <h3 className="text-lg font-bold">Smart Metadata Recovery</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.</p>
                 </div>
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><ZapIcon /></div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-main">Pemrosesan Batch</h3>
-                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Punya puluhan referensi? Tempelkan semua URL sekaligus dan dapatkan daftar urut abjad seketika.</p>
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                  <div className="feature-icon-box text-primary"><ZapIcon /></div>
+                  <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
+                  <p className="text-muted mt-2 text-sm leading-relaxed">Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Pricing & Transparency */}
-          <section className="pricing-section py-16 sm:py-24 relative z-10">
-            <div className="container text-center px-4">
-              <div className="pricing-card-anim pricing-card neu-flat rounded-3xl mx-auto flex flex-col justify-center">
-                <div className="badge-pill mx-auto mb-6 neu-pressed px-5 py-2 rounded-full font-bold text-[11px] sm:text-xs text-primary w-max uppercase tracking-wider">Paling Diminati</div>
-                <h2 className="m-0 mb-4 text-2xl sm:text-3xl font-black text-main tracking-tight leading-snug">Transparan. Pay-As-You-Go.</h2>
-                <p className="text-muted font-medium m-0 mb-8 sm:mb-10 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
-                
-                <div className="price-huge text-main mb-8"><span className="currency font-bold mt-2">Rp</span>750<span className="suffix font-bold text-muted">/ Sitasi</span></div>
-                
-                <div className="w-full h-px bg-neu-dark opacity-50 mb-8"></div>
-                
-                <ul className="pricing-list mx-auto w-full sm:max-w-sm space-y-4">
-                  <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Gratis 5 Kredit pendaftar baru.</span></li>
-                  <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Kredit tidak hangus jika gagal.</span></li>
-                  <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Format Footnote & APA 7.</span></li>
-                  <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">QRIS, e-Wallet, & VA aktif.</span></li>
+          <section className="pricing-section pb-24 relative z-10">
+            <div className="container text-center">
+              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
+                <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
+                <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
+                <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
+                <div className="price-huge relative z-10"><span className="currency font-semibold">Rp</span>750<span className="suffix font-medium text-muted">/ Sitasi Sukses</span></div>
+                <div className="pricing-divider relative z-10"></div>
+                <ul className="pricing-list relative z-10">
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Gratis 5 Kredit untuk pengguna baru.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Mendukung format Footnote & APA 7th Edition.</span></li>
+                  <li><div className="icon-wrap"><CheckIcon /></div><span>Dukungan otomatis QRIS, e-Wallet, & Virtual Account.</span></li>
                 </ul>
-                <button onClick={handleLoginAndEnter} className="neu-button w-full flex justify-center items-center gap-2 py-4 sm:py-5 min-h-[56px] mt-10 text-sm sm:text-base font-extrabold text-primary">
+                <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
                   Mulai Ruang Kerja Anda <ArrowRightIcon />
                 </button>
               </div>
             </div>
           </section>
 
-          <footer className="footer bg-white relative z-20">
-            <div className="container footer-content py-10 sm:py-12">
-              <div className="footer-brand flex flex-col items-center justify-center mb-6">
+          <footer className="footer relative z-20">
+            <div className="container footer-content">
+              <div className="footer-brand flex items-center justify-center mb-5">
                 <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
               </div>
-              <p className="mt-4 text-xs sm:text-sm max-w-md mx-auto text-muted font-medium leading-relaxed px-4">
+              <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
                 Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
               </p>
-              <div className="mt-8 sm:mt-10 text-[10px] sm:text-xs font-bold text-muted flex flex-wrap justify-center gap-4 sm:gap-6 uppercase tracking-wider">
+              <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex flex-wrap justify-center gap-6">
                  <span>© {new Date().getFullYear()} FlashCite.</span>
                  <a href="#" className="footer-link">Kebijakan Privasi</a>
                  <a href="#" className="footer-link">Syarat & Ketentuan</a>
@@ -799,19 +768,19 @@ export default function App() {
       {currentView === "tool" && user && (
         <div className="dashboard-layout animate-fade-in">
            {/* Mobile Header */}
-           <div className="mobile-dashboard-header hidden sm:hidden neu-flat">
-              <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn text-main"><MenuIcon /></button>
-              <div className="logo-icon-wrap"><VideoLogo /></div>
+           <div className="mobile-dashboard-header hidden sm:hidden">
+              <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><MenuIcon /></button>
+              <div className="logo-icon-wrap" style={{ height: '24px' }}><VideoLogo /></div>
            </div>
 
            {/* Mobile Sidebar Overlay */}
            {isSidebarOpen && <div className="sidebar-overlay sm:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
            {/* Sidebar */}
-           <aside className={`dashboard-sidebar neu-flat ${isSidebarOpen ? 'open' : ''}`}>
-              <div className="sidebar-header pb-6 mb-2 border-b border-neu-divider">
-                 <div className="logo-icon-wrap h-8"><VideoLogo /></div>
-                 <button className="mobile-close sm:hidden neu-button p-2" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
+           <aside className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+              <div className="sidebar-header">
+                 <div className="logo-icon-wrap"><VideoLogo /></div>
+                 <button className="mobile-close sm:hidden" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
               </div>
               
               <nav className="sidebar-nav">
@@ -832,14 +801,14 @@ export default function App() {
                  </button>
               </nav>
 
-              <div className="sidebar-footer pt-6 border-t border-neu-divider">
-                 <div className="credit-box neu-pressed p-5 rounded-2xl mb-6">
-                    <p className="credit-label text-muted">Sisa Token</p>
-                    <div className="credit-amount text-main font-black text-2xl mb-4"><CoinIcon /> <span>{userData.credits || 0}</span></div>
-                    <button onClick={() => setShowTopupModal(true)} className="neu-button w-full py-3.5 min-h-[44px] text-sm text-primary font-bold">Top Up Token</button>
+              <div className="sidebar-footer">
+                 <div className="credit-box">
+                    <p className="credit-label">Sisa Kredit</p>
+                    <div className="credit-amount"><CoinIcon /> <span>{userData.credits || 0}</span></div>
+                    <button onClick={() => setShowTopupModal(true)} className="btn-topup">Top Up Token</button>
                  </div>
-                 <button onClick={handleLogout} className="btn-logout w-full flex justify-center items-center gap-2 py-3.5 min-h-[44px] text-sm font-bold text-muted transition-colors hover:text-error">
-                    <LogoutIcon /> Keluar Ruang Kerja
+                 <button onClick={handleLogout} className="btn-logout">
+                    <LogoutIcon /> Keluar
                  </button>
               </div>
            </aside>
@@ -847,115 +816,115 @@ export default function App() {
            {/* Main Workspace Content */}
            <main className="dashboard-main">
               <div className="dashboard-container">
-                <div className="tool-header mb-8 sm:mb-10 text-center sm:text-left px-2 sm:px-0 mt-6 sm:mt-0">
-                  <h2 className="section-title m-0 tracking-tight text-main text-2xl sm:text-3xl">Ruang Kerja</h2>
-                  <p className="text-muted text-xs sm:text-sm mt-3 font-medium leading-relaxed">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
+                <div className="tool-header mb-8 text-center sm:text-left">
+                  <h2 className="section-title m-0 tracking-tight">Ruang Kerja</h2>
+                  <p className="text-muted text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
                 </div>
 
-                <div className="card neu-flat rounded-3xl mb-8 sm:mb-10 relative z-20">
-                  <div className="card-body p-6 sm:p-10">
+                <div className="card glass-panel shadow-premium mb-8 relative z-20 border-0 bg-white">
+                  <div className="card-body p-6 sm:p-8">
                     {/* TOGGLE CITATION STYLE */}
-                    <div className="flex items-center justify-between mb-8 pb-6 border-b border-neu-divider flex-col sm:flex-row gap-5 sm:gap-0">
-                       <div className="text-center sm:text-left w-full sm:w-auto">
-                         <h3 className="text-sm sm:text-base font-extrabold text-main m-0">Format Sitasi</h3>
-                         <p className="text-[10px] sm:text-xs text-muted mt-1.5 font-semibold m-0">Pilih gaya output yang dihasilkan</p>
+                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
+                       <div className="mb-4 sm:mb-0 text-center sm:text-left">
+                         <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
+                         <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
                        </div>
-                       <div className="style-toggle neu-pressed rounded-xl p-1.5 w-full sm:w-auto flex gap-2 justify-center">
-                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold flex-1 sm:flex-none ${citationStyle === "footnote" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
-                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold flex-1 sm:flex-none ${citationStyle === "apa7" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
+                       <div className="style-toggle w-full sm:w-auto">
+                          <button className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
+                          <button className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
                        </div>
                     </div>
 
                     {inputMode === "doi" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-6 relative">
+                        <div className="form-group mb-5 relative">
                           <label className="input-label">Nomor DOI Referensi</label>
-                          <input type="text" className="input-field-modern neu-pressed" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
+                          <input type="text" className="input-field-modern" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
                         </div>
                         {citationStyle === "footnote" && (
-                          <div className="form-group mb-8 sm:mb-10 relative animate-fade-in">
-                            <label className="input-label">Kota Terbit <span className="opacity-60 font-medium">(Opsional)</span></label>
-                            <input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                          <div className="form-group mb-8 relative animate-fade-in">
+                            <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={fetchDOI} disabled={loading || !doiInput}>
-                          {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Token)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchDOI} disabled={loading || !doiInput}>
+                          {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
 
                     {inputMode === "url" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-6 relative">
+                        <div className="form-group mb-5 relative">
                           <label className="input-label">Tautan Artikel / PDF</label>
-                          <input type="text" className="input-field-modern neu-pressed" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
+                          <input type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
                         </div>
                         {citationStyle === "footnote" && (
-                          <div className="form-group mb-8 sm:mb-10 relative animate-fade-in">
-                            <label className="input-label">Kota Terbit <span className="opacity-60 font-medium">(Opsional)</span></label>
-                            <input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
+                          <div className="form-group mb-8 relative animate-fade-in">
+                            <label className="input-label">Kota Terbit <span className="text-muted font-normal">(Opsional)</span></label>
+                            <input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={fetchURL} disabled={loading || !urlInput}>
-                          {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Token)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchURL} disabled={loading || !urlInput}>
+                          {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
 
                     {inputMode === "manual" && (
                       <div className="animate-fade-in">
-                        <div className="grid-2 gap-5 sm:gap-6">
-                          <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern neu-pressed" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
-                          <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern neu-pressed" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
-                          <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern neu-pressed" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
-                          <div className="form-group"><label className="input-label">Tahun Terbit *</label><input type="text" className="input-field-modern neu-pressed" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
-                          <div className="form-group"><label className="input-label">Volume</label><input type="text" className="input-field-modern neu-pressed" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
-                          <div className="form-group"><label className="input-label">Isu / Nomor</label><input type="text" className="input-field-modern neu-pressed" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
-                          <div className="form-group"><label className="input-label">Halaman</label><input type="text" className="input-field-modern neu-pressed" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
+                        <div className="grid-2 gap-5">
+                          <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
+                          <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
+                          <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
+                          <div className="form-group"><label className="input-label">Tahun Terbit *</label><input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
+                          <div className="form-group"><label className="input-label">Volume</label><input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
+                          <div className="form-group"><label className="input-label">Isu / Nomor</label><input type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
+                          <div className="form-group"><label className="input-label">Halaman</label><input type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
                           {citationStyle === "footnote" && (
-                            <div className="form-group animate-fade-in"><label className="input-label">Kota Terbit</label><input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
+                            <div className="form-group animate-fade-in"><label className="input-label">Kota Terbit</label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
                           )}
                         </div>
-                        <button className="neu-button w-full mt-8 sm:mt-10 py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={handleGenerateManual}>Generate Manual (1 Token)</button>
+                        <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual}>Generate Manual (1 Kredit)</button>
                       </div>
                     )}
 
                     {inputMode === "batch" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-6"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field neu-pressed" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
+                        <div className="form-group mb-5"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
                         {citationStyle === "footnote" && (
-                          <div className="form-group mb-8 sm:mb-10 animate-fade-in"><label className="input-label">Kota Terbit Global <span className="opacity-60 font-medium">(Opsional)</span></label><input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
+                          <div className="form-group mb-8 animate-fade-in"><label className="input-label">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label><input type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
                         )}
-                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
-                          {loading ? "Memproses Batch..." : "Generate Semua (1 Token/Sukses)"}
+                        <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                          {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
                         </button>
                       </div>
                     )}
 
                     {/* TAB HISTORY */}
                     {inputMode === "history" && (
-                      <div className="animate-fade-in history-container custom-scrollbar pr-2 sm:pr-4">
+                      <div className="animate-fade-in history-container custom-scrollbar pr-3">
                         {history.length === 0 ? (
-                          <div className="text-center text-muted font-bold p-10 sm:p-12 flex flex-col items-center">
-                            <span className="text-4xl sm:text-5xl mb-4 opacity-40">🗂️</span> Ruang riwayat Anda masih kosong.
+                          <div className="text-center text-muted p-10 flex flex-col items-center">
+                            <span className="text-4xl mb-3 opacity-20">🗂️</span> Ruang riwayat Anda masih kosong.
                           </div>
                         ) : (
                           history.map((item) => {
                             const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia.");
                             const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia.");
                             return (
-                              <div key={item.id} className="history-item mb-6 pb-6 border-b border-neu-divider last-no-border">
-                                <div className="flex justify-between items-center mb-4">
-                                  <span className="neu-pressed font-bold text-[10px] sm:text-xs px-3 py-1.5 rounded-full text-muted">{item.type}</span>
-                                  <span className="text-[10px] sm:text-xs font-mono font-bold text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
+                              <div key={item.id} className="history-item mb-5 pb-5 border-b border-color last-no-border">
+                                <div className="flex justify-between items-center mb-3">
+                                  <span className="badge-pill text-xs px-2 py-0.5">{item.type}</span>
+                                  <span className="text-xs font-mono text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
                                 </div>
-                                <h4 className="m-0 mb-5 font-extrabold text-xs sm:text-sm leading-relaxed truncate-2 text-main">{item.title}</h4>
-                                <div className="flex gap-4 flex-col sm:flex-row">
-                                  <button className="neu-button text-[10px] sm:text-xs py-3 min-h-[44px] flex-1 font-bold text-muted hover:text-primary flex items-center justify-center gap-2" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
-                                    {copiedId === `hist-in-${item.id}` ? <><span className="text-success mr-1">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
+                                <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">{item.title}</h4>
+                                <div className="flex gap-2 mt-4 flex-col-mobile">
+                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
+                                    {copiedId === `hist-in-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
                                   </button>
-                                  <button className="neu-button text-[10px] sm:text-xs py-3 min-h-[44px] flex-1 font-bold text-muted hover:text-primary flex items-center justify-center gap-2" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
-                                    {copiedId === `hist-dp-${item.id}` ? <><span className="text-success mr-1">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
+                                  <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
+                                    {copiedId === `hist-dp-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
                                   </button>
                                 </div>
                               </div>
@@ -966,9 +935,9 @@ export default function App() {
                     )}
 
                     {error && (
-                      <div className="error-alert mt-6 sm:mt-8 p-5 neu-pressed rounded-xl flex items-start">
-                        <div className="mt-0.5 text-error flex-shrink-0"><WarningIcon /></div> 
-                        <span className="leading-relaxed font-bold text-error ml-3 text-xs sm:text-sm">{error}</span>
+                      <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
+                        <div className="mt-0.5"><WarningIcon /></div> 
+                        <span className="leading-relaxed font-medium">{error}</span>
                       </div>
                     )}
                   </div>
@@ -976,32 +945,31 @@ export default function App() {
 
                 {loading && inputMode !== "batch" && <SkeletonLoader />}
                 {loading && inputMode === "batch" && (
-                  <><SkeletonLoader /><div className="opacity-50 scale-95 origin-top"><SkeletonLoader /></div></>
+                  <><SkeletonLoader /><div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div></>
                 )}
 
                 {/* RESULTS AREA: SINGLE */}
                 {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
-                  <div className="card mt-8 sm:mt-10 animate-slide-up neu-flat rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-5 opacity-10 pointer-events-none text-main"><CheckIcon /></div>
-                    <div className="card-body p-6 sm:p-10">
-                      <div className="result-block neu-pressed rounded-2xl p-5 sm:p-6 relative">
-                        <div className="flex justify-between items-center border-b border-neu-divider pb-4 mb-4">
-                          <span className="text-[10px] sm:text-xs font-extrabold text-muted">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
-                          <button className="neu-button font-bold text-[10px] sm:text-xs py-2 px-4 text-primary min-h-[36px]" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
-                            {copiedId === "single-in" ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden bg-white border-0">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
+                    <div className="card-body p-6 sm:p-8">
+                      <div className="result-block bg-slate-50 border-color">
+                        <div className="result-header">
+                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
+                          <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
+                            {copiedId === "single-in" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
                         </div>
-                        <div className="result-html text-main font-medium leading-relaxed sm:leading-loose text-xs sm:text-sm" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
+                        <div className="result-html text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
                       </div>
-                      
-                      <div className="result-block mt-6 sm:mt-8 neu-pressed rounded-2xl p-5 sm:p-6 relative">
-                        <div className="flex justify-between items-center border-b border-neu-divider pb-4 mb-4">
-                          <span className="text-[10px] sm:text-xs font-extrabold text-muted">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
-                          <button className="neu-button font-bold text-[10px] sm:text-xs py-2 px-4 text-primary min-h-[36px]" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
-                            {copiedId === "single-dp" ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
+                      <div className="result-block mt-8 bg-slate-50 border-color">
+                        <div className="result-header">
+                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
+                          <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
+                            {copiedId === "single-dp" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
                         </div>
-                        <div className="result-html text-main font-medium leading-relaxed sm:leading-loose text-xs sm:text-sm" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
+                        <div className="result-html text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata) }} />
                       </div>
                     </div>
                   </div>
@@ -1009,55 +977,55 @@ export default function App() {
 
                 {/* RESULTS AREA: BATCH */}
                 {!loading && batchResults.length > 0 && inputMode === "batch" && (
-                  <div className="card mt-8 sm:mt-10 animate-slide-up neu-flat rounded-3xl">
-                    <div className="card-body p-6 sm:p-10">
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success bg-white border-0">
+                    <div className="card-body p-6 sm:p-8">
                       {batchSuccesses.length > 0 && (
                         <>
-                          <div className="flex items-center justify-between mb-6 pb-4 border-b border-neu-divider">
-                            <h3 className="text-base sm:text-lg font-extrabold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
+                          <div className="flex items-center justify-between mb-4 border-b border-color pb-3">
+                            <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
                           </div>
                           {batchSuccesses.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
                             const copyId = `batch-in-${index}`;
                             return (
-                              <div className="result-block mb-6 neu-pressed rounded-2xl p-5" key={copyId}>
-                                <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
-                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted pr-4">{r.line}</span>
-                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 px-4 text-primary min-h-[36px] flex-shrink-0" onClick={() => handleCopy(content, copyId)}>
-                                    {copiedId === copyId ? <span className="text-success font-black">✓</span> : "Salin"}
+                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b-color">
+                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                                  <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                    {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                <div className="result-html text-xs sm:text-sm font-medium text-main leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} />
+                                <div className="result-html text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
                               </div>
                             );
                           })}
                           
-                          <div className="flex items-center justify-between mt-10 sm:mt-12 mb-6 pb-4 border-b border-neu-divider">
-                            <h3 className="text-base sm:text-lg font-extrabold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
+                          <div className="flex items-center justify-between mt-10 mb-4 border-b border-color pb-3">
+                            <h3 className="text-base font-bold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
                           </div>
                           {sortedBatchDafpus.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
                             const copyId = `batch-dp-${index}`;
                             return (
-                              <div className="result-block mb-6 neu-pressed rounded-2xl p-5" key={copyId}>
-                                <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
-                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted pr-4">{r.line}</span>
-                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 px-4 text-primary min-h-[36px] flex-shrink-0" onClick={() => handleCopy(content, copyId)}>
-                                    {copiedId === copyId ? <span className="text-success font-black">✓</span> : "Salin"}
+                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b-color">
+                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                                  <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
+                                    {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                <div className="result-html text-xs sm:text-sm font-medium text-main leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} />
+                                <div className="result-html text-sm font-medium text-slate-800" dangerouslySetInnerHTML={{ __html: content }} />
                               </div>
                             );
                           })}
                         </>
                       )}
                       {batchErrors.length > 0 && (
-                        <div className="error-alert mt-8 p-5 sm:p-6 neu-pressed rounded-2xl">
-                          <strong className="flex items-center gap-2 mb-4 text-error font-extrabold text-xs sm:text-sm"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
-                          <ul className="m-0 pl-6 text-error font-medium text-[10px] sm:text-sm space-y-3 opacity-90">
+                        <div className="error-alert mt-8 p-5 bg-error-subtle border-error border rounded-lg">
+                          <strong className="flex items-center gap-2 mb-3 text-error"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
+                          <ul className="m-0 pl-5 text-error text-sm space-y-2 opacity-90">
                             {batchErrors.map((err, i) => (
-                              <li key={i} className="break-all leading-relaxed"><span className="font-mono font-bold mr-2 opacity-70">{err.line}</span><br className="sm:hidden" />{err.error}</li>
+                              <li key={i} className="break-all"><span className="font-mono text-xs font-semibold mr-2">{err.line}</span><br className="sm:hidden" />{err.error}</li>
                             ))}
                           </ul>
                         </div>
@@ -1070,29 +1038,51 @@ export default function App() {
         </div>
       )}
 
-      {/* --- CSS STYLING & VARIABLES ISOLATION (NEUMORPHISM) --- */}
+      {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
-        html, body, #root { margin: 0 !important; padding: 0 !important; width: 100%; min-height: 100vh; background-color: var(--bg-body); overflow-x: hidden; scroll-behavior: smooth; }
+        html, body, #root {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100%;
+          min-height: 100vh;
+          background-color: var(--bg-body); 
+          overflow-x: hidden;
+        }
 
         .app-wrapper {
-          --bg-body: #ecf0f3;
-          --neu-light: #ffffff;
-          --neu-dark: #d1d9e6;
-          --neu-divider: rgba(209, 217, 230, 0.5);
+          --bg-body: #f8fafc;
+          --bg-surface: rgba(255, 255, 255, 1);
+          --bg-surface-hover: #f1f5f9;
+          --bg-surface-alt: transparent;
+          --bg-surface-solid: #ffffff;
           
-          --text-main: #2d3748;
-          --text-muted: #718096;
+          --text-main: #0f172a;
+          --text-muted: #64748b;
           
-          --primary: #3b82f6; 
-          --success: #10b981;
-          --error: #ef4444;
+          --border-color: rgba(15, 23, 42, 0.08);
+          --border-focus: rgba(15, 23, 42, 0.8);
+          
+          --primary: #0f172a;
+          --primary-hover: #1e293b;
+          --primary-subtle: rgba(15, 23, 42, 0.03);
+          --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+          
+          --success-light: #f0fdf4;
+          --success: #16a34a;
+          --success-border: #22c55e;
+          --error-bg: #fef2f2;
+          --error-text: #dc2626;
 
-          --radius-sm: 12px;
-          --radius-md: 20px;
-          --radius-lg: 30px;
+          --nav-bg: #ffffff; 
+          --skeleton-bg: #e2e8f0;
+          --skeleton-hl: #f1f5f9;
+
+          --radius-sm: 8px;
+          --radius-md: 16px;
+          --radius-lg: 24px;
           
           min-height: 100vh;
           background-color: var(--bg-body);
@@ -1103,50 +1093,98 @@ export default function App() {
           position: relative;
         }
 
-        /* NEUMORPHISM UTILITY CLASSES */
-        .neu-flat { background: var(--bg-body); box-shadow: 10px 10px 20px var(--neu-dark), -10px -10px 20px var(--neu-light); }
-        .neu-pressed { background: var(--bg-body); box-shadow: inset 6px 6px 12px var(--neu-dark), inset -6px -6px 12px var(--neu-light); }
-        .neu-button { background: var(--bg-body); box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light); border: none; outline: none; transition: all 0.2s ease-in-out; cursor: pointer; }
-        .neu-button:hover:not(:disabled) { box-shadow: 4px 4px 8px var(--neu-dark), -4px -4px 8px var(--neu-light); }
-        .neu-button:active:not(:disabled), .neu-button.active { box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light); }
-        .neu-button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: 2px 2px 4px var(--neu-dark), -2px -2px 4px var(--neu-light); }
-
         * { box-sizing: border-box; }
         .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
 
+        /* PATTERN & AMBIENT BACKGROUND GLOW */
+        .pattern-bg {
+          background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+          background-size: 24px 24px;
+        }
+        
+        .ambient-background {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          overflow: hidden; z-index: 0; pointer-events: none;
+        }
+        .ambient-blob {
+          position: absolute; filter: blur(100px); opacity: 0.7;
+          border-radius: 50%; animation: floatBlob 25s infinite alternate;
+        }
+        .blob-1 {
+          top: -5%; left: -5%; width: 55vw; height: 55vw;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
+        }
+        .blob-2 {
+          bottom: -10%; right: -5%; width: 65vw; height: 65vw;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          animation-delay: -5s;
+        }
+        .blob-3 {
+          top: 40%; left: 60%; width: 45vw; height: 45vw;
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          animation-delay: -12s;
+        }
+        
+        @keyframes floatBlob {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(8%, 12%) scale(1.15); }
+          100% { transform: translate(-8%, -12%) scale(0.9); }
+        }
+
+        /* GLASSMORPHISM & SHADOWS */
+        .glass-panel { background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+        .shadow-premium { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.03), 0 1px 4px -1px rgba(0, 0, 0, 0.02); }
+        .shadow-glow { box-shadow: 0 0 20px rgba(0, 0, 0, 0.08); }
+        .shadow-premium-glow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06), 0 0 40px -10px var(--border-color); }
+
         /* UTILS */
         .text-center { text-align: center; } .text-left { text-align: left; }
-        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-row { flex-direction: row; } .flex-1 { flex: 1; } .flex-shrink-0 { flex-shrink: 0; } .flex-none { flex: none; }
-        .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; } .gap-8 { gap: 2rem; }
+        .text-gradient { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
+        .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
-        .mt-0 { margin-top: 0; } .mt-1\.5 { margin-top: 0.375rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } .mt-5 { margin-top: 1.25rem; } .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
-        .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-10 { margin-bottom: 2.5rem; } .mb-12 { margin-bottom: 3rem; } .mb-16 { margin-bottom: 4rem; }
-        .p-1 { padding: 0.25rem; } .p-1\.5 { padding: 0.375rem; } .p-2 { padding: 0.5rem; } .p-3 { padding: 0.75rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; } .p-12 { padding: 3rem; }
-        .pb-2 { padding-bottom: 0.5rem; } .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-6 { padding-bottom: 1.5rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; } .pb-32 { padding-bottom: 8rem; }
-        .pt-5 { padding-top: 1.25rem; } .pt-6 { padding-top: 1.5rem; } .pt-8 { padding-top: 2rem; } .pt-16 { padding-top: 4rem; } .pt-20 { padding-top: 5rem; } .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; } .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; } .py-20 { padding-top: 5rem; padding-bottom: 5rem; } .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; } .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; } .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } 
+        .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
+        .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } 
+        .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-12 { margin-bottom: 3rem; }
+        .p-1 { padding: 0.25rem; } .p-2 { padding: 0.5rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; }
+        .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; }
+        .pt-5 { padding-top: 1.25rem; } .pt-8 { padding-top: 2rem; } .pt-20 { padding-top: 5rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; } .py-1.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .pr-3 { padding-right: 0.75rem; } .pr-4 { padding-right: 1rem; } .pl-2 { padding-left: 0.5rem; } .pl-5 { padding-left: 1.25rem; }
         .w-full { width: 100%; } .w-max { width: max-content; } .w-auto { width: auto; }
-        .min-h-\[36px\] { min-height: 36px; } .min-h-\[40px\] { min-height: 40px; } .min-h-\[44px\] { min-height: 44px; } .min-h-\[48px\] { min-height: 48px; } .min-h-\[50px\] { min-height: 50px; } .min-h-\[52px\] { min-height: 52px; } .min-h-\[56px\] { min-height: 56px; }
-        .border-b { border-bottom: 1px solid var(--neu-divider); } .border-t { border-top: 1px solid var(--neu-divider); } .border-y { border-top: 1px solid var(--neu-divider); border-bottom: 1px solid var(--neu-divider); }
-        .border-none { border: none; } .border-transparent { border-color: transparent; }
-        .rounded-md { border-radius: 6px; } .rounded-lg { border-radius: 8px; } .rounded-xl { border-radius: 12px; } .rounded-2xl { border-radius: 16px; } .rounded-3xl { border-radius: 24px; } .rounded-full { border-radius: 9999px; }
-        .text-\[10px\] { font-size: 0.625rem; } .text-\[11px\] { font-size: 0.6875rem; } .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-3xl { font-size: 1.875rem; } .text-4xl { font-size: 2.25rem; } .text-5xl { font-size: 3rem; }
-        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error); }
-        .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; } .font-black { font-weight: 900; }
+        .border-b { border-bottom: 1px solid var(--border-color); } .border-t { border-top: 1px solid var(--border-color); } .border-y { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .border-r { border-right: 1px solid var(--border-color); } .border-l-apa { border-left: 3px solid var(--text-muted) !important; }
+        .border-color { border-color: var(--border-color); } .border-main { border-color: var(--text-main); }
+        .border-none { border: none; } .rounded-md { border-radius: 6px; } .rounded-xl { border-radius: 12px; } .rounded-lg { border-radius: var(--radius-sm); }
+        .bg-subtle { background: var(--bg-surface-hover); } .bg-surface-solid { background: var(--bg-surface-solid); } .bg-surface-hover { background: var(--bg-surface-hover); } .bg-surface-alt { background: var(--bg-surface-alt); } .bg-error-subtle { background: var(--error-bg); } .border-error { border-color: var(--error-text); }
+        .bg-primary { background: var(--primary); } .bg-primary-subtle { background: var(--primary-subtle); } .bg-white { background: #ffffff; }
+        .bg-slate-50 { background-color: #f8fafc; } .bg-slate-100 { background-color: #f1f5f9; }
+        .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-4xl { font-size: 2.25rem; }
+        .text-main { color: var(--text-main); } .text-muted { color: var(--text-muted); } .text-primary { color: var(--primary); } .text-success { color: var(--success); } .text-error { color: var(--error-text); } .text-body { color: var(--bg-surface-solid); }
+        .text-slate-900 { color: #0f172a; } .text-slate-800 { color: #1e293b; } .text-slate-600 { color: #475569; } .text-slate-500 { color: #64748b; } .text-slate-400 { color: #94a3b8; }
+        .text-green-600 { color: #16a34a; } .text-red-600 { color: #dc2626; } .text-white { color: #ffffff; }
+        .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-wider { letter-spacing: 0.1em; } .tracking-widest { letter-spacing: 0.15em; } .tracking-tight { letter-spacing: -0.025em; }
-        .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; } .leading-loose { line-height: 2; }
+        .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.05em; } .tracking-tight { letter-spacing: -0.025em; }
+        .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
         .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
-        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-30 { opacity: 0.3; } .opacity-40 { opacity: 0.4; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
-        .pointer-events-none { pointer-events: none; } .pointer-events-auto { pointer-events: auto; }
-        .whitespace-nowrap { white-space: nowrap; } .whitespace-normal { white-space: normal; }
-        .break-all { word-break: break-all; } .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; } .max-w-5xl { max-width: 64rem; }
+        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
+        .pointer-events-none { pointer-events: none; }
+        .break-all { word-break: break-all; }
+        .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; }
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .border-t-success { border-top: 3px solid var(--success-border); }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .transition-colors { transition: background-color 0.2s, color 0.2s; } .transition-opacity { transition: opacity 0.2s; } .transition-all { transition: all 0.2s; } .transition-transform { transition: transform 0.2s; }
-        .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; } .ease-out { transition-timing-function: ease-out; } .ease-in-out { transition-timing-function: ease-in-out; }
-        .scale-95 { transform: scale(0.95); } .scale-100 { transform: scale(1); } .scale-\[0\.98\] { transform: scale(0.98); } .origin-top { transform-origin: top; }
+        .duration-200 { transition-duration: 0.2s; } .duration-700 { transition-duration: 0.7s; } .duration-1000 { transition-duration: 1s; }
+        .ease-in-out { transition-timing-function: ease-in-out; }
+        .scale-95 { transform: scale(0.95); } .scale-100 { transform: scale(1); }
+        .translate-y-0 { transform: translateY(0); } .translate-y-4 { transform: translateY(1rem); }
         .h-0 { height: 0; } .h-auto { height: auto; }
 
         /* FIXED NAVBAR LANDING PAGE */
@@ -1158,153 +1196,218 @@ export default function App() {
         .navbar {
           pointer-events: auto; 
           width: 100%; max-width: 800px; 
-          padding: 0.5rem 0.5rem 0.5rem 1.5rem; 
+          background: var(--nav-bg); 
+          border: 1px solid var(--border-color); 
+          border-radius: 100px;
+          padding: 0.6rem 0.6rem 0.6rem 1.25rem; 
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
         }
         .nav-container { display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { cursor: pointer; display: flex; align-items: center; }
-        .logo-icon-wrap { height: 36px; width: auto; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
-        .footer-logo { height: 64px; justify-content: center; margin-bottom: 0; }
+        .logo-icon-wrap { height: 36px; display: flex; align-items: center; justify-content: flex-start; border-radius: 0; flex-shrink: 0; }
+        .footer-logo { height: 64px; justify-content: center; }
         .video-logo-asset { width: auto; height: 100%; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
+        
+        .credit-badge {
+          display: flex; align-items: center; gap: 6px;
+          background: var(--bg-surface-hover); color: var(--text-main);
+          padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
+          cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
+        }
+        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-hover); }
 
         .content-padding-top { padding-top: 100px; }
 
+        /* BUTTONS */
+        .btn-primary {
+          background: var(--primary); color: var(--bg-surface-solid);
+          border: 1px solid transparent; border-radius: 100px; font-weight: 600; font-size: 0.95rem;
+          padding: 0.875rem 1.75rem !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+        }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: scale(1.02); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-secondary {
+          background: var(--bg-surface-solid); color: var(--text-main); border: 1px solid var(--border-color);
+          border-radius: 100px; font-weight: 600; font-size: 0.85rem;
+          padding: 0.6rem 1.25rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .btn-secondary:hover { background: var(--bg-surface-hover); border-color: var(--text-muted); }
+        .btn-sm { height: 36px; padding: 0 1.25rem !important; font-size: 0.85rem; }
+        .btn-lg { padding: 1.125rem 2.5rem !important; font-size: 1.05rem; }
+
         /* HERO SECTION */
-        .hero-section { padding: 4rem 0 3rem; }
-        .hero-title { font-size: clamp(2rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.15; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; color: var(--text-main); }
+        .hero-section { padding: 4rem 0 5rem; }
+        .badge-pill { padding: 6px 16px; font-size: 0.8rem; font-weight: 600; background: var(--bg-surface-solid); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulseDot 2s infinite; }
+        @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        
+        .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; }
         .hero-title-line { overflow: hidden; }
         .title-word { display: inline-block; padding-right: 0.2em; }
-        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 500; position: relative; z-index: 10; }
+        .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
+        .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.08; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
         
         /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bg-body); background-color: var(--neu-dark); margin-left: -12px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-surface-solid); background-color: var(--skeleton-bg); margin-left: -8px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .avatar:nth-child(1) { background-image: url('https://i.pravatar.cc/100?img=1'); margin-left: 0; z-index: 3; }
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
 
-        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 3px solid var(--neu-dark); border-radius: 50%; border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+        /* PREVIEW MOCK COMPONENT */
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border-color); border-radius: 50%; border-top-color: var(--bg-surface-solid); animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
+        .step-card { flex: 1; text-align: center; padding: 0 1rem; z-index: 2; position: relative; }
+        .step-icon { width: 48px; height: 48px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin: 0 auto 1.25rem; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .step-connector { flex: 1; height: 1px; background: var(--border-color); margin-top: 24px; z-index: 1; }
 
         /* FEATURES SECTION */
-        .section-title { font-size: clamp(1.75rem, 5vw, 2.75rem); font-weight: 900; letter-spacing: -0.04em; position: relative; z-index: 2; color: var(--text-main); line-height: 1.2; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.5rem; position: relative; z-index: 2;}
-        .feature-card { text-align: left; }
-        .feature-icon-box { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; }
+        .section-title { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; position: relative; z-index: 2; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; position: relative; z-index: 2;}
+        .feature-card { padding: 2.5rem 2rem; text-align: left; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: var(--radius-lg); position: relative; }
+        .group-hover-effect:hover { transform: translateY(-8px); border-color: var(--text-muted); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1); }
+        .feature-icon-box { width: 56px; height: 56px; background: var(--bg-surface-solid); border: 1px solid var(--border-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .group-hover-effect:hover .feature-icon-box { transform: scale(1.1) rotate(-5deg); }
 
         /* PRICING SECTION */
-        .pricing-card { max-width: 440px; padding: 3.5rem 3rem; z-index: 2; box-sizing: border-box;}
-        .price-huge { font-size: 3.5rem; font-weight: 900; display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.05em; gap: 8px; color: var(--primary); }
-        .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; color: var(--text-main); }
-        .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; font-weight: 600; color: var(--text-muted); }
-        .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 1rem; }
-        .pricing-list li { font-size: 1rem; display: flex; gap: 1rem; align-items: flex-start; color: var(--text-main); font-weight: 600; }
-        .icon-wrap { border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
-        .icon-wrap svg { width: 14px; height: 14px; stroke-width: 3.5; }
+        .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative; box-sizing: border-box;}
+        .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
+        .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
+        .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
+        .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
+        .pricing-divider { height: 1px; width: 100%; background: var(--border-color); margin: 2rem 0; }
+        .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 16px; }
+        .pricing-list li { font-size: 0.95rem; display: flex; gap: 14px; align-items: flex-start; color: var(--text-main); }
+        .icon-wrap { background: var(--success-light); color: var(--success-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+        .icon-wrap svg { width: 13px; height: 13px; stroke-width: 3.5; }
 
         /* DASHBOARD WORKSPACE */
-        .dashboard-layout { display: flex; min-height: 100vh; position: relative; z-index: 10; background: var(--bg-body); }
+        .dashboard-layout { display: flex; min-height: 100vh; position: relative; z-index: 10; }
         
         /* SIDEBAR DESKTOP */
         .dashboard-sidebar { 
-           width: 280px;
+           width: 260px; background: #ffffff; border-right: 1px solid var(--border-color); 
            display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; 
            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .sidebar-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        .sidebar-nav { flex: 1; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-nav { flex: 1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; }
         .nav-item { 
-           display: flex; align-items: center; gap: 14px; width: 100%; padding: 1rem 1.25rem;
-           text-align: left; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); 
-           min-height: 48px; border-radius: 12px;
+           display: flex; align-items: center; gap: 12px; width: 100%; padding: 0.875rem 1rem; border: none; background: transparent; 
+           text-align: left; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: inherit;
         }
-        .nav-item:hover { color: var(--text-main); }
-        .nav-item.active { background: var(--bg-body); box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light); color: var(--primary); }
+        .nav-item:hover { background: var(--bg-surface-hover); color: var(--text-main); }
+        .nav-item.active { background: var(--bg-surface-hover); color: var(--primary); font-weight: 700; }
         
-        .sidebar-footer { padding: 1.5rem; }
-        .credit-box { padding: 1.5rem; border-radius: 20px; margin-bottom: 1.5rem; text-align: center; }
-        .credit-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem; color: var(--text-muted); }
-        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 2rem; font-weight: 900; margin-bottom: 1.5rem; color: var(--primary); }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid var(--border-color); }
+        .credit-box { padding: 1rem; background: var(--bg-surface-hover); border-radius: 12px; margin-bottom: 1rem; text-align: center; border: 1px solid var(--border-color); }
+        .credit-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.5rem; }
+        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 1rem; }
+        .btn-topup { width: 100%; padding: 0.75rem; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-topup:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-logout { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0.75rem; background: transparent; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .btn-logout:hover { background: #fef2f2; color: #dc2626; }
 
-        .dashboard-main { flex: 1; margin-left: 280px; padding: 3rem 2.5rem; min-height: 100vh; }
-        .dashboard-container { max-width: 800px; margin: 0 auto; }
+        .dashboard-main { flex: 1; margin-left: 260px; padding: 2.5rem; min-height: 100vh; }
+        .dashboard-container { max-width: 760px; margin: 0 auto; }
+        
+        /* CITATION STYLE TOGGLE */
+        .style-toggle { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; }
+        .style-toggle-btn { background: transparent; border: none; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+        .style-toggle-btn:hover:not(.active) { color: var(--text-main); }
+        .style-toggle-btn.active { background: #ffffff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
         /* FORMS MODERN */
-        .input-label { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .input-field-modern { width: 100%; padding: 1.125rem 1.5rem; min-height: 56px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); border: none; outline: none; transition: all 0.2s; font-family: inherit; border-radius: 16px; }
-        .input-field-modern::placeholder { color: var(--neu-dark); font-weight: 600; }
-        .textarea-field { min-height: 140px; padding-top: 1.5rem; resize: vertical; line-height: 1.6; }
+        .input-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
+        .input-field-modern { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: all 0.2s; font-family: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+        .input-field-modern::placeholder { color: var(--text-muted); opacity: 0.6; }
+        .input-field-modern:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
+        .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
 
-        /* HISTORY */
-        .history-container { max-height: 650px; overflow-y: auto; padding-right: 0.5rem; }
+        /* RESULTS AREA & HISTORY */
+        .result-block { overflow: hidden; }
+        .result-header { padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .result-html { padding: 1rem; font-size: 0.95rem; line-height: 1.7; word-break: break-word; color: var(--text-main); }
+        .btn-copy-modern { background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-family: inherit; }
+        .btn-copy-modern:hover { background: var(--bg-surface-hover); border-color: var(--text-main); }
+        .btn-sm-padding { padding: 6px; }
+        .history-container { max-height: 600px; overflow-y: auto; }
         
         /* CUSTOM SCROLLBAR */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-body); border-radius: 10px; box-shadow: inset 2px 2px 4px var(--neu-dark), inset -2px -2px 4px var(--neu-light); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--neu-dark); border-radius: 10px; border: 2px solid var(--bg-body); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.85); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1.5rem; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .modal-box { width: 100%; max-width: 440px; border-radius: var(--radius-lg); overflow: hidden; }
-        .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--neu-divider); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 2rem; }
-        .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
-
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .modal-box { background: var(--bg-surface-solid); width: 100%; max-width: 420px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1.5rem; }
+        .btn-close-modal { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
+        .btn-close-modal:hover { background: var(--bg-surface-hover); color: var(--text-main); }
+        .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .btn-package { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.875rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+        .btn-package:hover { border-color: var(--border-focus); color: var(--text-main); }
+        .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
+        
         /* TRUE SHIMMER SKELETON */
-        .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--neu-dark) 25%, var(--neu-light) 50%, var(--neu-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; opacity: 0.5; }
-        .skeleton-box { background: linear-gradient(90deg, var(--neu-dark) 25%, var(--neu-light) 50%, var(--neu-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); width: 100%; opacity: 0.5; }
+        .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+        .skeleton-box { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); width: 100%; }
+        .w-40 { width: 10rem; } .w-48 { width: 12rem; } .h-24 { height: 6rem; } .h-20 { height: 5rem; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* FOOTER */
-        .footer { padding: 3rem 0 2rem; text-align: center; margin-top: auto; background-color: transparent; }
+        .footer { padding: 4rem 0 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; background-color: var(--bg-surface-solid); position: relative; z-index: 10; }
         .footer-link { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
-        .footer-link:hover { color: var(--text-main); }
+        .footer-link:hover { color: var(--text-main); text-decoration: underline; }
 
-        /* ==========================================================================
-           MOBILE RESPONSIVE ADJUSTMENTS (FIX "GEPENG")
-           ========================================================================== */
+        /* ANIMATIONS */
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up-fade { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+        /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 768px) {
-          .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6.5rem; }
-          .dashboard-sidebar { transform: translateX(-100%); width: 280px; box-shadow: 20px 0 40px rgba(163,177,198,0.4); }
+          .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6rem; }
+          .dashboard-sidebar { transform: translateX(-100%); width: 280px; }
           .dashboard-sidebar.open { transform: translateX(0); }
-          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 72px; z-index: 900; padding: 0 1.5rem; }
-          .mobile-menu-btn { background: transparent; border: none; color: var(--text-main); padding: 8px; margin-left: -8px; cursor: pointer; }
-          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.7); z-index: 950; backdrop-filter: blur(4px); }
+          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 64px; background: #ffffff; z-index: 900; padding: 0 1.5rem; border-bottom: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+          .mobile-menu-btn { background: transparent; border: none; color: var(--text-main); padding: 4px; margin-left: -4px; cursor: pointer; }
+          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 950; backdrop-filter: blur(2px); }
+          .mobile-close { background: var(--bg-surface-hover); border: none; padding: 6px; border-radius: 50%; color: var(--text-main); cursor: pointer; }
           
           .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
+          .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
-          /* Landing Page Mobile Fixes - Jarak Lebih Lega */
-          .navbar { padding: 0.5rem 0.5rem 0.5rem 1.25rem; }
+          /* Landing Page Navbar Mobile Fix */
+          .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
-          .footer-logo { height: 48px; }
+          .footer-logo { height: 44px; }
+          .btn-primary.btn-sm { font-size: 0.75rem; padding: 0 1rem !important; height: 32px; border-radius: 8px; }
           
-          .hero-section { padding: 7rem 0 5rem; } /* Jauhkan hero dari navbar */
-          .hero-title { font-size: clamp(2.25rem, 8vw, 3rem); line-height: 1.25;}
-          .hero-subtitle { font-size: 1rem; margin-top: 1.25rem; padding: 0 1rem; line-height: 1.6; }
-          
-          .section-title { font-size: 1.75rem; margin-bottom: 2.5rem; }
-          
-          /* PRICING CARD FIX (Mencegah Gepeng) */
-          .pricing-card { 
-            padding: 2.5rem 1.5rem; 
-            margin: 0 auto; 
-            width: 100%; 
-            max-width: none; /* Dihapus max-width-nya agar pas di mobile */
-            border-radius: var(--radius-lg); 
-            box-sizing: border-box; 
-            height: auto;
-          }
-          .price-huge { font-size: 2.75rem; }
-          .pricing-list { gap: 1rem; width: 100%; }
-          .pricing-list li { font-size: 0.9rem; align-items: center; }
-          
-          /* FLEX DIRECTION OVERRIDE */
-          .flex-col-mobile { flex-direction: column; align-items: center; text-align: center; }
+          .pricing-card { padding: 2.5rem 1.5rem; margin: 0; width: 100%; border-radius: var(--radius-md); border-left: none; border-right: none; box-sizing: border-box; }
+          .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
+          .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
+          .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
+          .style-toggle-btn { flex: 1; justify-content: center; }
+          .flex-col-mobile { flex-direction: column; align-items: flex-start; }
+          .steps-grid { flex-direction: column; gap: 2rem; }
         }
       `}</style>
     </div>
