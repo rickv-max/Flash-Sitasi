@@ -106,51 +106,51 @@ const AnimatedWorkspaceMock = () => {
          <span className="text-[10px] font-bold text-muted font-mono ml-2 uppercase tracking-widest">Ruang Kerja App</span>
       </div>
 
-      <div className="p-4 sm:p-6 relative z-10">
-        <div className="flex items-center justify-between mb-5 pb-4 border-b border-neu-divider">
-          <div>
+      <div className="p-5 sm:p-8 relative z-10">
+        <div className="flex items-center justify-between mb-6 pb-5 border-b border-neu-divider flex-col sm:flex-row gap-4 sm:gap-0">
+          <div className="w-full sm:w-auto text-center sm:text-left">
             <h3 className="text-sm font-extrabold text-main m-0">Format Sitasi</h3>
           </div>
-          <div className="style-toggle neu-pressed pointer-events-none p-1 flex gap-1 rounded-lg">
-            <button className="neu-button text-primary px-3 py-1.5 text-[11px] active font-bold">📝 Footnote</button>
-            <button className="text-muted font-bold px-3 py-1.5 text-[11px]">📑 APA 7</button>
+          <div className="style-toggle neu-pressed pointer-events-none p-1.5 flex gap-1 rounded-xl w-full sm:w-auto justify-center">
+            <button className="neu-button text-primary px-4 py-2 text-[11px] active font-bold flex-1 sm:flex-none whitespace-nowrap">📝 Footnote</button>
+            <button className="text-muted font-bold px-4 py-2 text-[11px] flex-1 sm:flex-none whitespace-nowrap">📑 APA 7</button>
           </div>
         </div>
 
-        <div className="form-group mb-5">
+        <div className="form-group mb-6">
           <label className="input-label text-[10px] font-extrabold mb-2 block uppercase tracking-wider text-muted">Nomor DOI Referensi</label>
-          <div className={`neu-pressed px-4 min-h-[44px] flex items-center rounded-lg transition-all ${step >= 2 && step < 5 ? 'border-primary shadow-inner-blue' : 'border-transparent'}`} style={{borderWidth: '1px'}}>
-            <span className="text-main font-bold text-sm">{typedText}</span>
+          <div className={`neu-pressed px-4 min-h-[50px] flex items-center rounded-xl transition-all ${step >= 2 && step < 5 ? 'border-primary shadow-inner-blue' : 'border-transparent'}`} style={{borderWidth: '1px'}}>
+            <span className="text-main font-bold text-sm sm:text-base truncate">{typedText}</span>
             {step >= 2 && step < 4 && <span className="mock-caret"></span>}
-            {!typedText && step <= 1 && <span className="text-muted opacity-60 text-xs font-medium">Contoh: 10.1038/s41586...</span>}
+            {!typedText && step <= 1 && <span className="text-muted opacity-60 text-xs sm:text-sm font-medium">Contoh: 10.1038/s41586...</span>}
           </div>
         </div>
 
-        <button className={`neu-button w-full py-3 text-xs uppercase tracking-wide font-extrabold text-primary rounded-lg transition-transform duration-200 ${step === 4 ? 'scale-[0.98]' : 'scale-100'}`}>
+        <button className={`neu-button w-full min-h-[52px] py-4 text-xs sm:text-sm uppercase tracking-wider font-extrabold text-primary rounded-xl transition-transform duration-200 flex items-center justify-center ${step === 4 ? 'scale-[0.98]' : 'scale-100'}`}>
           {step === 5 ? (
-            <span className="flex items-center gap-2 justify-center text-primary"><span className="loading-spinner w-3 h-3 border-primary"></span> Mengekstrak...</span>
+            <span className="flex items-center gap-2 justify-center text-primary"><span className="loading-spinner w-4 h-4 border-primary"></span> Mengekstrak...</span>
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
         {/* RESULTS MOCK */}
-        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-700 ease-out overflow-hidden ${step >= 6 ? 'opacity-100 max-h-[400px] mt-5' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
-          <div className="result-block neu-pressed rounded-xl p-4 relative">
-            <div className="flex justify-between items-center border-b border-neu-divider pb-2 mb-3">
-              <span className="text-[10px] font-extrabold text-muted">CATATAN KAKI</span>
-              <button className={`neu-button text-[10px] py-1 px-3 font-bold rounded-md ${step === 8 ? 'text-success' : 'text-primary'}`}>
+        <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-5 transition-all duration-700 ease-out overflow-hidden ${step >= 6 ? 'opacity-100 max-h-[600px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
+          <div className="result-block neu-pressed rounded-2xl p-5 relative">
+            <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
+              <span className="text-[10px] sm:text-xs font-extrabold text-muted">CATATAN KAKI</span>
+              <button className={`neu-button text-[10px] py-1.5 px-3 font-bold rounded-md ${step === 8 ? 'text-success' : 'text-primary'}`}>
                 {step > 8 ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
               </button>
             </div>
-            <p className="text-xs m-0 leading-relaxed text-main font-medium">
+            <p className="text-xs sm:text-sm m-0 leading-relaxed text-main font-medium">
               Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
-          <div className="result-block neu-pressed rounded-xl p-4 relative">
-            <div className="flex justify-between items-center border-b border-neu-divider pb-2 mb-3">
-              <span className="text-[10px] font-extrabold text-muted">APA 7TH EDITION</span>
-              <button className="neu-button text-[10px] py-1 px-3 font-bold rounded-md text-primary">Salin</button>
+          <div className="result-block neu-pressed rounded-2xl p-5 relative">
+            <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
+              <span className="text-[10px] sm:text-xs font-extrabold text-muted">APA 7TH EDITION</span>
+              <button className="neu-button text-[10px] py-1.5 px-3 font-bold rounded-md text-primary">Salin</button>
             </div>
-            <p className="text-xs m-0 leading-relaxed text-main font-medium">
+            <p className="text-xs sm:text-sm m-0 leading-relaxed text-main font-medium">
               Smith, J. (2020). The Architecture of Modern SaaS. <i>Nature</i>, 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
@@ -165,7 +165,7 @@ const AnimatedWorkspaceMock = () => {
       </div>
 
       <style>{`
-        .mock-caret { display: inline-block; width: 2px; height: 16px; background: var(--primary); margin-left: 4px; animation: blink 1s step-end infinite; }
+        .mock-caret { display: inline-block; width: 2px; height: 18px; background: var(--primary); margin-left: 4px; animation: blink 1s step-end infinite; }
         .shadow-inner-blue { box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5); }
         @keyframes blink { 50% { opacity: 0; } }
         
@@ -173,18 +173,18 @@ const AnimatedWorkspaceMock = () => {
         
         /* Desktop Cursor Routing */
         .cursor-step-0 { top: 90%; left: 80%; opacity: 0; }
-        .cursor-step-1, .cursor-step-2 { top: 38%; left: 25%; opacity: 1; }
-        .cursor-step-3 { top: 52%; left: 50%; opacity: 1; }
-        .cursor-step-4, .cursor-step-5 { top: 52%; left: 50%; opacity: 1; transform: scale(0.9); }
+        .cursor-step-1, .cursor-step-2 { top: 44%; left: 25%; opacity: 1; }
+        .cursor-step-3 { top: 58%; left: 50%; opacity: 1; }
+        .cursor-step-4, .cursor-step-5 { top: 58%; left: 50%; opacity: 1; transform: scale(0.9); }
         .cursor-step-6, .cursor-step-7 { top: 82%; left: 45%; opacity: 1; transform: scale(1); }
         .cursor-step-8 { top: 82%; left: 45%; opacity: 1; transform: scale(0.9); }
         .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
         
         /* Mobile Cursor Routing */
         @media (max-width: 640px) {
-           .cursor-step-1, .cursor-step-2 { top: 35%; left: 35%; }
-           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 48%; left: 50%; }
-           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 65%; left: 80%; }
+           .cursor-step-1, .cursor-step-2 { top: 52%; left: 35%; }
+           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 62%; left: 50%; }
+           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 72%; left: 80%; }
         }
       `}</style>
     </div>
@@ -354,7 +354,7 @@ export default function App() {
     });
   };
 
-  // --- SCRAPING ENGINE ---
+  // --- SCRAPING ENGINE (Dipertahankan seperti semula) ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -533,6 +533,15 @@ export default function App() {
     if (success) { setCopiedId(targetCopyId); setTimeout(() => setCopiedId(null), 2000); }
   };
 
+  // --- Derived Variables for Batch ---
+  const batchSuccesses = batchResults.filter((r) => r.status === "success");
+  const batchErrors = batchResults.filter((r) => r.status === "error");
+  const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => {
+    const authorA = a.meta?.authorDafpus?.replace(/<[^>]+>/g, "").trim().toLowerCase() || "";
+    const authorB = b.meta?.authorDafpus?.replace(/<[^>]+>/g, "").trim().toLowerCase() || "";
+    return authorA.localeCompare(authorB);
+  });
+
   // --- SVGs & ICONS ---
   const VideoLogo = () => (<video src="/logo.mp4" autoPlay loop muted playsInline className="video-logo-asset" style={{ mixBlendMode: 'multiply' }} />);
   const CheckIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" height="16" width="16"><polyline points="20 6 9 17 4 12"></polyline></svg>);
@@ -555,8 +564,8 @@ export default function App() {
   const ZapIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" height="28" width="28"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
 
   const SkeletonLoader = () => (
-    <div className="mt-8 neu-flat rounded-2xl">
-      <div className="p-6"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
+    <div className="mt-8 sm:mt-10 neu-flat rounded-3xl">
+      <div className="p-6 sm:p-10"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
     </div>
   );
 
@@ -579,7 +588,7 @@ export default function App() {
               <p className="text-muted mb-6 mt-0 text-sm leading-relaxed">Kredit Anda habis. Harga per 1 sitasi sukses hanya Rp 750.</p>
               <div className="grid-packages mb-5">
                 {[50, 75, 100, 125].map((amt) => (
-                  <button key={amt} className={`neu-button py-3 text-sm font-bold ${topupAmount === amt ? "active text-primary" : "text-muted"}`} onClick={() => setTopupAmount(amt)}>{amt} Kredit</button>
+                  <button key={amt} className={`neu-button py-4 text-sm font-bold min-h-[50px] ${topupAmount === amt ? "active text-primary" : "text-muted"}`} onClick={() => setTopupAmount(amt)}>{amt} Kredit</button>
                 ))}
               </div>
               <div className="form-group">
@@ -590,7 +599,7 @@ export default function App() {
                 <span className="text-muted font-bold text-sm">Total:</span>
                 <span className="font-black text-xl text-primary">Rp {(topupAmount * 750).toLocaleString("id-ID")}</span>
               </div>
-              <button className="neu-button w-full mt-8 py-4 text-primary font-extrabold" onClick={processPayment} disabled={isPaying}>
+              <button className="neu-button w-full mt-8 py-4 sm:py-5 min-h-[56px] text-primary font-extrabold flex items-center justify-center" onClick={processPayment} disabled={isPaying}>
                 {isPaying ? "Menghubungkan..." : "Bayar via Bayar.gg"}
               </button>
             </div>
@@ -608,11 +617,11 @@ export default function App() {
               </div>
               <div className="nav-actions">
                 {!user ? (
-                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-primary" disabled={loading}>
+                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold text-primary flex items-center whitespace-nowrap" disabled={loading}>
                     {loading ? "Menghubungkan..." : "Buka Ruang Kerja"}
                   </button>
                 ) : (
-                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-primary">Buka Ruang Kerja</button>
+                  <button onClick={handleLoginAndEnter} className="neu-button px-5 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold text-primary flex items-center whitespace-nowrap">Buka Ruang Kerja</button>
                 )}
               </div>
             </div>
@@ -645,7 +654,7 @@ export default function App() {
             </div>
 
             <div className="container text-center relative z-10 px-4">
-              <div className="hero-badge neu-flat mx-auto mb-6 sm:mb-8 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full flex items-center gap-2 w-max text-xs sm:text-sm font-bold text-muted">
+              <div className="hero-badge neu-flat mx-auto mb-6 sm:mb-8 px-5 py-2 rounded-full flex items-center gap-2 w-max text-xs sm:text-sm font-bold text-muted">
                 <span className="pulse-dot"></span> Tools Sitasi Jurnal Otomatis
               </div>
               
@@ -661,16 +670,16 @@ export default function App() {
                 </div>
               </h1>
               
-              <p className="hero-subtitle mx-auto mt-4 sm:mt-6 text-muted">
+              <p className="hero-subtitle mx-auto mt-5 sm:mt-6 text-muted">
                 Berhenti menyusun daftar pustaka secara manual. Sistem mengekstrak metadata
                 dari PDF, DOI, Academia, ResearchGate, dan OJS secara instan dengan presisi tinggi.
               </p>
               
-              <div className="hero-cta mt-8 sm:mt-12">
-                <button onClick={handleLoginAndEnter} className="neu-button px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-extrabold text-primary w-full sm:w-auto max-w-sm mx-auto" disabled={loading}>
+              <div className="hero-cta mt-10 sm:mt-12 w-full max-w-sm mx-auto px-4 sm:px-0">
+                <button onClick={handleLoginAndEnter} className="neu-button px-6 sm:px-8 py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary w-full flex items-center justify-center" disabled={loading}>
                   {loading ? "Memuat Workspace..." : "Mulai Gratis Sekarang"}
                 </button>
-                <div className="hero-trusted mt-6 sm:mt-8 flex items-center justify-center gap-3">
+                <div className="hero-trusted mt-8 flex items-center justify-center gap-3">
                   <div className="avatar-group flex"><div className="avatar"></div><div className="avatar"></div><div className="avatar"></div></div>
                   <p className="text-[10px] sm:text-xs text-muted font-bold m-0">Dipercaya oleh Mahasiswa & Akademisi</p>
                 </div>
@@ -680,39 +689,39 @@ export default function App() {
 
           {/* Animated Mock Workspace (Hero Showcase) */}
           <section className="preview-section mt-10 sm:mt-16 pb-16 sm:pb-24 relative z-20">
-            <div className="container preview-card-anim px-3 sm:px-6">
+            <div className="container preview-card-anim px-4 sm:px-6">
                <AnimatedWorkspaceMock />
             </div>
           </section>
 
           {/* How It Works Section */}
-          <section className="steps-section py-16 sm:py-20 relative z-10">
+          <section className="steps-section py-16 sm:py-24 relative z-10">
              <div className="container px-4">
-                <h2 className="section-title text-center mb-3 sm:mb-4">Tiga Langkah Mudah</h2>
-                <p className="text-muted font-medium text-center max-w-md mx-auto mb-10 sm:mb-16 text-sm sm:text-base">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
+                <h2 className="section-title text-center mb-4">Tiga Langkah Mudah</h2>
+                <p className="text-muted font-medium text-center max-w-md mx-auto mb-12 sm:mb-16 text-sm sm:text-base leading-relaxed">Otomatisasi referensi Anda dalam hitungan detik. Tanpa format manual yang membingungkan.</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
-                   <div className="step-card-anim neu-flat p-6 rounded-3xl text-left flex flex-row sm:flex-col items-center sm:items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-12 h-12 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">1</div>
+                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
+                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">1</div>
                       <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-1 sm:mb-2">Salin Tautan</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium">Dapatkan tautan (URL) atau nomor DOI dari jurnal/artikel yang ingin disitasi.</p>
+                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Salin Tautan</h4>
+                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Dapatkan tautan (URL) atau nomor DOI dari jurnal/artikel yang ingin disitasi.</p>
                       </div>
                    </div>
                    
-                   <div className="step-card-anim neu-flat p-6 rounded-3xl text-left flex flex-row sm:flex-col items-center sm:items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-12 h-12 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">2</div>
+                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
+                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">2</div>
                       <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-1 sm:mb-2">Sistem Memproses</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium">Tempelkan tautan ke dalam sistem kami, lalu klik tombol Generate.</p>
+                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Sistem Memproses</h4>
+                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Tempelkan tautan ke dalam sistem kami, lalu klik tombol Generate.</p>
                       </div>
                    </div>
                    
-                   <div className="step-card-anim neu-flat p-6 rounded-3xl text-left flex flex-row sm:flex-col items-center sm:items-start gap-5">
-                      <div className="step-number neu-pressed rounded-full w-12 h-12 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">3</div>
+                   <div className="step-card-anim neu-flat p-6 sm:p-8 rounded-3xl text-left flex flex-col items-start gap-5">
+                      <div className="step-number neu-pressed rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-primary flex-shrink-0">3</div>
                       <div>
-                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-1 sm:mb-2">Sitasi Selesai</h4>
-                        <p className="text-xs sm:text-sm text-muted font-medium">Salin hasil Footnote & Daftar Pustaka (APA 7) yang sudah terformat rapi.</p>
+                        <h4 className="font-extrabold text-main text-base sm:text-lg mb-2">Sitasi Selesai</h4>
+                        <p className="text-xs sm:text-sm text-muted font-medium leading-relaxed">Salin hasil Footnote & Daftar Pustaka (APA 7) yang sudah terformat rapi.</p>
                       </div>
                    </div>
                 </div>
@@ -720,48 +729,48 @@ export default function App() {
           </section>
 
           {/* Features Detail */}
-          <section id="features" className="features-section pt-16 pb-16 relative z-10">
+          <section id="features" className="features-section py-16 sm:py-24 relative z-10">
             <div className="container text-center px-4">
-              <h2 className="section-title mb-10 sm:mb-16">Dibangun untuk Kecepatan & Presisi</h2>
+              <h2 className="section-title mb-12 sm:mb-16">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-6 sm:p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full"><ShieldIcon /></div>
+                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
+                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><ShieldIcon /></div>
                   <h3 className="text-base sm:text-lg font-extrabold text-main">Anti-Cloudflare Bypass</h3>
-                  <p className="text-muted font-medium mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare.</p>
+                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare.</p>
                 </div>
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-6 sm:p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full"><SparklesIcon /></div>
+                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
+                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><SparklesIcon /></div>
                   <h3 className="text-base sm:text-lg font-extrabold text-main">Smart Metadata Recovery</h3>
-                  <p className="text-muted font-medium mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed">Jika struktur PDF berantakan, sistem akan melacak metadata yang tepat dari database global.</p>
+                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Jika struktur PDF berantakan, sistem akan melacak metadata yang tepat dari database global.</p>
                 </div>
-                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-6 sm:p-8">
-                  <div className="feature-icon-box text-primary neu-pressed w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full"><ZapIcon /></div>
+                <div className="feature-card-anim feature-card neu-flat rounded-3xl p-8">
+                  <div className="feature-icon-box text-primary neu-pressed w-14 h-14 sm:w-16 sm:h-16 rounded-full"><ZapIcon /></div>
                   <h3 className="text-base sm:text-lg font-extrabold text-main">Pemrosesan Batch</h3>
-                  <p className="text-muted font-medium mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed">Punya puluhan referensi? Tempelkan semua URL sekaligus dan dapatkan daftar urut abjad seketika.</p>
+                  <p className="text-muted font-medium mt-3 text-xs sm:text-sm leading-relaxed">Punya puluhan referensi? Tempelkan semua URL sekaligus dan dapatkan daftar urut abjad seketika.</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Pricing & Transparency */}
-          <section className="pricing-section pb-24 sm:pb-32 relative z-10">
+          <section className="pricing-section py-16 sm:py-24 relative z-10">
             <div className="container text-center px-4">
               <div className="pricing-card-anim pricing-card neu-flat rounded-3xl mx-auto flex flex-col justify-center">
-                <div className="badge-pill mx-auto mb-5 sm:mb-6 neu-pressed px-4 py-1.5 rounded-full font-bold text-[10px] sm:text-xs text-primary w-max uppercase tracking-wider">Paling Diminati</div>
-                <h2 className="m-0 mb-3 sm:mb-4 text-2xl sm:text-3xl font-black text-main tracking-tight">Transparan. Pay-As-You-Go.</h2>
-                <p className="text-muted font-medium m-0 mb-8 sm:mb-10 text-xs sm:text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
+                <div className="badge-pill mx-auto mb-6 neu-pressed px-5 py-2 rounded-full font-bold text-[11px] sm:text-xs text-primary w-max uppercase tracking-wider">Paling Diminati</div>
+                <h2 className="m-0 mb-4 text-2xl sm:text-3xl font-black text-main tracking-tight leading-snug">Transparan. Pay-As-You-Go.</h2>
+                <p className="text-muted font-medium m-0 mb-8 sm:mb-10 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
                 
-                <div className="price-huge text-main mb-6 sm:mb-8"><span className="currency font-bold mt-2">Rp</span>750<span className="suffix font-bold text-muted">/ Sitasi</span></div>
+                <div className="price-huge text-main mb-8"><span className="currency font-bold mt-2">Rp</span>750<span className="suffix font-bold text-muted">/ Sitasi</span></div>
                 
-                <div className="w-full h-px bg-neu-dark opacity-50 mb-6 sm:mb-8"></div>
+                <div className="w-full h-px bg-neu-dark opacity-50 mb-8"></div>
                 
-                <ul className="pricing-list mx-auto max-w-sm space-y-4">
+                <ul className="pricing-list mx-auto w-full sm:max-w-sm space-y-4">
                   <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Gratis 5 Kredit pendaftar baru.</span></li>
                   <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Kredit tidak hangus jika gagal.</span></li>
                   <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">Format Footnote & APA 7.</span></li>
                   <li><div className="icon-wrap neu-pressed text-primary"><CheckIcon /></div><span className="text-main font-semibold text-sm">QRIS, e-Wallet, & VA aktif.</span></li>
                 </ul>
-                <button onClick={handleLoginAndEnter} className="neu-button w-full flex justify-center items-center gap-2 sm:gap-3 py-3.5 sm:py-4 mt-8 sm:mt-10 text-sm sm:text-base font-extrabold text-primary">
+                <button onClick={handleLoginAndEnter} className="neu-button w-full flex justify-center items-center gap-2 py-4 sm:py-5 min-h-[56px] mt-10 text-sm sm:text-base font-extrabold text-primary">
                   Mulai Ruang Kerja Anda <ArrowRightIcon />
                 </button>
               </div>
@@ -769,14 +778,14 @@ export default function App() {
           </section>
 
           <footer className="footer bg-white relative z-20">
-            <div className="container footer-content py-8 sm:py-10">
-              <div className="footer-brand flex flex-col items-center justify-center mb-4 sm:mb-6">
+            <div className="container footer-content py-10 sm:py-12">
+              <div className="footer-brand flex flex-col items-center justify-center mb-6">
                 <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
               </div>
-              <p className="mt-2 sm:mt-4 text-[11px] sm:text-sm max-w-md mx-auto text-muted font-medium leading-relaxed px-4">
+              <p className="mt-4 text-xs sm:text-sm max-w-md mx-auto text-muted font-medium leading-relaxed px-4">
                 Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
               </p>
-              <div className="mt-6 sm:mt-10 text-[10px] sm:text-xs font-bold text-muted flex flex-wrap justify-center gap-4 sm:gap-6 uppercase tracking-wider">
+              <div className="mt-8 sm:mt-10 text-[10px] sm:text-xs font-bold text-muted flex flex-wrap justify-center gap-4 sm:gap-6 uppercase tracking-wider">
                  <span>© {new Date().getFullYear()} FlashCite.</span>
                  <a href="#" className="footer-link">Kebijakan Privasi</a>
                  <a href="#" className="footer-link">Syarat & Ketentuan</a>
@@ -802,7 +811,7 @@ export default function App() {
            <aside className={`dashboard-sidebar neu-flat ${isSidebarOpen ? 'open' : ''}`}>
               <div className="sidebar-header pb-6 mb-2 border-b border-neu-divider">
                  <div className="logo-icon-wrap h-8"><VideoLogo /></div>
-                 <button className="mobile-close sm:hidden neu-button" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
+                 <button className="mobile-close sm:hidden neu-button p-2" onClick={() => setIsSidebarOpen(false)}><CloseIcon /></button>
               </div>
               
               <nav className="sidebar-nav">
@@ -827,9 +836,9 @@ export default function App() {
                  <div className="credit-box neu-pressed p-5 rounded-2xl mb-6">
                     <p className="credit-label text-muted">Sisa Token</p>
                     <div className="credit-amount text-main font-black text-2xl mb-4"><CoinIcon /> <span>{userData.credits || 0}</span></div>
-                    <button onClick={() => setShowTopupModal(true)} className="neu-button w-full py-3 text-sm text-primary font-bold">Top Up Token</button>
+                    <button onClick={() => setShowTopupModal(true)} className="neu-button w-full py-3.5 min-h-[44px] text-sm text-primary font-bold">Top Up Token</button>
                  </div>
-                 <button onClick={handleLogout} className="btn-logout w-full flex justify-center items-center gap-2 py-3 text-sm font-bold text-muted transition-colors hover:text-error">
+                 <button onClick={handleLogout} className="btn-logout w-full flex justify-center items-center gap-2 py-3.5 min-h-[44px] text-sm font-bold text-muted transition-colors hover:text-error">
                     <LogoutIcon /> Keluar Ruang Kerja
                  </button>
               </div>
@@ -838,28 +847,28 @@ export default function App() {
            {/* Main Workspace Content */}
            <main className="dashboard-main">
               <div className="dashboard-container">
-                <div className="tool-header mb-8 sm:mb-10 text-center sm:text-left px-2 sm:px-0">
+                <div className="tool-header mb-8 sm:mb-10 text-center sm:text-left px-2 sm:px-0 mt-6 sm:mt-0">
                   <h2 className="section-title m-0 tracking-tight text-main text-2xl sm:text-3xl">Ruang Kerja</h2>
-                  <p className="text-muted text-xs sm:text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
+                  <p className="text-muted text-xs sm:text-sm mt-3 font-medium leading-relaxed">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
                 </div>
 
                 <div className="card neu-flat rounded-3xl mb-8 sm:mb-10 relative z-20">
-                  <div className="card-body p-5 sm:p-10">
+                  <div className="card-body p-6 sm:p-10">
                     {/* TOGGLE CITATION STYLE */}
-                    <div className="flex items-center justify-between mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-neu-divider flex-col-mobile gap-4 sm:gap-0">
+                    <div className="flex items-center justify-between mb-8 pb-6 border-b border-neu-divider flex-col sm:flex-row gap-5 sm:gap-0">
                        <div className="text-center sm:text-left w-full sm:w-auto">
                          <h3 className="text-sm sm:text-base font-extrabold text-main m-0">Format Sitasi</h3>
-                         <p className="text-[10px] sm:text-xs text-muted mt-1 font-semibold m-0">Pilih gaya output yang dihasilkan</p>
+                         <p className="text-[10px] sm:text-xs text-muted mt-1.5 font-semibold m-0">Pilih gaya output yang dihasilkan</p>
                        </div>
-                       <div className="style-toggle neu-pressed rounded-xl p-1.5 w-full sm:w-auto flex gap-2">
-                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold ${citationStyle === "footnote" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
-                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold ${citationStyle === "apa7" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
+                       <div className="style-toggle neu-pressed rounded-xl p-1.5 w-full sm:w-auto flex gap-2 justify-center">
+                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold flex-1 sm:flex-none ${citationStyle === "footnote" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
+                          <button className={`neu-button w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-bold flex-1 sm:flex-none ${citationStyle === "apa7" ? "active text-primary" : "text-muted shadow-none"}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
                        </div>
                     </div>
 
                     {inputMode === "doi" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-5 sm:mb-6 relative">
+                        <div className="form-group mb-6 relative">
                           <label className="input-label">Nomor DOI Referensi</label>
                           <input type="text" className="input-field-modern neu-pressed" value={doiInput} onChange={(e) => setDoiInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDOI()} placeholder="Contoh: 10.1038/s41586..." />
                         </div>
@@ -869,7 +878,7 @@ export default function App() {
                             <input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="neu-button w-full py-3.5 sm:py-4 text-sm sm:text-base font-extrabold text-primary" onClick={fetchDOI} disabled={loading || !doiInput}>
+                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={fetchDOI} disabled={loading || !doiInput}>
                           {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Token)"}
                         </button>
                       </div>
@@ -877,7 +886,7 @@ export default function App() {
 
                     {inputMode === "url" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-5 sm:mb-6 relative">
+                        <div className="form-group mb-6 relative">
                           <label className="input-label">Tautan Artikel / PDF</label>
                           <input type="text" className="input-field-modern neu-pressed" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
                         </div>
@@ -887,7 +896,7 @@ export default function App() {
                             <input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Masukkan kota terbit jurnal" />
                           </div>
                         )}
-                        <button className="neu-button w-full py-3.5 sm:py-4 text-sm sm:text-base font-extrabold text-primary" onClick={fetchURL} disabled={loading || !urlInput}>
+                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={fetchURL} disabled={loading || !urlInput}>
                           {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Token)"}
                         </button>
                       </div>
@@ -895,7 +904,7 @@ export default function App() {
 
                     {inputMode === "manual" && (
                       <div className="animate-fade-in">
-                        <div className="grid-2 gap-4 sm:gap-6">
+                        <div className="grid-2 gap-5 sm:gap-6">
                           <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern neu-pressed" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
                           <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern neu-pressed" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
                           <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern neu-pressed" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
@@ -907,17 +916,17 @@ export default function App() {
                             <div className="form-group animate-fade-in"><label className="input-label">Kota Terbit</label><input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Jakarta" /></div>
                           )}
                         </div>
-                        <button className="neu-button w-full mt-8 sm:mt-10 py-3.5 sm:py-4 text-sm sm:text-base font-extrabold text-primary" onClick={handleGenerateManual}>Generate Manual (1 Token)</button>
+                        <button className="neu-button w-full mt-8 sm:mt-10 py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={handleGenerateManual}>Generate Manual (1 Token)</button>
                       </div>
                     )}
 
                     {inputMode === "batch" && (
                       <div className="animate-fade-in">
-                        <div className="form-group mb-5 sm:mb-6"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field neu-pressed" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
+                        <div className="form-group mb-6"><label className="input-label">Daftar Link / DOI</label><textarea className="input-field-modern textarea-field neu-pressed" value={batchInput} onChange={(e) => setBatchInput(e.target.value)} placeholder="Paste banyak URL atau DOI di sini&#10;1 Baris = 1 Link/DOI&#10;Maksimal disarankan: 20 baris per proses" /></div>
                         {citationStyle === "footnote" && (
                           <div className="form-group mb-8 sm:mb-10 animate-fade-in"><label className="input-label">Kota Terbit Global <span className="opacity-60 font-medium">(Opsional)</span></label><input type="text" className="input-field-modern neu-pressed" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} placeholder="Diaplikasikan ke semua referensi" /></div>
                         )}
-                        <button className="neu-button w-full py-3.5 sm:py-4 text-sm sm:text-base font-extrabold text-primary" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
+                        <button className="neu-button w-full py-4 sm:py-5 min-h-[56px] text-sm sm:text-base font-extrabold text-primary flex items-center justify-center" onClick={handleBatchGenerate} disabled={loading || !batchInput}>
                           {loading ? "Memproses Batch..." : "Generate Semua (1 Token/Sukses)"}
                         </button>
                       </div>
@@ -925,9 +934,9 @@ export default function App() {
 
                     {/* TAB HISTORY */}
                     {inputMode === "history" && (
-                      <div className="animate-fade-in history-container custom-scrollbar pr-1 sm:pr-3">
+                      <div className="animate-fade-in history-container custom-scrollbar pr-2 sm:pr-4">
                         {history.length === 0 ? (
-                          <div className="text-center text-muted font-bold p-8 sm:p-12 flex flex-col items-center">
+                          <div className="text-center text-muted font-bold p-10 sm:p-12 flex flex-col items-center">
                             <span className="text-4xl sm:text-5xl mb-4 opacity-40">🗂️</span> Ruang riwayat Anda masih kosong.
                           </div>
                         ) : (
@@ -935,17 +944,17 @@ export default function App() {
                             const inTextToCopy = citationStyle === "footnote" ? item.footnote : (item.apaInText || "Data APA 7 belum tersedia.");
                             const refToCopy = citationStyle === "footnote" ? item.dafpus : (item.apaRef || "Data APA 7 belum tersedia.");
                             return (
-                              <div key={item.id} className="history-item mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-neu-divider last-no-border">
-                                <div className="flex justify-between items-center mb-3 sm:mb-4">
-                                  <span className="neu-pressed font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-full text-muted">{item.type}</span>
+                              <div key={item.id} className="history-item mb-6 pb-6 border-b border-neu-divider last-no-border">
+                                <div className="flex justify-between items-center mb-4">
+                                  <span className="neu-pressed font-bold text-[10px] sm:text-xs px-3 py-1.5 rounded-full text-muted">{item.type}</span>
                                   <span className="text-[10px] sm:text-xs font-mono font-bold text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
                                 </div>
-                                <h4 className="m-0 mb-4 sm:mb-5 font-extrabold text-xs sm:text-sm leading-snug truncate-2 text-main">{item.title}</h4>
-                                <div className="flex gap-3 sm:gap-4 flex-col-mobile">
-                                  <button className="neu-button text-[10px] sm:text-xs py-2 sm:py-2.5 flex-1 font-bold text-muted hover:text-primary" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
+                                <h4 className="m-0 mb-5 font-extrabold text-xs sm:text-sm leading-relaxed truncate-2 text-main">{item.title}</h4>
+                                <div className="flex gap-4 flex-col sm:flex-row">
+                                  <button className="neu-button text-[10px] sm:text-xs py-3 min-h-[44px] flex-1 font-bold text-muted hover:text-primary flex items-center justify-center gap-2" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
                                     {copiedId === `hist-in-${item.id}` ? <><span className="text-success mr-1">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
                                   </button>
-                                  <button className="neu-button text-[10px] sm:text-xs py-2 sm:py-2.5 flex-1 font-bold text-muted hover:text-primary" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
+                                  <button className="neu-button text-[10px] sm:text-xs py-3 min-h-[44px] flex-1 font-bold text-muted hover:text-primary flex items-center justify-center gap-2" onClick={() => handleCopy(refToCopy, `hist-dp-${item.id}`)}>
                                     {copiedId === `hist-dp-${item.id}` ? <><span className="text-success mr-1">✓</span> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Dafpus' : 'APA 7'}</>}
                                   </button>
                                 </div>
@@ -957,9 +966,9 @@ export default function App() {
                     )}
 
                     {error && (
-                      <div className="error-alert mt-6 sm:mt-8 p-4 sm:p-5 neu-pressed rounded-xl flex items-start">
-                        <div className="mt-0.5 text-error"><WarningIcon /></div> 
-                        <span className="leading-relaxed font-bold text-error ml-2 sm:ml-3 text-xs sm:text-sm">{error}</span>
+                      <div className="error-alert mt-6 sm:mt-8 p-5 neu-pressed rounded-xl flex items-start">
+                        <div className="mt-0.5 text-error flex-shrink-0"><WarningIcon /></div> 
+                        <span className="leading-relaxed font-bold text-error ml-3 text-xs sm:text-sm">{error}</span>
                       </div>
                     )}
                   </div>
@@ -973,12 +982,12 @@ export default function App() {
                 {/* RESULTS AREA: SINGLE */}
                 {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
                   <div className="card mt-8 sm:mt-10 animate-slide-up neu-flat rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 sm:p-5 opacity-10 pointer-events-none text-main"><CheckIcon /></div>
-                    <div className="card-body p-5 sm:p-10">
+                    <div className="absolute top-0 right-0 p-5 opacity-10 pointer-events-none text-main"><CheckIcon /></div>
+                    <div className="card-body p-6 sm:p-10">
                       <div className="result-block neu-pressed rounded-2xl p-5 sm:p-6 relative">
-                        <div className="flex justify-between items-center border-b border-neu-divider pb-3 sm:pb-4 mb-3 sm:mb-4">
+                        <div className="flex justify-between items-center border-b border-neu-divider pb-4 mb-4">
                           <span className="text-[10px] sm:text-xs font-extrabold text-muted">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
-                          <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4 text-primary" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
+                          <button className="neu-button font-bold text-[10px] sm:text-xs py-2 px-4 text-primary min-h-[36px]" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
                             {copiedId === "single-in" ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
                           </button>
                         </div>
@@ -986,9 +995,9 @@ export default function App() {
                       </div>
                       
                       <div className="result-block mt-6 sm:mt-8 neu-pressed rounded-2xl p-5 sm:p-6 relative">
-                        <div className="flex justify-between items-center border-b border-neu-divider pb-3 sm:pb-4 mb-3 sm:mb-4">
+                        <div className="flex justify-between items-center border-b border-neu-divider pb-4 mb-4">
                           <span className="text-[10px] sm:text-xs font-extrabold text-muted">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
-                          <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4 text-primary" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
+                          <button className="neu-button font-bold text-[10px] sm:text-xs py-2 px-4 text-primary min-h-[36px]" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
                             {copiedId === "single-dp" ? <><span className="text-success font-black mr-1">✓</span> Disalin</> : "Salin"}
                           </button>
                         </div>
@@ -1001,20 +1010,20 @@ export default function App() {
                 {/* RESULTS AREA: BATCH */}
                 {!loading && batchResults.length > 0 && inputMode === "batch" && (
                   <div className="card mt-8 sm:mt-10 animate-slide-up neu-flat rounded-3xl">
-                    <div className="card-body p-5 sm:p-10">
+                    <div className="card-body p-6 sm:p-10">
                       {batchSuccesses.length > 0 && (
                         <>
-                          <div className="flex items-center justify-between mb-5 sm:mb-6 pb-3 sm:pb-4 border-b border-neu-divider">
+                          <div className="flex items-center justify-between mb-6 pb-4 border-b border-neu-divider">
                             <h3 className="text-base sm:text-lg font-extrabold m-0 text-main">{citationStyle === 'footnote' ? `Catatan Kaki (${batchSuccesses.length})` : `Sitasi Dalam Teks (${batchSuccesses.length})`}</h3>
                           </div>
                           {batchSuccesses.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
                             const copyId = `batch-in-${index}`;
                             return (
-                              <div className="result-block mb-4 sm:mb-6 neu-pressed rounded-2xl p-4 sm:p-5" key={copyId}>
-                                <div className="flex justify-between items-center border-b border-neu-divider pb-2 sm:pb-3 mb-3 sm:mb-4">
-                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted">{r.line}</span>
-                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1 sm:py-1.5 px-3 sm:px-4 text-primary" onClick={() => handleCopy(content, copyId)}>
+                              <div className="result-block mb-6 neu-pressed rounded-2xl p-5" key={copyId}>
+                                <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
+                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted pr-4">{r.line}</span>
+                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 px-4 text-primary min-h-[36px] flex-shrink-0" onClick={() => handleCopy(content, copyId)}>
                                     {copiedId === copyId ? <span className="text-success font-black">✓</span> : "Salin"}
                                   </button>
                                 </div>
@@ -1023,17 +1032,17 @@ export default function App() {
                             );
                           })}
                           
-                          <div className="flex items-center justify-between mt-8 sm:mt-12 mb-5 sm:mb-6 pb-3 sm:pb-4 border-b border-neu-divider">
+                          <div className="flex items-center justify-between mt-10 sm:mt-12 mb-6 pb-4 border-b border-neu-divider">
                             <h3 className="text-base sm:text-lg font-extrabold m-0 text-main">{citationStyle === 'footnote' ? `Daftar Pustaka A-Z (${sortedBatchDafpus.length})` : `Daftar Pustaka APA 7 (${sortedBatchDafpus.length})`}</h3>
                           </div>
                           {sortedBatchDafpus.map((r, index) => {
                             const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
                             const copyId = `batch-dp-${index}`;
                             return (
-                              <div className="result-block mb-4 sm:mb-6 neu-pressed rounded-2xl p-4 sm:p-5" key={copyId}>
-                                <div className="flex justify-between items-center border-b border-neu-divider pb-2 sm:pb-3 mb-3 sm:mb-4">
-                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted">{r.line}</span>
-                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1 sm:py-1.5 px-3 sm:px-4 text-primary" onClick={() => handleCopy(content, copyId)}>
+                              <div className="result-block mb-6 neu-pressed rounded-2xl p-5" key={copyId}>
+                                <div className="flex justify-between items-center border-b border-neu-divider pb-3 mb-4">
+                                  <span className="truncate font-mono font-bold text-[10px] sm:text-xs text-muted pr-4">{r.line}</span>
+                                  <button className="neu-button font-bold text-[10px] sm:text-xs py-1.5 px-4 text-primary min-h-[36px] flex-shrink-0" onClick={() => handleCopy(content, copyId)}>
                                     {copiedId === copyId ? <span className="text-success font-black">✓</span> : "Salin"}
                                   </button>
                                 </div>
@@ -1044,11 +1053,11 @@ export default function App() {
                         </>
                       )}
                       {batchErrors.length > 0 && (
-                        <div className="error-alert mt-6 sm:mt-8 p-4 sm:p-6 neu-pressed rounded-2xl">
-                          <strong className="flex items-center gap-2 mb-3 sm:mb-4 text-error font-extrabold text-xs sm:text-sm"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
-                          <ul className="m-0 pl-5 sm:pl-6 text-error font-medium text-[10px] sm:text-sm space-y-2 sm:space-y-3 opacity-90">
+                        <div className="error-alert mt-8 p-5 sm:p-6 neu-pressed rounded-2xl">
+                          <strong className="flex items-center gap-2 mb-4 text-error font-extrabold text-xs sm:text-sm"><WarningIcon/> Gagal (Otomatis Di-Refund):</strong>
+                          <ul className="m-0 pl-6 text-error font-medium text-[10px] sm:text-sm space-y-3 opacity-90">
                             {batchErrors.map((err, i) => (
-                              <li key={i} className="break-all"><span className="font-mono font-bold mr-2 opacity-70">{err.line}</span><br className="sm:hidden" />{err.error}</li>
+                              <li key={i} className="break-all leading-relaxed"><span className="font-mono font-bold mr-2 opacity-70">{err.line}</span><br className="sm:hidden" />{err.error}</li>
                             ))}
                           </ul>
                         </div>
@@ -1107,19 +1116,18 @@ export default function App() {
 
         /* UTILS */
         .text-center { text-align: center; } .text-left { text-align: left; }
-        .text-gradient { background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; } .flex-shrink-0 { flex-shrink: 0; }
+        .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .flex-col { flex-direction: column; } .flex-row { flex-direction: row; } .flex-1 { flex: 1; } .flex-shrink-0 { flex-shrink: 0; } .flex-none { flex: none; }
         .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; } .gap-8 { gap: 2rem; }
         .m-0 { margin: 0; } .mx-auto { margin-left: auto; margin-right: auto; }
-        .mt-0 { margin-top: 0; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } .mt-5 { margin-top: 1.25rem; } .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
+        .mt-0 { margin-top: 0; } .mt-1\.5 { margin-top: 0.375rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; } .mt-5 { margin-top: 1.25rem; } .mt-6 { margin-top: 1.5rem; } .mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; } .mt-16 { margin-top: 4rem; }
         .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mb-10 { margin-bottom: 2.5rem; } .mb-12 { margin-bottom: 3rem; } .mb-16 { margin-bottom: 4rem; }
         .p-1 { padding: 0.25rem; } .p-1\.5 { padding: 0.375rem; } .p-2 { padding: 0.5rem; } .p-3 { padding: 0.75rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .p-10 { padding: 2.5rem; } .p-12 { padding: 3rem; }
         .pb-2 { padding-bottom: 0.5rem; } .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; } .pb-5 { padding-bottom: 1.25rem; } .pb-6 { padding-bottom: 1.5rem; } .pb-16 { padding-bottom: 4rem; } .pb-24 { padding-bottom: 6rem; } .pb-32 { padding-bottom: 8rem; }
-        .pt-5 { padding-top: 1.25rem; } .pt-6 { padding-top: 1.5rem; } .pt-8 { padding-top: 2rem; } .pt-16 { padding-top: 4rem; } .pt-20 { padding-top: 5rem; } .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; } .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+        .pt-5 { padding-top: 1.25rem; } .pt-6 { padding-top: 1.5rem; } .pt-8 { padding-top: 2rem; } .pt-16 { padding-top: 4rem; } .pt-20 { padding-top: 5rem; } .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; } .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; } .py-16 { padding-top: 4rem; padding-bottom: 4rem; } .py-20 { padding-top: 5rem; padding-bottom: 5rem; } .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
         .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; } .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; } .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } .px-8 { padding-left: 2rem; padding-right: 2rem; }
         .w-full { width: 100%; } .w-max { width: max-content; } .w-auto { width: auto; }
+        .min-h-\[36px\] { min-height: 36px; } .min-h-\[40px\] { min-height: 40px; } .min-h-\[44px\] { min-height: 44px; } .min-h-\[48px\] { min-height: 48px; } .min-h-\[50px\] { min-height: 50px; } .min-h-\[52px\] { min-height: 52px; } .min-h-\[56px\] { min-height: 56px; }
         .border-b { border-bottom: 1px solid var(--neu-divider); } .border-t { border-top: 1px solid var(--neu-divider); } .border-y { border-top: 1px solid var(--neu-divider); border-bottom: 1px solid var(--neu-divider); }
-        .border-r { border-right: 1px solid var(--neu-divider); }
         .border-none { border: none; } .border-transparent { border-color: transparent; }
         .rounded-md { border-radius: 6px; } .rounded-lg { border-radius: 8px; } .rounded-xl { border-radius: 12px; } .rounded-2xl { border-radius: 16px; } .rounded-3xl { border-radius: 24px; } .rounded-full { border-radius: 9999px; }
         .text-\[10px\] { font-size: 0.625rem; } .text-\[11px\] { font-size: 0.6875rem; } .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-3xl { font-size: 1.875rem; } .text-4xl { font-size: 2.25rem; } .text-5xl { font-size: 3rem; }
@@ -1132,6 +1140,7 @@ export default function App() {
         .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
         .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-30 { opacity: 0.3; } .opacity-40 { opacity: 0.4; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
         .pointer-events-none { pointer-events: none; } .pointer-events-auto { pointer-events: auto; }
+        .whitespace-nowrap { white-space: nowrap; } .whitespace-normal { white-space: normal; }
         .break-all { word-break: break-all; } .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; } .max-w-5xl { max-width: 64rem; }
         .last-no-border:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
@@ -1162,14 +1171,14 @@ export default function App() {
 
         /* HERO SECTION */
         .hero-section { padding: 4rem 0 3rem; }
-        .hero-title { font-size: clamp(2rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.1; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; color: var(--text-main); }
+        .hero-title { font-size: clamp(2rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.15; margin: 0; letter-spacing: -0.04em; position: relative; z-index: 10; color: var(--text-main); }
         .hero-title-line { overflow: hidden; }
         .title-word { display: inline-block; padding-right: 0.2em; }
         .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 500; position: relative; z-index: 10; }
         
         /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--bg-body); background-color: var(--skeleton-bg); margin-left: -10px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bg-body); background-color: var(--neu-dark); margin-left: -12px; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .avatar:nth-child(1) { background-image: url('https://i.pravatar.cc/100?img=1'); margin-left: 0; z-index: 3; }
         .avatar:nth-child(2) { background-image: url('https://i.pravatar.cc/100?img=2'); z-index: 2; }
         .avatar:nth-child(3) { background-image: url('https://i.pravatar.cc/100?img=3'); z-index: 1; }
@@ -1179,25 +1188,21 @@ export default function App() {
 
         /* STEPS SECTION */
         .steps-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 800px; margin: 0 auto; position: relative; z-index: 2;}
-        .step-card { flex: 1; text-align: center; padding: 0 1rem; z-index: 2; position: relative; }
-        .step-icon { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; margin: 0 auto 1.25rem; color: var(--primary); }
-        .step-connector { flex: 1; height: 2px; background: var(--neu-dark); margin-top: 28px; z-index: 1; opacity: 0.5; }
 
         /* FEATURES SECTION */
-        .section-title { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 900; letter-spacing: -0.04em; position: relative; z-index: 2; color: var(--text-main); }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; position: relative; z-index: 2;}
-        .feature-card { padding: 2.5rem 2rem; text-align: left; }
-        .feature-icon-box { width: 64px; height: 64px; border-radius: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; }
+        .section-title { font-size: clamp(1.75rem, 5vw, 2.75rem); font-weight: 900; letter-spacing: -0.04em; position: relative; z-index: 2; color: var(--text-main); line-height: 1.2; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.5rem; position: relative; z-index: 2;}
+        .feature-card { text-align: left; }
+        .feature-icon-box { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; }
 
         /* PRICING SECTION */
-        .pricing-card { max-width: 440px; padding: 3rem 2.5rem; z-index: 2; box-sizing: border-box;}
+        .pricing-card { max-width: 440px; padding: 3.5rem 3rem; z-index: 2; box-sizing: border-box;}
         .price-huge { font-size: 3.5rem; font-weight: 900; display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.05em; gap: 8px; color: var(--primary); }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; color: var(--text-main); }
         .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; font-weight: 600; color: var(--text-muted); }
-        .pricing-divider { height: 2px; width: 100%; border-top: 2px dashed var(--neu-dark); margin: 2rem 0; opacity: 0.5; }
-        .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 16px; }
-        .pricing-list li { font-size: 0.95rem; display: flex; gap: 16px; align-items: flex-start; color: var(--text-main); font-weight: 600; }
-        .icon-wrap { border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .pricing-list { list-style: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 1rem; }
+        .pricing-list li { font-size: 1rem; display: flex; gap: 1rem; align-items: flex-start; color: var(--text-main); font-weight: 600; }
+        .icon-wrap { border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
         .icon-wrap svg { width: 14px; height: 14px; stroke-width: 3.5; }
 
         /* DASHBOARD WORKSPACE */
@@ -1205,34 +1210,36 @@ export default function App() {
         
         /* SIDEBAR DESKTOP */
         .dashboard-sidebar { 
-           width: 260px;
+           width: 280px;
            display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; 
            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
         .sidebar-nav { flex: 1; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
         .nav-item { 
-           display: flex; align-items: center; gap: 12px; width: 100%; padding: 1rem 1.25rem;
-           text-align: left; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); 
+           display: flex; align-items: center; gap: 14px; width: 100%; padding: 1rem 1.25rem;
+           text-align: left; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); 
+           min-height: 48px; border-radius: 12px;
         }
         .nav-item:hover { color: var(--text-main); }
+        .nav-item.active { background: var(--bg-body); box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light); color: var(--primary); }
         
-        .sidebar-footer { padding: 1.25rem; }
+        .sidebar-footer { padding: 1.5rem; }
         .credit-box { padding: 1.5rem; border-radius: 20px; margin-bottom: 1.5rem; text-align: center; }
-        .credit-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem; color: var(--text-muted); }
-        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.75rem; font-weight: 900; margin-bottom: 1.25rem; color: var(--primary); }
+        .credit-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem; color: var(--text-muted); }
+        .credit-amount { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 2rem; font-weight: 900; margin-bottom: 1.5rem; color: var(--primary); }
 
-        .dashboard-main { flex: 1; margin-left: 260px; padding: 3rem 2.5rem; min-height: 100vh; }
-        .dashboard-container { max-width: 760px; margin: 0 auto; }
+        .dashboard-main { flex: 1; margin-left: 280px; padding: 3rem 2.5rem; min-height: 100vh; }
+        .dashboard-container { max-width: 800px; margin: 0 auto; }
 
         /* FORMS MODERN */
         .input-label { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .input-field-modern { width: 100%; padding: 1.125rem 1.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main); border: none; outline: none; transition: all 0.2s; font-family: inherit; border-radius: 12px; }
+        .input-field-modern { width: 100%; padding: 1.125rem 1.5rem; min-height: 56px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); border: none; outline: none; transition: all 0.2s; font-family: inherit; border-radius: 16px; }
         .input-field-modern::placeholder { color: var(--neu-dark); font-weight: 600; }
-        .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
+        .textarea-field { min-height: 140px; padding-top: 1.5rem; resize: vertical; line-height: 1.6; }
 
         /* HISTORY */
-        .history-container { max-height: 600px; overflow-y: auto; padding-right: 1rem; }
+        .history-container { max-height: 650px; overflow-y: auto; padding-right: 0.5rem; }
         
         /* CUSTOM SCROLLBAR */
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
@@ -1240,58 +1247,66 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--neu-dark); border-radius: 10px; border: 2px solid var(--bg-body); }
 
         /* MODALS & ALERTS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-        .modal-box { width: 100%; max-width: 420px; border-radius: var(--radius-lg); overflow: hidden; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.85); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 1.5rem; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .modal-box { width: 100%; max-width: 440px; border-radius: var(--radius-lg); overflow: hidden; }
         .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--neu-divider); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 2rem; }
-        .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .grid-packages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
 
         /* TRUE SHIMMER SKELETON */
         .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--neu-dark) 25%, var(--neu-light) 50%, var(--neu-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; opacity: 0.5; }
-        .skeleton-box { background: linear-gradient(90deg, var(--neu-dark) 25%, var(--neu-light) 50%, var(--neu-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); width: 100%; opacity: 0.5; }
+        .skeleton-box { background: linear-gradient(90deg, var(--neu-dark) 25%, var(--neu-light) 50%, var(--neu-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); width: 100%; opacity: 0.5; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* FOOTER */
-        .footer { padding: 3rem 0 2rem; text-align: center; margin-top: auto; background-color: #ffffff; }
+        .footer { padding: 3rem 0 2rem; text-align: center; margin-top: auto; background-color: transparent; }
         .footer-link { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
         .footer-link:hover { color: var(--text-main); }
 
-        /* MOBILE RESPONSIVE ADJUSTMENTS */
+        /* ==========================================================================
+           MOBILE RESPONSIVE ADJUSTMENTS (FIX "GEPENG")
+           ========================================================================== */
         @media (max-width: 768px) {
-          .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6rem; }
-          .dashboard-sidebar { transform: translateX(-100%); width: 280px; box-shadow: 20px 0 40px rgba(163,177,198,0.3); }
+          .dashboard-main { margin-left: 0; padding: 1.5rem 1rem; padding-top: 6.5rem; }
+          .dashboard-sidebar { transform: translateX(-100%); width: 280px; box-shadow: 20px 0 40px rgba(163,177,198,0.4); }
           .dashboard-sidebar.open { transform: translateX(0); }
-          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 64px; z-index: 900; padding: 0 1.5rem; }
-          .mobile-menu-btn { background: transparent; border: none; color: var(--text-main); padding: 4px; margin-left: -4px; cursor: pointer; }
-          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.6); z-index: 950; backdrop-filter: blur(2px); }
+          .mobile-dashboard-header { display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; height: 72px; z-index: 900; padding: 0 1.5rem; }
+          .mobile-menu-btn { background: transparent; border: none; color: var(--text-main); padding: 8px; margin-left: -8px; cursor: pointer; }
+          .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(224,229,236,0.7); z-index: 950; backdrop-filter: blur(4px); }
           
           .hidden-mobile { display: none !important; }
           .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
           
-          /* Landing Page Mobile Fixes */
-          .navbar { padding: 0.4rem 0.4rem 0.4rem 1.25rem; }
+          /* Landing Page Mobile Fixes - Jarak Lebih Lega */
+          .navbar { padding: 0.5rem 0.5rem 0.5rem 1.25rem; }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
-          .footer-logo { height: 40px; }
+          .footer-logo { height: 48px; }
           
-          .hero-section { padding: 3rem 0 4rem; }
-          .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); line-height: 1.2;}
-          .hero-subtitle { font-size: 0.95rem; margin-top: 1rem; padding: 0 1rem; }
-          .hero-cta { mt: 2rem; }
+          .hero-section { padding: 7rem 0 5rem; } /* Jauhkan hero dari navbar */
+          .hero-title { font-size: clamp(2.25rem, 8vw, 3rem); line-height: 1.25;}
+          .hero-subtitle { font-size: 1rem; margin-top: 1.25rem; padding: 0 1rem; line-height: 1.6; }
           
-          .section-title { font-size: 1.5rem; margin-bottom: 2rem; }
+          .section-title { font-size: 1.75rem; margin-bottom: 2.5rem; }
           
-          /* Pricing Card Mobile Proportion Fix */
-          .pricing-card { padding: 2rem 1.5rem; margin: 0 auto; width: 100%; max-width: 340px; border-radius: var(--radius-lg); box-sizing: border-box; }
+          /* PRICING CARD FIX (Mencegah Gepeng) */
+          .pricing-card { 
+            padding: 2.5rem 1.5rem; 
+            margin: 0 auto; 
+            width: 100%; 
+            max-width: none; /* Dihapus max-width-nya agar pas di mobile */
+            border-radius: var(--radius-lg); 
+            box-sizing: border-box; 
+            height: auto;
+          }
           .price-huge { font-size: 2.75rem; }
-          .pricing-list { gap: 12px; }
-          .pricing-list li { font-size: 0.85rem; }
+          .pricing-list { gap: 1rem; width: 100%; }
+          .pricing-list li { font-size: 0.9rem; align-items: center; }
           
-          .flex-col-mobile { flex-direction: column; align-items: flex-start; }
-          .steps-grid { flex-direction: column; gap: 1.5rem; }
+          /* FLEX DIRECTION OVERRIDE */
+          .flex-col-mobile { flex-direction: column; align-items: center; text-align: center; }
         }
       `}</style>
     </div>
   );
 }
-
