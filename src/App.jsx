@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { initializeApp } from "firebase/app";
-import { increment } from "firebase/firestore";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -19,6 +18,7 @@ import {
   collection,
   addDoc,
   onSnapshot,
+  increment,
 } from "firebase/firestore";
 
 // Register GSAP Plugin
@@ -29,16 +29,24 @@ gsap.registerPlugin(ScrollTrigger);
 // ============================================================================
 const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 
-const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: env.VITE_FIREBASE_APP_ID,
+// Fallback untuk environment Canvas jika VITE env tidak tersedia
+const getFirebaseConfig = () => {
+  if (env.VITE_FIREBASE_API_KEY) {
+    return {
+      apiKey: env.VITE_FIREBASE_API_KEY,
+      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: env.VITE_FIREBASE_APP_ID,
+    };
+  } else if (typeof __firebase_config !== 'undefined') {
+    return JSON.parse(__firebase_config);
+  }
+  return {};
 };
 
-const BAYAR_GG_API_KEY = env.VITE_BAYAR_GG_API_KEY;
+const firebaseConfig = getFirebaseConfig();
 
 // Initialize Firebase
 let app, auth, db;
@@ -51,7 +59,7 @@ if (firebaseConfig.apiKey) {
     console.warn("Konfigurasi Firebase gagal dimuat:", error);
   }
 } else {
-  console.warn("API Key Firebase belum diset di .env");
+  console.warn("API Key Firebase belum diset di environment variables.");
 }
 
 // ============================================================================
@@ -107,14 +115,14 @@ const AnimatedWorkspaceMock = () => {
       </div>
 
       <div className="p-6 sm:p-8 relative z-10 bg-white">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-color">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-color flex-col sm:flex-row gap-4 sm:gap-0">
           <div>
             <h3 className="text-base font-bold text-slate-900 m-0">Format Sitasi</h3>
             <p className="text-xs text-slate-500 mt-1 m-0 hidden sm:block">Pilih gaya output</p>
           </div>
-          <div className="style-toggle pointer-events-none">
-            <button className="style-toggle-btn active">📝 Footnote</button>
-            <button className="style-toggle-btn">📑 APA 7</button>
+          <div className="style-toggle pointer-events-none w-full sm:w-auto flex justify-center">
+            <button className="style-toggle-btn active flex-1 sm:flex-none justify-center">📝 Footnote</button>
+            <button className="style-toggle-btn flex-1 sm:flex-none justify-center">📑 APA 7</button>
           </div>
         </div>
 
@@ -159,7 +167,7 @@ const AnimatedWorkspaceMock = () => {
       </div>
 
       {/* FAKE CURSOR */}
-      <div className={`fake-cursor cursor-step-${step}`}>
+      <div className={`fake-cursor cursor-step-${step} hidden sm:block`}>
         <svg width="28" height="34" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#0f172a" stroke="#ffffff" strokeWidth="2.5"/>
         </svg>
@@ -178,11 +186,6 @@ const AnimatedWorkspaceMock = () => {
         .cursor-step-6, .cursor-step-7 { top: 80%; left: 45%; opacity: 1; transform: scale(1); }
         .cursor-step-8 { top: 80%; left: 45%; opacity: 1; transform: scale(0.9); }
         .cursor-step-9 { top: 85%; left: 80%; opacity: 0; }
-        @media (max-width: 640px) {
-           .cursor-step-1, .cursor-step-2 { top: 25%; left: 35%; }
-           .cursor-step-3, .cursor-step-4, .cursor-step-5 { top: 38%; left: 50%; }
-           .cursor-step-6, .cursor-step-7, .cursor-step-8 { top: 58%; left: 80%; }
-        }
       `}</style>
     </div>
   );
@@ -234,7 +237,7 @@ export default function App() {
   const [footnoteResult, setFootnoteResult] = useState("");
   const [dafpusResult, setDafpusResult] = useState("");
   const [copiedId, setCopiedId] = useState(null);
-  const [notification, setNotification] = useState("");
+  const [notification, setNotification] = useState({ show: false, message: "", type: "info" });
 
   // --- GSAP ANIMATIONS ---
   useEffect(() => {
@@ -266,54 +269,82 @@ export default function App() {
     setError(""); setMetadata(null); setBatchResults([]); setFootnoteResult(""); setDafpusResult(""); setCopiedId(null);
   }, [inputMode]);
 
-  const showNotification = (msg) => {
-    setNotification(msg); setTimeout(() => setNotification(""), 3000);
+  const showNotificationMsg = (msg, type = "info") => {
+    setNotification({ show: true, message: msg, type }); 
+    setTimeout(() => setNotification({ show: false, message: "", type: "info" }), 3500);
   };
 
   // --- FIREBASE AUTH & REALTIME DATA ---
   useEffect(() => {
     if (!auth) return;
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => { setUser(currentUser); });
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => { 
+      setUser(currentUser); 
+    });
     return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
     if (!user || !db) return;
     const profileRef = doc(db, "users", user.uid);
-    const unsubProfile = onSnapshot(profileRef, (docSnap) => { if (docSnap.exists()) setUserData(docSnap.data()); });
+    
+    // Gunakan try catch didalam onSnapshot error handler
+    const unsubProfile = onSnapshot(profileRef, 
+      (docSnap) => { if (docSnap.exists()) setUserData(docSnap.data()); },
+      (err) => { console.error("Error fetching user profile:", err); }
+    );
+    
     const historyRef = collection(db, "users", user.uid, "history");
-    const unsubHistory = onSnapshot(historyRef, (snapshot) => {
-      const histData = [];
-      snapshot.forEach((doc) => histData.push({ id: doc.id, ...doc.data() }));
-      histData.sort((a, b) => b.timestamp - a.timestamp);
-      setHistory(histData);
-    });
+    const unsubHistory = onSnapshot(historyRef, 
+      (snapshot) => {
+        const histData = [];
+        snapshot.forEach((doc) => histData.push({ id: doc.id, ...doc.data() }));
+        histData.sort((a, b) => b.timestamp - a.timestamp);
+        setHistory(histData);
+      },
+      (err) => { console.error("Error fetching user history:", err); }
+    );
+    
     return () => { unsubProfile(); unsubHistory(); };
   }, [user]);
 
   // --- AUTH HANDLERS ---
   const handleLoginAndEnter = async () => {
     if (user) { setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-    if (!auth) return showNotification("Error: Konfigurasi API Key di .env belum diset.");
+    if (!auth) return showNotificationMsg("Sistem gagal memuat konfigurasi.", "error");
+    
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const loggedUser = result.user;
       const profileRef = doc(db, "users", loggedUser.uid);
+      
       const profileSnap = await getDoc(profileRef);
+      
       if (!profileSnap.exists()) {
-        await setDoc(profileRef, { credits: 5, createdAt: Date.now(), email: loggedUser.email, name: loggedUser.displayName });
-        showNotification("Selamat datang! Anda mendapatkan 5 Kredit gratis.");
+        // Pembuatan akun pertama kali dengan merge true untuk keamanan
+        await setDoc(profileRef, { 
+          credits: 5, 
+          createdAt: Date.now(), 
+          email: loggedUser.email, 
+          name: loggedUser.displayName 
+        }, { merge: true });
+        showNotificationMsg("Selamat datang! Anda mendapatkan 5 Kredit gratis.", "success");
       } else {
         const existingData = profileSnap.data();
-        if (existingData.credits === undefined || existingData.credits === null) {
+        if (existingData.credits === undefined) {
           await updateDoc(profileRef, { credits: 5 });
-          showNotification("Bonus 5 Kredit berhasil ditambahkan.");
+          showNotificationMsg("Bonus 5 Kredit berhasil ditambahkan.", "success");
         }
       }
-      setCurrentView("tool"); window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (e) { setError("Login via Google dibatalkan atau gagal."); } finally { setLoading(false); }
+      setCurrentView("tool"); 
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) { 
+      console.error(e);
+      showNotificationMsg("Login dibatalkan atau gagal diproses.", "error"); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleLogout = async () => {
@@ -323,42 +354,88 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // --- PAYMENT HANDLER ---
+  // --- PAYMENT HANDLER (FIXED) ---
   const processPayment = async () => {
-    if (topupAmount < 1) return showNotification("Minimal pembelian 1 kredit.");
-    setIsPaying(true); const price = topupAmount * 750;
+    if (topupAmount < 1) return showNotificationMsg("Minimal pembelian 1 kredit.", "error");
+    setIsPaying(true); 
+    const price = topupAmount * 750;
+    
     try {
       const response = await fetch("/api/create-payment", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: price, description: `Top Up ${topupAmount} Kredit FlashCite`, customer_name: user.displayName || "Pengguna", customer_email: user.email || "", payment_method: "qris", redirect_url: window.location.href }),
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          amount: price, 
+          description: `Top Up ${topupAmount} Kredit FlashCite`, 
+          customer_name: user?.displayName || "Pengguna", 
+          customer_email: user?.email || "", 
+          payment_method: "qris", 
+          redirect_url: window.location.href 
+        }),
       });
+      
+      // Deteksi jika endpoint backend belum disetup
+      if (!response.ok) {
+        throw new Error(`Server Error (${response.status}): Webhook / Backend API belum tersedia.`);
+      }
+
       const data = await response.json();
-      if (data.success && data.data?.payment_url) { window.location.href = data.data.payment_url; } 
-      else { throw new Error(data.message || "Gagal membuat pembayaran"); }
-    } catch (err) { showNotification(err.message || "Error payment."); } finally { setIsPaying(false); }
+      if (data.success && data.data?.payment_url) { 
+        window.location.href = data.data.payment_url; 
+      } else { 
+        throw new Error(data.message || "Gagal membuat URL pembayaran."); 
+      }
+    } catch (err) { 
+      console.warn("Payment API Error:", err.message);
+      showNotificationMsg(`Sistem pembayaran terputus: ${err.message}`, "error"); 
+    } finally { 
+      setIsPaying(false); 
+    }
   };
 
+  // --- CREDIT DEDUCTION (FIXED & SECURED) ---
   const deductCredit = async (amount = 1) => {
     if (!user || !db) return false;
     const currentCredits = userData.credits || 0;
-    if (currentCredits < amount) { setShowTopupModal(true); return false; }
-    await updateDoc(doc(db, "users", user.uid), { credits: increment(-amount) });
-    return true;
+    
+    if (currentCredits < amount) { 
+      setShowTopupModal(true); 
+      return false; 
+    }
+    
+    try {
+      // Wajib menggunakan `increment` untuk memastikan database konsisten.
+      // Diletakkan di blok try-catch agar tidak terjadi optimistic update semu (Ghost Deduction).
+      await updateDoc(doc(db, "users", user.uid), { credits: increment(-amount) });
+      return true;
+    } catch (error) {
+      console.error("Gagal sinkronisasi token (Deduct):", error);
+      showNotificationMsg("Gagal memproses kredit. Pastikan koneksi dan Rules Firestore benar.", "error");
+      return false;
+    }
   };
 
   const refundCredit = async (amount = 1) => {
     if (!user || !db) return;
-    await updateDoc(doc(db, "users", user.uid), { credits: increment(amount) });
+    try {
+      await updateDoc(doc(db, "users", user.uid), { credits: increment(amount) });
+    } catch (error) {
+      console.error("Gagal sinkronisasi token (Refund):", error);
+    }
   };
 
   const saveToHistory = async (meta, fn, dp, apaIn, apaRf, inputVal, type) => {
     if (!user || !db) return;
-    await addDoc(collection(db, "users", user.uid, "history"), {
-      type, input: inputVal, title: meta.title, footnote: fn, dafpus: dp, apaInText: apaIn, apaRef: apaRf, timestamp: Date.now(),
-    });
+    try {
+      await addDoc(collection(db, "users", user.uid, "history"), {
+        type, input: inputVal, title: meta.title, footnote: fn, dafpus: dp, apaInText: apaIn, apaRef: apaRf, timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.error("Gagal menyimpan riwayat:", err);
+    }
   };
 
-  // --- SCRAPING ENGINE ---
+  // --- SCRAPING ENGINE (Unchanged but validated) ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -497,40 +574,160 @@ export default function App() {
   };
 
   const fetchDOI = async () => {
-    if (!doiInput) return; setError(""); const canProceed = await deductCredit(1); if (!canProceed) return; setLoading(true); setMetadata(null);
-    try { const meta = await processDOI(doiInput); const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, doiInput, "DOI"); } catch (e) { await refundCredit(1); setError(e.message); } finally { setLoading(false); }
+    if (!doiInput) return; setError(""); 
+    const canProceed = await deductCredit(1); 
+    if (!canProceed) return; 
+    
+    setLoading(true); setMetadata(null);
+    try { 
+      const meta = await processDOI(doiInput); 
+      const fn = buildFootnote(meta, kotaInput); 
+      const dp = buildDafpus(meta, kotaInput); 
+      const apaIn = buildApaInText(meta); 
+      const apaRf = buildApaReference(meta); 
+      
+      setMetadata(meta); 
+      setFootnoteResult(fn); 
+      setDafpusResult(dp); 
+      await saveToHistory(meta, fn, dp, apaIn, apaRf, doiInput, "DOI"); 
+    } catch (e) { 
+      await refundCredit(1); 
+      setError(e.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
+
   const fetchURL = async () => {
-    if (!urlInput) return; setError(""); const canProceed = await deductCredit(1); if (!canProceed) return; setLoading(true); setMetadata(null);
-    try { const meta = await processURL(urlInput); const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, urlInput, "URL"); } catch (e) { await refundCredit(1); setError(e.message); } finally { setLoading(false); }
+    if (!urlInput) return; setError(""); 
+    const canProceed = await deductCredit(1); 
+    if (!canProceed) return; 
+    
+    setLoading(true); setMetadata(null);
+    try { 
+      const meta = await processURL(urlInput); 
+      const fn = buildFootnote(meta, kotaInput); 
+      const dp = buildDafpus(meta, kotaInput); 
+      const apaIn = buildApaInText(meta); 
+      const apaRf = buildApaReference(meta); 
+      
+      setMetadata(meta); 
+      setFootnoteResult(fn); 
+      setDafpusResult(dp); 
+      await saveToHistory(meta, fn, dp, apaIn, apaRf, urlInput, "URL"); 
+    } catch (e) { 
+      await refundCredit(1); 
+      setError(e.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
+
   const handleGenerateManual = async () => {
-    setError(""); if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi."); const canProceed = await deductCredit(1); if (!canProceed) return;
+    setError(""); 
+    if (!mAuthor || !mTitle || !mYear) return setError("Nama Penulis, Judul, dan Tahun wajib diisi."); 
+    
+    const canProceed = await deductCredit(1); 
+    if (!canProceed) return;
+    
     let fnName = "Penulis Tidak Diketahui", dpName = "Penulis Tidak Diketahui";
-    if (mAuthor.trim()) { const authors = mAuthor.split(",").map((a) => a.trim()).filter(Boolean); const parts = authors[0].split(" ").filter(Boolean); let family = "", given = ""; if (parts.length === 1) { family = parts[0]; } else { family = parts.pop(); given = parts.join(" "); } fnName = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dpName = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family); if (authors.length > 1) { fnName += " <i>et al.</i>"; dpName += " <i>et al.</i>"; } }
+    if (mAuthor.trim()) { 
+      const authors = mAuthor.split(",").map((a) => a.trim()).filter(Boolean); 
+      const parts = authors[0].split(" ").filter(Boolean); 
+      let family = "", given = ""; 
+      
+      if (parts.length === 1) { 
+        family = parts[0]; 
+      } else { 
+        family = parts.pop(); given = parts.join(" "); 
+      } 
+      
+      fnName = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); 
+      dpName = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family); 
+      if (authors.length > 1) { fnName += " <i>et al.</i>"; dpName += " <i>et al.</i>"; } 
+    }
+    
     const meta = { authorFootnote: fnName, authorDafpus: dpName, title: mTitle, journal: mJournal, year: mYear, month: "", volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, kotaScraped: "" };
     const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta);
-    setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual");
+    
+    setMetadata(meta); setFootnoteResult(fn); setDafpusResult(dp); 
+    await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual");
   };
+
+  // --- BATCH GENERATION (FIXED SYNCHRONIZATION) ---
   const handleBatchGenerate = async () => {
-    if (!batchInput.trim()) return setError("Masukkan setidaknya 1 baris URL/DOI."); const lines = batchInput.split("\n").map((l) => l.trim()).filter((l) => l.length > 0); const currentCredits = userData.credits || 0; if (currentCredits <= 0) return setShowTopupModal(true);
-    setLoading(true); setError(""); setBatchResults([]); setMetadata(null); const results = []; let successfulParses = 0;
+    if (!batchInput.trim()) return setError("Masukkan setidaknya 1 baris URL/DOI."); 
+    const lines = batchInput.split("\n").map((l) => l.trim()).filter((l) => l.length > 0); 
+    const currentCredits = userData.credits || 0; 
+    
+    if (currentCredits <= 0) return setShowTopupModal(true);
+    
+    setLoading(true); setError(""); setBatchResults([]); setMetadata(null); 
+    const results = []; let successfulParses = 0;
+    
     for (let i = 0; i < lines.length; i++) {
-      if (currentCredits - successfulParses <= 0) { results.push({ status: "error", line: lines[i], error: "Kredit habis." }); break; }
-      const line = lines[i]; const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
-      try { let meta = isDoi ? await processDOI(line) : await processURL(line); results.push({ status: "success", line, meta }); successfulParses++; const fn = buildFootnote(meta, kotaInput); const dp = buildDafpus(meta, kotaInput); const apaIn = buildApaInText(meta); const apaRf = buildApaReference(meta); await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch"); } catch (err) { results.push({ status: "error", line, error: err.message }); }
+      if (currentCredits - successfulParses <= 0) { 
+        results.push({ status: "error", line: lines[i], error: "Kredit habis." }); 
+        break; 
+      }
+      
+      const line = lines[i]; 
+      const isDoi = (line.includes("10.") && !line.includes("http")) || line.includes("doi.org");
+      
+      try { 
+        let meta = isDoi ? await processDOI(line) : await processURL(line); 
+        results.push({ status: "success", line, meta }); 
+        successfulParses++; 
+        
+        const fn = buildFootnote(meta, kotaInput); 
+        const dp = buildDafpus(meta, kotaInput); 
+        const apaIn = buildApaInText(meta); 
+        const apaRf = buildApaReference(meta); 
+        
+        await saveToHistory(meta, fn, dp, apaIn, apaRf, line, "Batch"); 
+      } catch (err) { 
+        results.push({ status: "error", line, error: err.message }); 
+      }
     }
-    if (successfulParses > 0) { const profileRef = doc(db, "users", user.uid); await updateDoc(profileRef, { credits: currentCredits - successfulParses }); }
-    setBatchResults(results); setLoading(false);
+    
+    // Potong total sukses di akhir batch dengan INCREMENT Firebase.
+    if (successfulParses > 0) { 
+      try {
+        const profileRef = doc(db, "users", user.uid); 
+        await updateDoc(profileRef, { credits: increment(-successfulParses) });
+      } catch (dbErr) {
+        console.error("Gagal sinkronisasi token batch:", dbErr);
+      }
+    }
+    
+    setBatchResults(results); 
+    setLoading(false);
   };
 
   const handleCopy = (htmlString, targetCopyId) => {
-    if (!htmlString) return; const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
-    const div = document.createElement("div"); div.innerHTML = htmlString; div.style.position = "fixed"; div.style.left = "-9999px"; document.body.appendChild(div);
-    const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(div); selection.removeAllRanges(); selection.addRange(range);
-    let success = false; try { success = document.execCommand("copy"); } catch (err) {} selection.removeAllRanges(); document.body.removeChild(div);
-    if (!success && navigator.clipboard) { navigator.clipboard.writeText(plainText).then(() => (success = true)).catch((e) => {}); }
-    if (success) { setCopiedId(targetCopyId); setTimeout(() => setCopiedId(null), 2000); }
+    if (!htmlString) return; 
+    const plainText = htmlString.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
+    
+    const div = document.createElement("div"); 
+    div.innerHTML = htmlString; div.style.position = "fixed"; div.style.left = "-9999px"; 
+    document.body.appendChild(div);
+    
+    const selection = window.getSelection(); const range = document.createRange(); 
+    range.selectNodeContents(div); selection.removeAllRanges(); selection.addRange(range);
+    
+    let success = false; 
+    try { success = document.execCommand("copy"); } catch (err) {} 
+    
+    selection.removeAllRanges(); document.body.removeChild(div);
+    
+    if (!success && navigator.clipboard) { 
+      navigator.clipboard.writeText(plainText).then(() => (success = true)).catch((e) => {}); 
+    }
+    
+    if (success) { 
+      setCopiedId(targetCopyId); 
+      setTimeout(() => setCopiedId(null), 2000); 
+    }
   };
 
   // --- SVGs & ICONS ---
@@ -564,20 +761,38 @@ export default function App() {
   const batchErrors = batchResults.filter((r) => r.status === "error");
   const sortedBatchDafpus = [...batchSuccesses].sort((a, b) => a.meta.authorDafpus.localeCompare(b.meta.authorDafpus));
 
+  // --- MODERN LOADING SKELETON (Holy Shit Standard) ---
   const SkeletonLoader = () => (
-    <div className="card mt-6 glass-panel animate-fade-in">
-      <div className="p-6"><div className="skeleton-line w-40 mb-6"></div><div className="skeleton-box h-24 mb-6"></div><div className="skeleton-line w-48 mb-6"></div><div className="skeleton-box h-20"></div></div>
+    <div className="card mt-6 glass-panel animate-fade-in bg-white border-0 shadow-premium">
+      <div className="p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="skeleton-circle w-10 h-10 rounded-full"></div>
+          <div className="skeleton-line w-40"></div>
+        </div>
+        <div className="skeleton-box h-24 mb-6 rounded-lg"></div>
+        <div className="skeleton-line w-48 mb-6"></div>
+        <div className="skeleton-box h-20 rounded-lg"></div>
+      </div>
     </div>
   );
 
   return (
     <div className="app-wrapper pattern-bg" ref={appRef}>
       {!firebaseConfig.apiKey && (
-        <div className="env-warning">⚠️ Peringatan: Konfigurasi API Key di file .env belum diset.</div>
+        <div className="env-warning flex items-center justify-center p-3 bg-amber-100 text-amber-800 text-sm font-semibold">
+          <WarningIcon /> Peringatan: Konfigurasi API Key Firebase belum disetup dengan benar.
+        </div>
       )}
 
-      {notification && (<div className="notification-toast animate-slide-up-fade">{notification}</div>)}
+      {/* MODERN NOTIFICATION TOAST */}
+      {notification.show && (
+        <div className={`notification-toast animate-slide-up-fade ${notification.type === 'error' ? 'toast-error' : 'toast-success'}`}>
+          {notification.type === 'error' ? <WarningIcon /> : <CheckIcon />}
+          <span>{notification.message}</span>
+        </div>
+      )}
 
+      {/* TOPUP MODAL */}
       {showTopupModal && (
         <div className="modal-overlay">
           <div className="modal-box animate-scale-in">
@@ -642,7 +857,6 @@ export default function App() {
 
           {/* Hero Section */}
           <section id="hero" className="hero-section relative">
-            {/* Floating GSAP Elements - Sembunyi di HP, Animasi ke belakang terminal */}
             <div className="floating-element float-1 hidden-mobile" style={{position: 'absolute', top: '10%', left: '8%', zIndex: 0}}><FloatBook /></div>
             <div className="floating-element float-2 hidden-mobile" style={{position: 'absolute', top: '5%', right: '10%', zIndex: 0}}><FloatToga /></div>
             <div className="floating-element float-3 hidden-mobile" style={{position: 'absolute', top: '40%', left: '12%', zIndex: 0}}><FloatFlash /></div>
@@ -705,17 +919,17 @@ export default function App() {
             <div className="container text-center">
               <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
               <div className="grid-3">
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect bg-white">
                   <div className="feature-icon-box text-primary"><ShieldIcon /></div>
                   <h3 className="text-lg font-bold">Anti-Cloudflare Bypass</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">Mengekstrak data secara otomatis meski web sumber diproteksi sistem keamanan Cloudflare (seperti Academia).</p>
                 </div>
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect bg-white">
                   <div className="feature-icon-box text-primary"><SparklesIcon /></div>
                   <h3 className="text-lg font-bold">Smart Metadata Recovery</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">Jika struktur PDF tidak standar, sistem akan melacak dan mengoreksi metadata dari database jurnal global.</p>
                 </div>
-                <div className="feature-card-anim feature-card glass-panel group-hover-effect">
+                <div className="feature-card-anim feature-card glass-panel group-hover-effect bg-white">
                   <div className="feature-icon-box text-primary"><ZapIcon /></div>
                   <h3 className="text-lg font-bold">Pemrosesan Batch</h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">Punya 50 referensi? Tempelkan semua URL sekaligus dan dapatkan daftar pustaka urut abjad seketika.</p>
@@ -727,7 +941,7 @@ export default function App() {
           {/* Pricing & Transparency */}
           <section className="pricing-section pb-24 relative z-10">
             <div className="container text-center">
-              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow">
+              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow bg-white">
                 <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
                 <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
                 <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
@@ -768,9 +982,11 @@ export default function App() {
       {currentView === "tool" && user && (
         <div className="dashboard-layout animate-fade-in">
            {/* Mobile Header */}
-           <div className="mobile-dashboard-header hidden sm:hidden">
+           <div className="mobile-dashboard-header hidden sm:flex">
               <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><MenuIcon /></button>
               <div className="logo-icon-wrap" style={{ height: '24px' }}><VideoLogo /></div>
+              {/* Dummy div to align center */}
+              <div style={{ width: '24px' }}></div>
            </div>
 
            {/* Mobile Sidebar Overlay */}
@@ -821,17 +1037,17 @@ export default function App() {
                   <p className="text-muted text-sm mt-2 font-medium">Sistem ekstraksi metadata aktif. Masukkan referensi Anda.</p>
                 </div>
 
-                <div className="card glass-panel shadow-premium mb-8 relative z-20 border-0 bg-white">
+                <div className="card glass-panel shadow-premium mb-8 relative z-20 border-0 bg-white rounded-xl">
                   <div className="card-body p-6 sm:p-8">
                     {/* TOGGLE CITATION STYLE */}
-                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col-mobile">
-                       <div className="mb-4 sm:mb-0 text-center sm:text-left">
+                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col sm:flex-row gap-4 sm:gap-0">
+                       <div className="mb-2 sm:mb-0 text-center sm:text-left w-full sm:w-auto">
                          <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
                          <p className="text-xs text-muted mt-1 m-0">Pilih gaya output yang dihasilkan</p>
                        </div>
-                       <div className="style-toggle w-full sm:w-auto">
-                          <button className={`style-toggle-btn ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
-                          <button className={`style-toggle-btn ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
+                       <div className="style-toggle w-full sm:w-auto flex justify-center">
+                          <button className={`style-toggle-btn flex-1 sm:flex-none justify-center ${citationStyle === "footnote" ? "active" : ""}`} onClick={() => setCitationStyle("footnote")}>📝 Footnote</button>
+                          <button className={`style-toggle-btn flex-1 sm:flex-none justify-center ${citationStyle === "apa7" ? "active" : ""}`} onClick={() => setCitationStyle("apa7")}>📑 APA 7</button>
                        </div>
                     </div>
 
@@ -873,9 +1089,9 @@ export default function App() {
 
                     {inputMode === "manual" && (
                       <div className="animate-fade-in">
-                        <div className="grid-2 gap-5">
-                          <div className="col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
-                          <div className="col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div className="sm:col-span-2 form-group"><label className="input-label">Nama Penulis Lengkap *</label><input type="text" className="input-field-modern" value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder="John Doe, Jane Smith" /></div>
+                          <div className="sm:col-span-2 form-group"><label className="input-label">Judul Artikel *</label><input type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
                           <div className="form-group"><label className="input-label">Nama Jurnal</label><input type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
                           <div className="form-group"><label className="input-label">Tahun Terbit *</label><input type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
                           <div className="form-group"><label className="input-label">Volume</label><input type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
@@ -905,8 +1121,9 @@ export default function App() {
                     {inputMode === "history" && (
                       <div className="animate-fade-in history-container custom-scrollbar pr-3">
                         {history.length === 0 ? (
-                          <div className="text-center text-muted p-10 flex flex-col items-center">
-                            <span className="text-4xl mb-3 opacity-20">🗂️</span> Ruang riwayat Anda masih kosong.
+                          <div className="text-center text-muted p-10 flex flex-col items-center bg-slate-50 rounded-xl border border-dashed border-color">
+                            <span className="text-4xl mb-3 opacity-30">🗂️</span>
+                            <span className="font-semibold text-sm">Ruang riwayat Anda masih kosong.</span>
                           </div>
                         ) : (
                           history.map((item) => {
@@ -919,7 +1136,7 @@ export default function App() {
                                   <span className="text-xs font-mono text-muted">{new Date(item.timestamp).toLocaleString("id-ID")}</span>
                                 </div>
                                 <h4 className="m-0 mb-3 font-semibold text-sm leading-snug truncate-2 text-main">{item.title}</h4>
-                                <div className="flex gap-2 mt-4 flex-col-mobile">
+                                <div className="flex gap-2 mt-4 flex-col sm:flex-row">
                                   <button className="btn-secondary btn-sm flex-1 justify-center w-full" onClick={() => handleCopy(inTextToCopy, `hist-in-${item.id}`)}>
                                     {copiedId === `hist-in-${item.id}` ? <><CheckIcon /> Disalin</> : <><CopyIcon /> {citationStyle === 'footnote' ? 'Footnote' : 'In-Text'}</>}
                                   </button>
@@ -935,9 +1152,9 @@ export default function App() {
                     )}
 
                     {error && (
-                      <div className="error-alert mt-8 animate-slide-up-fade flex items-start">
-                        <div className="mt-0.5"><WarningIcon /></div> 
-                        <span className="leading-relaxed font-medium">{error}</span>
+                      <div className="error-alert mt-8 animate-slide-up-fade flex items-start p-4 bg-error-subtle border border-error rounded-lg">
+                        <div className="mt-0.5 text-error mr-3"><WarningIcon /></div> 
+                        <span className="leading-relaxed font-semibold text-error text-sm">{error}</span>
                       </div>
                     )}
                   </div>
@@ -950,21 +1167,21 @@ export default function App() {
 
                 {/* RESULTS AREA: SINGLE */}
                 {!loading && metadata && inputMode !== "batch" && inputMode !== "history" && (
-                  <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden bg-white border-0">
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden bg-white border-0 shadow-premium">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
                     <div className="card-body p-6 sm:p-8">
-                      <div className="result-block bg-slate-50 border-color">
-                        <div className="result-header">
-                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
+                      <div className="result-block bg-slate-50 border-color rounded-lg mb-8">
+                        <div className="result-header border-b border-color">
+                          <span className="text-slate-500 font-extrabold text-xs tracking-wide">{citationStyle === 'footnote' ? 'CATATAN KAKI (FOOTNOTE)' : 'SITASI DALAM TEKS (IN-TEXT)'}</span>
                           <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata), "single-in")}>
                             {copiedId === "single-in" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
                         </div>
                         <div className="result-html text-slate-800 font-medium" dangerouslySetInnerHTML={{ __html: citationStyle === 'footnote' ? footnoteResult : buildApaInText(metadata) }} />
                       </div>
-                      <div className="result-block mt-8 bg-slate-50 border-color">
-                        <div className="result-header">
-                          <span className="text-slate-500 font-extrabold">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
+                      <div className="result-block bg-slate-50 border-color rounded-lg">
+                        <div className="result-header border-b border-color">
+                          <span className="text-slate-500 font-extrabold text-xs tracking-wide">{citationStyle === 'footnote' ? 'DAFTAR PUSTAKA' : 'DAFTAR PUSTAKA (APA 7)'}</span>
                           <button className="btn-copy-modern" onClick={() => handleCopy(citationStyle === 'footnote' ? dafpusResult : buildApaReference(metadata), "single-dp")}>
                             {copiedId === "single-dp" ? <><span className="text-success"><CheckIcon /></span> Disalin</> : <><CopyIcon /> Salin</>}
                           </button>
@@ -977,7 +1194,7 @@ export default function App() {
 
                 {/* RESULTS AREA: BATCH */}
                 {!loading && batchResults.length > 0 && inputMode === "batch" && (
-                  <div className="card glass-panel mt-8 animate-slide-up border-t-success bg-white border-0">
+                  <div className="card glass-panel mt-8 animate-slide-up border-t-success bg-white border-0 shadow-premium">
                     <div className="card-body p-6 sm:p-8">
                       {batchSuccesses.length > 0 && (
                         <>
@@ -988,9 +1205,9 @@ export default function App() {
                             const content = citationStyle === 'footnote' ? buildFootnote(r.meta, kotaInput) : buildApaInText(r.meta);
                             const copyId = `batch-in-${index}`;
                             return (
-                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
-                                <div className="result-header bg-slate-100 border-b-color">
-                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                              <div className="result-block mb-5 bg-slate-50 rounded-lg overflow-hidden border border-color" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b border-color">
+                                  <span className="truncate font-mono text-xs text-slate-600">{r.line}</span>
                                   <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
                                     {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
@@ -1007,9 +1224,9 @@ export default function App() {
                             const content = citationStyle === 'footnote' ? buildDafpus(r.meta, kotaInput) : buildApaReference(r.meta);
                             const copyId = `batch-dp-${index}`;
                             return (
-                              <div className="result-block mb-5 bg-slate-50" key={copyId}>
-                                <div className="result-header bg-slate-100 border-b-color">
-                                  <span className="truncate font-mono text-xs">{r.line}</span>
+                              <div className="result-block mb-5 bg-slate-50 rounded-lg overflow-hidden border border-color" key={copyId}>
+                                <div className="result-header bg-slate-100 border-b border-color">
+                                  <span className="truncate font-mono text-xs text-slate-600">{r.line}</span>
                                   <button className="btn-copy-modern btn-sm-padding" onClick={() => handleCopy(content, copyId)}>
                                     {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
@@ -1171,7 +1388,7 @@ export default function App() {
         .leading-snug { line-height: 1.375; } .leading-relaxed { line-height: 1.625; }
         .block { display: block; } .inline-block { display: inline-block; } .relative { position: relative; } .absolute { position: absolute; } .overflow-hidden { overflow: hidden; }
         .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; }
-        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
+        .opacity-0 { opacity: 0; } .opacity-10 { opacity: 0.1; } .opacity-20 { opacity: 0.2; } .opacity-30 { opacity: 0.3; } .opacity-60 { opacity: 0.6; } .opacity-70 { opacity: 0.7; } .opacity-80 { opacity: 0.8; } .opacity-90 { opacity: 0.9; } .opacity-100 { opacity: 1; }
         .pointer-events-none { pointer-events: none; }
         .break-all { word-break: break-all; }
         .truncate { display: inline-block; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1208,14 +1425,6 @@ export default function App() {
         .footer-logo { height: 64px; justify-content: center; }
         .video-logo-asset { width: auto; height: 100%; display: block; }
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
-        
-        .credit-badge {
-          display: flex; align-items: center; gap: 6px;
-          background: var(--bg-surface-hover); color: var(--text-main);
-          padding: 0 14px; height: 36px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
-          cursor: pointer; border: 1px solid var(--border-color); transition: 0.2s; font-family: 'JetBrains Mono', monospace;
-        }
-        .credit-badge:hover { border-color: var(--text-muted); background: var(--bg-surface-hover); }
 
         .content-padding-top { padding-top: 100px; }
 
@@ -1249,7 +1458,6 @@ export default function App() {
         .hero-title-line { overflow: hidden; }
         .title-word { display: inline-block; padding-right: 0.2em; }
         .hero-subtitle { font-size: 1.125rem; color: var(--text-muted); line-height: 1.6; max-width: 600px; font-weight: 400; position: relative; z-index: 10; }
-        .hero-glow-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; background: var(--primary); opacity: 0.08; filter: blur(120px); border-radius: 50%; z-index: 0; pointer-events: none; }
         
         /* AVATAR GROUP */
         .avatar-group { display: flex; align-items: center; }
@@ -1278,7 +1486,6 @@ export default function App() {
 
         /* PRICING SECTION */
         .pricing-card { max-width: 480px; margin: 0 auto; padding: 3rem 2.5rem; border-radius: var(--radius-lg); z-index: 2; position: relative; box-sizing: border-box;}
-        .absolute-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse at top, rgba(161, 161, 170, 0.15), transparent 70%); pointer-events: none; }
         .price-huge { font-size: 4rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: center; align-items: baseline; letter-spacing: -0.04em; gap: 8px; }
         .price-huge .currency { font-size: 1.5rem; letter-spacing: normal; margin-bottom: 0; }
         .price-huge .suffix { font-size: 0.95rem; letter-spacing: normal; white-space: nowrap; }
@@ -1358,11 +1565,17 @@ export default function App() {
         .btn-package:hover { border-color: var(--border-focus); color: var(--text-main); }
         .btn-package.active { border-color: var(--text-main); background: var(--text-main); color: var(--bg-surface-solid); box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
         .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
-        .notification-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
         
-        /* TRUE SHIMMER SKELETON */
+        /* TOAST NOTIFICATION */
+        .notification-toast { position: fixed; bottom: 2rem; left: 50%; background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .toast-error { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-text); }
+        .toast-success { background: var(--success-light); color: var(--success-border); border: 1px solid var(--success-border); }
+        
+        /* TRUE SHIMMER SKELETON (Holy Shit Standard) */
+        .skeleton-circle { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         .skeleton-line { height: 16px; background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
-        .skeleton-box { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); width: 100%; }
+        .skeleton-box { background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-hl) 50%, var(--skeleton-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        .w-10 { width: 2.5rem; } .h-10 { height: 2.5rem; } .rounded-full { border-radius: 9999px; }
         .w-40 { width: 10rem; } .w-48 { width: 12rem; } .h-24 { height: 6rem; } .h-20 { height: 5rem; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
@@ -1374,11 +1587,13 @@ export default function App() {
         /* ANIMATIONS */
         .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
         .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animate-slide-up-fade { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
         /* MOBILE RESPONSIVE ADJUSTMENTS */
         @media (max-width: 768px) {
@@ -1391,8 +1606,6 @@ export default function App() {
           .mobile-close { background: var(--bg-surface-hover); border: none; padding: 6px; border-radius: 50%; color: var(--text-main); cursor: pointer; }
           
           .hidden-mobile { display: none !important; }
-          .grid-2 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; }
-          .preview-body { grid-template-columns: 1fr; padding: 1.5rem; } .border-r { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; padding-right: 0; } .pl-2 { padding-left: 0; }
           
           /* Landing Page Navbar Mobile Fix */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
@@ -1405,9 +1618,27 @@ export default function App() {
           .price-huge { font-size: 2.75rem; flex-wrap: wrap; text-align: center; }
           .price-huge .suffix { white-space: normal; width: 100%; margin-top: 4px; font-size: 0.85rem; }
           .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
-          .style-toggle-btn { flex: 1; justify-content: center; }
-          .flex-col-mobile { flex-direction: column; align-items: flex-start; }
           .steps-grid { flex-direction: column; gap: 2rem; }
+          
+          /* Utility Classes Mobile */
+          .flex-col { flex-direction: column !important; }
+          .sm\\:flex-row { flex-direction: column; }
+          .sm\\:gap-0 { gap: 1rem; }
+        }
+        
+        @media (min-width: 640px) {
+           .sm\\:block { display: block; }
+           .sm\\:hidden { display: none; }
+           .sm\\:flex { display: flex; }
+           .sm\\:flex-row { flex-direction: row; }
+           .sm\\:gap-0 { gap: 0; }
+           .sm\\:col-span-2 { grid-column: span 2 / span 2; }
+           .sm\\:flex-none { flex: none; }
+           .sm\\:mb-0 { margin-bottom: 0; }
+           .sm\\:w-auto { width: auto; }
+           .sm\\:text-left { text-align: left; }
+           .sm\\:p-8 { padding: 2rem; }
+           .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       `}</style>
     </div>
