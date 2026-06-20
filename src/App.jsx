@@ -151,7 +151,7 @@ const AnimatedWorkspaceMock = () => {
               </button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
-              Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
+              Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, Volume 1 Nomor 1, April 2020, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
           <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
@@ -322,7 +322,6 @@ export default function App() {
       const profileSnap = await getDoc(profileRef);
       
       if (!profileSnap.exists()) {
-        // Pembuatan akun pertama kali dengan merge true untuk keamanan
         await setDoc(profileRef, { 
           credits: 5, 
           createdAt: Date.now(), 
@@ -354,7 +353,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // --- PAYMENT HANDLER (FIXED) ---
+  // --- PAYMENT HANDLER ---
   const processPayment = async () => {
     if (topupAmount < 1) return showNotificationMsg("Minimal pembelian 1 kredit.", "error");
     setIsPaying(true); 
@@ -374,7 +373,6 @@ export default function App() {
         }),
       });
       
-      // Deteksi jika endpoint backend belum disetup
       if (!response.ok) {
         throw new Error(`Server Error (${response.status}): Webhook / Backend API belum tersedia.`);
       }
@@ -393,7 +391,6 @@ export default function App() {
     }
   };
 
-  // --- CREDIT DEDUCTION (FIXED & SECURED) ---
   const deductCredit = async (amount = 1) => {
     if (!user || !db) return false;
     const currentCredits = userData.credits || 0;
@@ -404,8 +401,6 @@ export default function App() {
     }
     
     try {
-      // Wajib menggunakan `increment` untuk memastikan database konsisten.
-      // Diletakkan di blok try-catch agar tidak terjadi optimistic update semu (Ghost Deduction).
       await updateDoc(doc(db, "users", user.uid), { credits: increment(-amount) });
       return true;
     } catch (error) {
@@ -435,7 +430,7 @@ export default function App() {
     }
   };
 
-  // --- SCRAPING ENGINE (Unchanged but validated) ---
+  // --- SCRAPING ENGINE ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -559,13 +554,55 @@ export default function App() {
     throw new Error("Gagal mengekstrak data dari tautan ini.");
   };
 
+  // ============================================================================
+  // FORMATTING LOGIC
+  // ============================================================================
   const buildFootnote = (m, kotaManual) => {
-    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : ""; const pageTxt = m.page ? `hal. ${m.page}.` : "";
-    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${pageTxt}`; baseFootnote = baseFootnote.trim(); if (!baseFootnote.endsWith(".")) baseFootnote += "."; if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`; return baseFootnote;
+    // Membangun Footnote presisi tinggi berdasar request:
+    // Contoh: Nurhayati Manto et al. (2025) Implementasi... Sinergi : Jurnal Riset Ilmiah. Gorontalo, Volume 5 Nomor 1, April 2025, hal. 33-44. https://doi...
+    
+    const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
+    const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
+    
+    // Kombinasi Volume dan Issue (Nomor)
+    let volIssueTxt = "";
+    if (m.volume) volIssueTxt += `Volume ${m.volume}`;
+    if (m.issue) volIssueTxt += (volIssueTxt ? ` Nomor ${m.issue}` : `Nomor ${m.issue}`);
+    
+    // Kombinasi Bulan & Tahun
+    let dateTxt = m.month ? `${m.month} ${m.year}` : `${m.year}`;
+    
+    // Gabung Volume, Issue dan Date (Misal: Volume 5 Nomor 1, April 2025)
+    let journalMeta = "";
+    if (volIssueTxt || dateTxt) {
+      const metaParts = [];
+      if (volIssueTxt) metaParts.push(volIssueTxt);
+      if (dateTxt) metaParts.push(dateTxt);
+      journalMeta = metaParts.join(", ");
+    }
+    
+    // Halaman
+    const pageTxt = m.page ? `, hal. ${m.page}` : "";
+    
+    // Konstruksi Utama
+    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${journalMeta}${pageTxt}.`;
+    
+    // Pembersihan dobel spasi / titik yang mungkin muncul kalau data kosong
+    baseFootnote = baseFootnote.trim()
+      .replace(/\s+/g, ' ')       // Clean double spaces
+      .replace(/ ,/g, ',')        // Clean spaces before comma
+      .replace(/\.\./g, '.');     // Clean double dots
+
+    if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`;
+    
+    return baseFootnote;
   };
+
   const buildDafpus = (m, kotaManual) => {
+    // TIDAK DIUBAH (Sesuai Permintaan)
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const parts = []; if (m.journal) parts.push(capitalize(m.journal)); if (m.publisher) parts.push(capitalize(m.publisher)); if (finalKota) parts.push(capitalize(finalKota)); let volIssue = ""; if (m.volume) volIssue += `Vol. ${m.volume}`; if (m.issue) volIssue += volIssue ? ` No. ${m.issue}` : `No. ${m.issue}`; if (volIssue) parts.push(volIssue); let datePart = m.month ? `${m.month} ` : ""; datePart += m.year; parts.push(datePart); const journalMeta = parts.join(", ") + "."; const authorDot = m.authorDafpus.endsWith("</i>") || m.authorDafpus.endsWith(".") ? "" : "."; return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
+
   const buildApaInText = (m) => { let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let hasEtAl = m.authorDafpus.toLowerCase().includes('et al'); return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`; };
   const buildApaReference = (m) => {
     let authorPart = m.authorDafpus;
@@ -654,7 +691,6 @@ export default function App() {
     await saveToHistory(meta, fn, dp, apaIn, apaRf, "Input Manual", "Manual");
   };
 
-  // --- BATCH GENERATION (FIXED SYNCHRONIZATION) ---
   const handleBatchGenerate = async () => {
     if (!batchInput.trim()) return setError("Masukkan setidaknya 1 baris URL/DOI."); 
     const lines = batchInput.split("\n").map((l) => l.trim()).filter((l) => l.length > 0); 
@@ -690,7 +726,6 @@ export default function App() {
       }
     }
     
-    // Potong total sukses di akhir batch dengan INCREMENT Firebase.
     if (successfulParses > 0) { 
       try {
         const profileRef = doc(db, "users", user.uid); 
@@ -848,14 +883,12 @@ export default function App() {
       {/* --- VIEW 1: LANDING PAGE --- */}
       {currentView === "landing" && (
         <main className="main-content z-10 relative content-padding-top" ref={landingRef}>
-          {/* Mesh Gradient Background */}
           <div className="ambient-background">
              <div className="ambient-blob blob-1"></div>
              <div className="ambient-blob blob-2"></div>
              <div className="ambient-blob blob-3"></div>
           </div>
 
-          {/* Hero Section */}
           <section id="hero" className="hero-section relative">
             <div className="floating-element float-1 hidden-mobile" style={{position: 'absolute', top: '10%', left: '8%', zIndex: 0}}><FloatBook /></div>
             <div className="floating-element float-2 hidden-mobile" style={{position: 'absolute', top: '5%', right: '10%', zIndex: 0}}><FloatToga /></div>
@@ -892,14 +925,12 @@ export default function App() {
             </div>
           </section>
 
-          {/* Animated Mock Workspace (Hero Showcase) */}
           <section className="preview-section mt-12 pb-24 relative z-20">
             <div className="container preview-card-anim">
                <AnimatedWorkspaceMock />
             </div>
           </section>
 
-          {/* How It Works Section */}
           <section className="steps-section py-16 bg-surface-alt border-y border-color relative z-10">
              <div className="container text-center">
                 <h2 className="section-title mb-4">Tiga Langkah Mudah</h2>
@@ -914,7 +945,6 @@ export default function App() {
              </div>
           </section>
 
-          {/* Features Detail */}
           <section id="features" className="features-section pt-20 pb-16 relative z-10">
             <div className="container text-center">
               <h2 className="section-title mb-12">Dibangun untuk Kecepatan & Presisi</h2>
@@ -938,7 +968,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Pricing & Transparency */}
           <section className="pricing-section pb-24 relative z-10">
             <div className="container text-center">
               <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow bg-white">
@@ -981,18 +1010,14 @@ export default function App() {
       {/* --- VIEW 2: WORKSPACE (DASHBOARD) --- */}
       {currentView === "tool" && user && (
         <div className="dashboard-layout animate-fade-in">
-           {/* Mobile Header */}
            <div className="mobile-dashboard-header hidden sm:flex">
               <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><MenuIcon /></button>
               <div className="logo-icon-wrap" style={{ height: '24px' }}><VideoLogo /></div>
-              {/* Dummy div to align center */}
               <div style={{ width: '24px' }}></div>
            </div>
 
-           {/* Mobile Sidebar Overlay */}
            {isSidebarOpen && <div className="sidebar-overlay sm:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
-           {/* Sidebar */}
            <aside className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
               <div className="sidebar-header">
                  <div className="logo-icon-wrap"><VideoLogo /></div>
@@ -1039,7 +1064,6 @@ export default function App() {
 
                 <div className="card glass-panel shadow-premium mb-8 relative z-20 border-0 bg-white rounded-xl">
                   <div className="card-body p-6 sm:p-8">
-                    {/* TOGGLE CITATION STYLE */}
                     <div className="flex items-center justify-between mb-8 pb-4 border-b border-color flex-col sm:flex-row gap-4 sm:gap-0">
                        <div className="mb-2 sm:mb-0 text-center sm:text-left w-full sm:w-auto">
                          <h3 className="text-base font-bold text-main m-0">Format Sitasi</h3>
@@ -1160,6 +1184,7 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* SKELETON LAYOUT */}
                 {loading && inputMode !== "batch" && <SkeletonLoader />}
                 {loading && inputMode === "batch" && (
                   <><SkeletonLoader /><div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div></>
@@ -1255,11 +1280,12 @@ export default function App() {
         </div>
       )}
 
-      {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
+      {/* --- CSS STYLING & VARIABLES ISOLATION --- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
+        /* FIX: overflow-y: scroll; ensures horizontal layout never jumps/jitters when scrollbar appears */
         html, body, #root {
           margin: 0 !important;
           padding: 0 !important;
@@ -1267,6 +1293,7 @@ export default function App() {
           min-height: 100vh;
           background-color: var(--bg-body); 
           overflow-x: hidden;
+          overflow-y: scroll;
         }
 
         .app-wrapper {
@@ -1329,16 +1356,16 @@ export default function App() {
         }
         .blob-1 {
           top: -5%; left: -5%; width: 55vw; height: 55vw;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%);
         }
         .blob-2 {
           bottom: -10%; right: -5%; width: 65vw; height: 65vw;
-          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
           animation-delay: -5s;
         }
         .blob-3 {
           top: 40%; left: 60%; width: 45vw; height: 45vw;
-          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
           animation-delay: -12s;
         }
         
@@ -1522,8 +1549,9 @@ export default function App() {
         .btn-logout { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0.75rem; background: transparent; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
         .btn-logout:hover { background: #fef2f2; color: #dc2626; }
 
-        .dashboard-main { flex: 1; margin-left: 260px; padding: 2.5rem; min-height: 100vh; }
-        .dashboard-container { max-width: 760px; margin: 0 auto; }
+        /* FIX JITTER: Adding permanent flex/layout sizing so shrinking components don't collapse page */
+        .dashboard-main { flex: 1; margin-left: 260px; padding: 2.5rem; min-height: 100vh; display: flex; flex-direction: column; }
+        .dashboard-container { max-width: 760px; margin: 0 auto; width: 100%; flex: 1; }
         
         /* CITATION STYLE TOGGLE */
         .style-toggle { background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; }
@@ -1536,7 +1564,8 @@ export default function App() {
         .input-field-modern { width: 100%; padding: 0.875rem 1.25rem; font-size: 0.95rem; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; transition: all 0.2s; font-family: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
         .input-field-modern::placeholder { color: var(--text-muted); opacity: 0.6; }
         .input-field-modern:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
-        .textarea-field { min-height: 140px; resize: vertical; line-height: 1.6; }
+        /* FIX JITTER BATCH TEXTAREA: Constraint max height so it doesn't accidentally force scroll jumping when paste */
+        .textarea-field { min-height: 140px; max-height: 400px; resize: vertical; line-height: 1.6; }
 
         /* RESULTS AREA & HISTORY */
         .result-block { overflow: hidden; }
@@ -1607,7 +1636,6 @@ export default function App() {
           
           .hidden-mobile { display: none !important; }
           
-          /* Landing Page Navbar Mobile Fix */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
@@ -1620,7 +1648,6 @@ export default function App() {
           .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .steps-grid { flex-direction: column; gap: 2rem; }
           
-          /* Utility Classes Mobile */
           .flex-col { flex-direction: column !important; }
           .sm\\:flex-row { flex-direction: column; }
           .sm\\:gap-0 { gap: 1rem; }
