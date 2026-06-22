@@ -26,21 +26,26 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
+// Sesuai permintaan: import.meta.env dipertahankan untuk copy-paste langsung
 // ============================================================================
-const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
-
-// Fallback untuk environment Canvas jika VITE env tidak tersedia
 const getFirebaseConfig = () => {
-  if (env.VITE_FIREBASE_API_KEY) {
-    return {
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.VITE_FIREBASE_APP_ID,
-    };
-  } else if (typeof __firebase_config !== 'undefined') {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_FIREBASE_API_KEY) {
+      return {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID,
+      };
+    }
+  } catch (e) {
+    // Abaikan error di Canvas, ini dibuat agar aman saat di-copy ke Vite
+  }
+  
+  // Fallback environment Immersive Canvas
+  if (typeof __firebase_config !== 'undefined') {
     return JSON.parse(__firebase_config);
   }
   return {};
@@ -151,7 +156,7 @@ const AnimatedWorkspaceMock = () => {
               </button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
-              Smith, J. (2020) <i>The Architecture of Modern SaaS</i>. Nature. London, Volume 1 Nomor 1, April 2020, hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
+              Smith J. (2020) “The Architecture Of Modern Saas.” Nature. London, Vol. 1 No. 1, Apr 2020. hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
           <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
@@ -287,7 +292,6 @@ export default function App() {
     if (!user || !db) return;
     const profileRef = doc(db, "users", user.uid);
     
-    // Gunakan try catch didalam onSnapshot error handler
     const unsubProfile = onSnapshot(profileRef, 
       (docSnap) => { if (docSnap.exists()) setUserData(docSnap.data()); },
       (err) => { console.error("Error fetching user profile:", err); }
@@ -558,40 +562,49 @@ export default function App() {
   // FORMATTING LOGIC
   // ============================================================================
   const buildFootnote = (m, kotaManual) => {
-    // Membangun Footnote presisi tinggi berdasar request:
-    // Contoh: Nurhayati Manto et al. (2025) Implementasi... Sinergi : Jurnal Riset Ilmiah. Gorontalo, Volume 5 Nomor 1, April 2025, hal. 33-44. https://doi...
+    // Membangun Footnote presisi berdasar request:
+    // Format: Author (Year) “Title.” Journal. City, Vol. X No. Y, Month Year. hal. Z. URL
     
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
-    const kotaTxt = capitalize(finalKota) ? `${capitalize(finalKota)}, ` : "";
+    const kotaTxt = finalKota ? `${capitalize(finalKota)}, ` : "";
     
-    // Kombinasi Volume dan Issue (Nomor)
+    // Kombinasi Volume dan Issue (Vol. X No. Y)
     let volIssueTxt = "";
-    if (m.volume) volIssueTxt += `Volume ${m.volume}`;
-    if (m.issue) volIssueTxt += (volIssueTxt ? ` Nomor ${m.issue}` : `Nomor ${m.issue}`);
+    if (m.volume) volIssueTxt += `Vol. ${m.volume}`;
+    if (m.issue) volIssueTxt += (volIssueTxt ? ` No. ${m.issue}` : `No. ${m.issue}`);
     
-    // Kombinasi Bulan & Tahun
+    // Kombinasi Bulan & Tahun (Jan 2026)
     let dateTxt = m.month ? `${m.month} ${m.year}` : `${m.year}`;
     
-    // Gabung Volume, Issue dan Date (Misal: Volume 5 Nomor 1, April 2025)
+    // Gabung Volume, Issue dan Date
     let journalMeta = "";
     if (volIssueTxt || dateTxt) {
       const metaParts = [];
       if (volIssueTxt) metaParts.push(volIssueTxt);
       if (dateTxt) metaParts.push(dateTxt);
       journalMeta = metaParts.join(", ");
+      journalMeta += "."; // Titik setelah tanggal
     }
     
     // Halaman
-    const pageTxt = m.page ? `, hal. ${m.page}` : "";
+    const pageTxt = m.page ? ` hal. ${m.page}.` : "";
+    
+    // Judul dengan tanda kutip
+    const titleClean = m.title ? capitalize(m.title) : "";
+    const titleTxt = titleClean ? `“${titleClean}.”` : "";
+    
+    // Jurnal
+    const journalTxt = m.journal ? ` ${capitalize(m.journal)}.` : "";
     
     // Konstruksi Utama
-    let baseFootnote = `${m.authorFootnote} (${m.year}) ${capitalize(m.title)}. ${capitalize(m.journal)}. ${kotaTxt}${journalMeta}${pageTxt}.`;
+    let baseFootnote = `${m.authorFootnote} (${m.year}) ${titleTxt}${journalTxt} ${kotaTxt}${journalMeta}${pageTxt}`;
     
-    // Pembersihan dobel spasi / titik yang mungkin muncul kalau data kosong
+    // Pembersihan dobel spasi / titik ganda (kalau ada data yang bolong)
     baseFootnote = baseFootnote.trim()
-      .replace(/\s+/g, ' ')       // Clean double spaces
-      .replace(/ ,/g, ',')        // Clean spaces before comma
-      .replace(/\.\./g, '.');     // Clean double dots
+      .replace(/\s+/g, ' ')       
+      .replace(/ ,/g, ',')        
+      .replace(/\.\./g, '.')      
+      .replace(/\.”\./g, '.”');   
 
     if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`;
     
@@ -604,6 +617,7 @@ export default function App() {
   };
 
   const buildApaInText = (m) => { let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let hasEtAl = m.authorDafpus.toLowerCase().includes('et al'); return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`; };
+  
   const buildApaReference = (m) => {
     let authorPart = m.authorDafpus;
     if (authorPart && authorPart !== "Penulis Tidak Diketahui") { let parts = authorPart.split(','); if(parts.length > 1) { let family = parts[0].trim(); let givenRaw = parts[1].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let initials = givenRaw.split(' ').filter(Boolean).map(n => n[0].toUpperCase() + '.').join(' '); let hasEtAl = authorPart.toLowerCase().includes('et al'); authorPart = `${family}, ${initials}${hasEtAl ? ', et al.' : ''}`; } }
@@ -1184,7 +1198,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* SKELETON LAYOUT */}
                 {loading && inputMode !== "batch" && <SkeletonLoader />}
                 {loading && inputMode === "batch" && (
                   <><SkeletonLoader /><div style={{ opacity: 0.5, transform: "scale(0.98)" }}><SkeletonLoader /></div></>
@@ -1280,12 +1293,11 @@ export default function App() {
         </div>
       )}
 
-      {/* --- CSS STYLING & VARIABLES ISOLATION --- */}
+      {/* --- CSS STYLING & VARIABLES ISOLATION (ENTERPRISE GRADE) --- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
-        /* FIX: overflow-y: scroll; ensures horizontal layout never jumps/jitters when scrollbar appears */
         html, body, #root {
           margin: 0 !important;
           padding: 0 !important;
@@ -1356,16 +1368,16 @@ export default function App() {
         }
         .blob-1 {
           top: -5%; left: -5%; width: 55vw; height: 55vw;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
         }
         .blob-2 {
           bottom: -10%; right: -5%; width: 65vw; height: 65vw;
-          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
           animation-delay: -5s;
         }
         .blob-3 {
           top: 40%; left: 60%; width: 45vw; height: 45vw;
-          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
           animation-delay: -12s;
         }
         
@@ -1596,7 +1608,7 @@ export default function App() {
         .price-tag { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: var(--bg-surface-hover); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
         
         /* TOAST NOTIFICATION */
-        .notification-toast { position: fixed; bottom: 2rem; left: 50%; background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .notification-toast { position: fixed; bottom: 2rem; left: 50%; background: var(--text-main); color: var(--bg-surface-solid); padding: 0.875rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; transform: translateX(-50%); }
         .toast-error { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-text); }
         .toast-success { background: var(--success-light); color: var(--success-border); border: 1px solid var(--success-border); }
         
@@ -1636,6 +1648,7 @@ export default function App() {
           
           .hidden-mobile { display: none !important; }
           
+          /* Landing Page Navbar Mobile Fix */
           .navbar { padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius-md); }
           .nav-container { padding: 0; }
           .logo-icon-wrap { height: 28px; } 
@@ -1648,6 +1661,7 @@ export default function App() {
           .hero-title { font-size: clamp(2.25rem, 8vw, 2.75rem); }
           .steps-grid { flex-direction: column; gap: 2rem; }
           
+          /* Utility Classes Mobile */
           .flex-col { flex-direction: column !important; }
           .sm\\:flex-row { flex-direction: column; }
           .sm\\:gap-0 { gap: 1rem; }
