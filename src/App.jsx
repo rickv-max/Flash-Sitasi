@@ -506,7 +506,12 @@ export default function App() {
     if (!res.ok) throw new Error("DOI tidak ditemukan atau salah format.");
     const data = await res.json(); const item = data.message; const yearObj = item["published-print"] || item.issued; const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
     const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: item.volume || "", issue: item.issue || "", publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
+    
+    // Ekstraksi lebih dalam untuk Vol dan No (Mencegah data kosong)
+    const volume = item.volume || item["journal-volume"]?.volume || "";
+    const issue = item.issue || item["journal-issue"]?.issue || "";
+    
+    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: volume, issue: issue, publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
   };
 
   const processURL = async (rawUrl) => {
@@ -542,7 +547,12 @@ export default function App() {
         if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
       }
       const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || ""; const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun"; const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]); const lastPage = getMeta(["citation_lastpage"]);
-      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: getMeta(["citation_volume", "DC.Source.Volume"]) || "", issue: getMeta(["citation_issue", "DC.Source.Issue"]) || "", publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
+      
+      // Peningkatan ekstraksi Volume & Issue dari HTML meta tag
+      const vol = getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]) || "";
+      const iss = getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]) || "";
+
+      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: vol, issue: iss, publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
     };
 
     let htmlContent = "", contentType = "", finalUrl = targetUrl;
@@ -568,12 +578,10 @@ export default function App() {
   };
 
   // ============================================================================
-  // FORMATTING LOGIC (MENDUKUNG FORMAT SPESIFIK FOOTNOTE)
+  // FORMATTING LOGIC
   // ============================================================================
   const buildFootnote = (m, kotaManual) => {
-    // Membangun Footnote presisi tinggi berdasar request:
-    // Format: Author (Year) “Title.” Journal. City, Vol. X No. Y, Month Year. hal. Z. URL
-    
+    // Format yang diharapkan: Author (Year) “Title.” Journal. City, Vol. X No. Y, Month Year. hal. Z. URL
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
     const kotaTxt = finalKota ? `${capitalize(finalKota)}, ` : "";
     
@@ -582,7 +590,7 @@ export default function App() {
     if (m.volume) volIssueTxt += `Vol. ${m.volume}`;
     if (m.issue) volIssueTxt += (volIssueTxt ? ` No. ${m.issue}` : `No. ${m.issue}`);
     
-    // Kombinasi Bulan & Tahun (Jan 2026)
+    // Kombinasi Bulan & Tahun
     let dateTxt = m.month ? `${m.month} ${m.year}` : `${m.year}`;
     
     // Gabung Volume, Issue dan Date
@@ -591,8 +599,7 @@ export default function App() {
       const metaParts = [];
       if (volIssueTxt) metaParts.push(volIssueTxt);
       if (dateTxt) metaParts.push(dateTxt);
-      journalMeta = metaParts.join(", ");
-      journalMeta += "."; // Titik setelah tanggal
+      journalMeta = metaParts.join(", ") + ".";
     }
     
     // Halaman
@@ -605,10 +612,10 @@ export default function App() {
     // Jurnal
     const journalTxt = m.journal ? ` ${capitalize(m.journal)}.` : "";
     
-    // Konstruksi Utama
+    // Konstruksi Utama Footnote
     let baseFootnote = `${m.authorFootnote} (${m.year}) ${titleTxt}${journalTxt} ${kotaTxt}${journalMeta}${pageTxt}`;
     
-    // Pembersihan dobel spasi / titik ganda (kalau ada data yang bolong)
+    // Pembersihan spasi / titik ganda (kalau kebetulan ada data yang bolong)
     baseFootnote = baseFootnote.trim()
       .replace(/\s+/g, ' ')       
       .replace(/ ,/g, ',')        
