@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
+
+// ============================================================================
+// ⚠️ PERHATIAN UNTUK COPY-PASTE KE PROJECT VITE LOKAL ANDA:
+// Kembalikan import GSAP di bawah ini ke import module standar (hapus URL esm.sh)
+// Menjadi: 
+// import gsap from "gsap"; 
+// import { ScrollTrigger } from "gsap/ScrollTrigger";
+// ============================================================================
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -26,7 +35,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
-// Sesuai permintaan: import.meta.env dipertahankan untuk copy-paste langsung
+// Sesuai permintaan: import.meta.env dipertahankan untuk kemudahan copy-paste.
 // ============================================================================
 const getFirebaseConfig = () => {
   try {
@@ -41,7 +50,7 @@ const getFirebaseConfig = () => {
       };
     }
   } catch (e) {
-    // Abaikan error di Canvas, ini dibuat agar aman saat di-copy ke Vite
+    // Abaikan error di Canvas, tetap aman saat di-copy ke Vite
   }
   
   // Fallback environment Immersive Canvas
@@ -559,10 +568,10 @@ export default function App() {
   };
 
   // ============================================================================
-  // FORMATTING LOGIC
+  // FORMATTING LOGIC (MENDUKUNG FORMAT SPESIFIK FOOTNOTE)
   // ============================================================================
   const buildFootnote = (m, kotaManual) => {
-    // Membangun Footnote presisi berdasar request:
+    // Membangun Footnote presisi tinggi berdasar request:
     // Format: Author (Year) “Title.” Journal. City, Vol. X No. Y, Month Year. hal. Z. URL
     
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
@@ -589,7 +598,7 @@ export default function App() {
     // Halaman
     const pageTxt = m.page ? ` hal. ${m.page}.` : "";
     
-    // Judul dengan tanda kutip
+    // Judul dengan tanda kutip ("Judul.")
     const titleClean = m.title ? capitalize(m.title) : "";
     const titleTxt = titleClean ? `“${titleClean}.”` : "";
     
@@ -612,12 +621,11 @@ export default function App() {
   };
 
   const buildDafpus = (m, kotaManual) => {
-    // TIDAK DIUBAH (Sesuai Permintaan)
+    // FORMAT DAFPUS TETAP TIDAK DIUBAH SAMA SEKALI
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const parts = []; if (m.journal) parts.push(capitalize(m.journal)); if (m.publisher) parts.push(capitalize(m.publisher)); if (finalKota) parts.push(capitalize(finalKota)); let volIssue = ""; if (m.volume) volIssue += `Vol. ${m.volume}`; if (m.issue) volIssue += volIssue ? ` No. ${m.issue}` : `No. ${m.issue}`; if (volIssue) parts.push(volIssue); let datePart = m.month ? `${m.month} ` : ""; datePart += m.year; parts.push(datePart); const journalMeta = parts.join(", ") + "."; const authorDot = m.authorDafpus.endsWith("</i>") || m.authorDafpus.endsWith(".") ? "" : "."; return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
   };
 
   const buildApaInText = (m) => { let familyName = m.authorDafpus.split(',')[0].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let hasEtAl = m.authorDafpus.toLowerCase().includes('et al'); return `(${familyName}${hasEtAl ? ' et al.' : ''}, ${m.year})`; };
-  
   const buildApaReference = (m) => {
     let authorPart = m.authorDafpus;
     if (authorPart && authorPart !== "Penulis Tidak Diketahui") { let parts = authorPart.split(','); if(parts.length > 1) { let family = parts[0].trim(); let givenRaw = parts[1].replace(/<i>et al\.<\/i>/ig, '').replace(/et al\./ig, '').trim(); let initials = givenRaw.split(' ').filter(Boolean).map(n => n[0].toUpperCase() + '.').join(' '); let hasEtAl = authorPart.toLowerCase().includes('et al'); authorPart = `${family}, ${initials}${hasEtAl ? ', et al.' : ''}`; } }
@@ -1298,6 +1306,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         /* ⚠️ FORCE LIGHT MODE ONLY ⚠️ */
+        /* FIX: overflow-y: scroll; ensures horizontal layout never jumps/jitters when scrollbar appears */
         html, body, #root {
           margin: 0 !important;
           padding: 0 !important;
@@ -1368,16 +1377,16 @@ export default function App() {
         }
         .blob-1 {
           top: -5%; left: -5%; width: 55vw; height: 55vw;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%); /* Blue */
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%);
         }
         .blob-2 {
           bottom: -10%; right: -5%; width: 65vw; height: 65vw;
-          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%); /* Purple */
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
           animation-delay: -5s;
         }
         .blob-3 {
           top: 40%; left: 60%; width: 45vw; height: 45vw;
-          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%); /* Pink */
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
           animation-delay: -12s;
         }
         
