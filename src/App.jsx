@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // ============================================================================
-// ⚠️ PERHATIAN UNTUK COPY-PASTE KE PROJECT VITE LOKAL ANDA:
-// Kembalikan import GSAP di bawah ini ke import module standar (hapus URL esm.sh)
-// Menjadi: 
-// import gsap from "gsap"; 
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
+// ⚠️ ENVIRONMENT LOKAL READY:
+// Import standar telah dikembalikan agar berjalan mulus di VS Code / Vite lokal Anda.
 // ============================================================================
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -35,7 +32,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
 // ⚠️ ENVIRONMENT VARIABLES CONFIGURATION (VITE READY)
-// Sesuai permintaan: import.meta.env dipertahankan untuk kemudahan copy-paste.
 // ============================================================================
 const getFirebaseConfig = () => {
   try {
@@ -50,10 +46,9 @@ const getFirebaseConfig = () => {
       };
     }
   } catch (e) {
-    // Abaikan error di Canvas, tetap aman saat di-copy ke Vite
+    // Abaikan error env saat jalan di preview Canvas
   }
   
-  // Fallback environment Immersive Canvas
   if (typeof __firebase_config !== 'undefined') {
     return JSON.parse(__firebase_config);
   }
@@ -155,7 +150,6 @@ const AnimatedWorkspaceMock = () => {
           ) : "Generate Sitasi (1 Kredit)"}
         </button>
 
-        {/* RESULTS MOCK */}
         <div className={`mock-results-area grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-1000 ease-in-out ${step >= 6 ? 'opacity-100 max-h-[800px] mt-6' : 'opacity-0 max-h-0 mt-0 pointer-events-none'}`}>
           <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
             <div className="flex justify-between items-center border-b border-color pb-2 mb-3">
@@ -180,7 +174,6 @@ const AnimatedWorkspaceMock = () => {
         </div>
       </div>
 
-      {/* FAKE CURSOR */}
       <div className={`fake-cursor cursor-step-${step} hidden sm:block`}>
         <svg width="28" height="34" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.98402 1.54516L9.61053 28.0267C9.91974 29.0999 11.4554 29.1558 11.8152 28.1069L14.7336 19.6146L22.2573 15.656C23.1979 15.1611 23.0116 13.7661 21.9686 13.4925L2.57022 0.354145C1.61111 -0.290886 0.536968 0.697424 1.98402 1.54516Z" fill="#0f172a" stroke="#ffffff" strokeWidth="2.5"/>
@@ -443,7 +436,7 @@ export default function App() {
     }
   };
 
-  // --- SCRAPING ENGINE ---
+  // --- SCRAPING ENGINE (SUPER AGRESSIVE) ---
   const cleanDOI = (input) => input.trim().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, "");
   const capitalize = (str) => { if (!str || typeof str !== "string") return ""; return str.toLowerCase().replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1)); };
   const extractDoiFromUrl = (url) => { const match = url.match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i); return match ? match[1].replace(/\.pdf$/i, "") : null; };
@@ -502,16 +495,178 @@ export default function App() {
 
   const processDOI = async (rawDoi) => {
     const cleanedDoi = cleanDOI(rawDoi);
-    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
-    if (!res.ok) throw new Error("DOI tidak ditemukan atau salah format.");
-    const data = await res.json(); const item = data.message; const yearObj = item["published-print"] || item.issued; const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
-    const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: item.volume || item["journal-volume"]?.volume || "", issue: item.issue || item["journal-issue"]?.issue || "", publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
+    let volume = "", issue = "", page = "", monthNum = null, year = "Tahun", title = "Judul Artikel", journal = "Nama Jurnal", publisher = "", kotaScraped = "", author = [];
+    
+    // FETCH 1: CROSSREF API
+    try {
+        const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanedDoi)}`);
+        if (res.ok) {
+            const data = await res.json(); 
+            const item = data.message; 
+            const yearObj = item["published-print"] || item.issued; 
+            year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
+            monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null; 
+            title = item.title?.[0] ?? "Judul Artikel";
+            journal = item["container-title"]?.[0] ?? "Nama Jurnal";
+            publisher = item.publisher || "";
+            kotaScraped = item["publisher-location"] || "";
+            author = item.author || [];
+            volume = item.volume || item["journal-volume"]?.volume || "";
+            issue = item.issue || item["journal-issue"]?.issue || "";
+            page = item.page || "";
+        }
+    } catch (e) {}
+
+    // FALLBACK: JIKA API GAGAL BERI VOL/ISSUE, MASUK KE MODE SCRAPER WEB MANUAL
+    if (!volume || !issue || author.length === 0) {
+        const proxies = [
+            `https://corsproxy.io/?https://doi.org/${encodeURIComponent(cleanedDoi)}`,
+            `https://api.allorigins.win/raw?url=https://doi.org/${encodeURIComponent(cleanedDoi)}`
+        ];
+        for (let proxy of proxies) {
+            try {
+                const htmlRes = await fetch(proxy);
+                if (!htmlRes.ok) continue;
+                const htmlText = await htmlRes.text();
+                if (htmlText.toLowerCase().includes("just a moment")) continue;
+                
+                const parser = new DOMParser(); 
+                const doc = parser.parseFromString(htmlText, "text/html");
+                const getMeta = (names) => { for (const n of names) { const el = doc.querySelector(`meta[name="${n}" i]`) || doc.querySelector(`meta[property="${n}" i]`); if (el && el.getAttribute("content")) return el.getAttribute("content").trim(); } return ""; };
+                
+                if (!volume) volume = getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]);
+                if (!issue) issue = getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]);
+                if (!page) {
+                    let first = getMeta(["citation_firstpage"]);
+                    let last = getMeta(["citation_lastpage"]);
+                    page = first ? (last ? `${first}-${last}` : first) : "";
+                }
+                
+                // Aggressive Regex Text (Anti-Gagal Volume & Issue jika metadata disembunyikan Publisher)
+                if (!volume || !issue) {
+                    const textSearch = htmlText.substring(0, 20000).replace(/<[^>]+>/g, ' ');
+                    const regexVolNo = /Vol(?:ume|\.)?\s*(\d+)[,\s]*(?:No(?:mor|\.)?|Issue|Iss\.?)\s*(\d+)/i;
+                    const matchVolNo = textSearch.match(regexVolNo);
+                    
+                    if (matchVolNo) {
+                        if (!volume) volume = matchVolNo[1];
+                        if (!issue) issue = matchVolNo[2];
+                    } else {
+                        if (!volume) { const vMatch = textSearch.match(/Vol(?:ume|\.)?\s*(\d+)/i); if (vMatch) volume = vMatch[1]; }
+                        if (!issue) { const iMatch = textSearch.match(/(?:No(?:mor|\.)?|Issue|Iss\.?)\s*(\d+)/i); if (iMatch) issue = iMatch[1]; }
+                    }
+                }
+                
+                // Pengecekan Link DOI itu sendiri (Seringkali Volume dan Issue tersimpan di nama Link DOI, e.g. v1i2)
+                const volIssueMatch = cleanedDoi.match(/[./]v(\d+)i(\d+)[./]?/i) || cleanedDoi.match(/[./]vol(\d+)iss(\d+)[./]?/i);
+                if (volIssueMatch) {
+                    if (!volume) volume = volIssueMatch[1];
+                    if (!issue) issue = volIssueMatch[2];
+                }
+
+                if (author.length === 0) {
+                     title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui";
+                     journal = getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || journal;
+                     doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]').forEach((node) => { 
+                         const content = node.getAttribute("content"); 
+                         if (content) {
+                             const parts = content.split(" ");
+                             author.push({ family: parts.pop(), given: parts.join(" ") });
+                         }
+                     });
+                }
+                break;
+            } catch (e) {}
+        }
+    }
+
+    if (title === "Judul Artikel" && author.length === 0) {
+        throw new Error("Gagal mendeteksi informasi jurnal. Web diproteksi / DOI bermasalah.");
+    }
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    return { 
+        authorFootnote: formatAuthorsFootnote(author), 
+        authorDafpus: formatAuthorsDafpus(author), 
+        year: year.toString(), 
+        month: monthNum ? monthNames[monthNum - 1] : "", 
+        title, journal, page, volume, issue, publisher, kotaScraped, 
+        doiUrl: `https://doi.org/${cleanedDoi}` 
+    };
   };
 
   const processURL = async (rawUrl) => {
-    const targetUrl = normalizeUrl(rawUrl); const ssUrlsToTry = [targetUrl, rawUrl.trim()];
+    const targetUrl = normalizeUrl(rawUrl); 
+
+    const parseHTML = (html, contentType) => {
+      const isBase64Pdf = html.startsWith("JVBERi"); const isRawPdf = html.trim().startsWith("%PDF-"); const isPdfType = (contentType || "").toLowerCase().includes("pdf") || (contentType || "").toLowerCase().includes("octet-stream"); const isPdfUrl = targetUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+      if (isPdfType || isRawPdf || isBase64Pdf || isPdfUrl) return { isPdfFile: true };
+      const parser = new DOMParser(); const doc = parser.parseFromString(html, "text/html");
+      const getMeta = (names) => { for (const n of names) { const el = doc.querySelector(`meta[name="${n}" i]`) || doc.querySelector(`meta[property="${n}" i]`); if (el && el.getAttribute("content")) return el.getAttribute("content").trim(); } return ""; };
+      
+      let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui"; title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, "").trim();
+      const blockedKeywords = ["just a moment", "cloudflare", "attention required", "security check", "robot or human"]; if (blockedKeywords.some((kw) => title.toLowerCase().includes(kw))) return { blocked: true };
+      
+      let authors = []; doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]').forEach((node) => { const content = node.getAttribute("content"); if (content && !authors.includes(content)) authors.push(content); });
+      if (authors.length === 0 && title !== "Judul Tidak Diketahui") return { incomplete: true, title };
+      
+      let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
+      if (authors.length > 0) {
+        let firstAuthor = authors[0].trim(); let family = "", given = "";
+        if (firstAuthor.includes(",")) { const parts = firstAuthor.split(","); family = parts[0].trim(); given = parts[1] ? parts[1].trim() : ""; } 
+        else { const parts = firstAuthor.split(" ").filter(Boolean); if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); } }
+        fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
+        if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
+      }
+      
+      const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || ""; const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun"; 
+      let page = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]); 
+      const lastPage = getMeta(["citation_lastpage"]);
+      if (page && lastPage && !page.includes('-')) page = `${page}-${lastPage}`;
+
+      let volume = getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]);
+      let issue = getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]);
+
+      // Aggressive Regex jika OJS tidak rapi pasang meta tag
+      if (!volume || !issue) {
+          const textSearch = html.substring(0, 20000).replace(/<[^>]+>/g, ' ');
+          const regexVolNo = /Vol(?:ume|\.)?\s*(\d+)[,\s]*(?:No(?:mor|\.)?|Issue|Iss\.?)\s*(\d+)/i;
+          const matchVolNo = textSearch.match(regexVolNo);
+          
+          if (matchVolNo) {
+              if (!volume) volume = matchVolNo[1];
+              if (!issue) issue = matchVolNo[2];
+          } else {
+              if (!volume) { const vMatch = textSearch.match(/Vol(?:ume|\.)?\s*(\d+)/i); if (vMatch) volume = vMatch[1]; }
+              if (!issue) { const iMatch = textSearch.match(/(?:No(?:mor|\.)?|Issue|Iss\.?)\s*(\d+)/i); if (iMatch) issue = iMatch[1]; }
+          }
+      }
+
+      // Mengecek URL itu sendiri
+      const volIssueMatch = targetUrl.match(/[./]v(\d+)i(\d+)[./]?/i) || targetUrl.match(/[./]vol(\d+)iss(\d+)[./]?/i);
+      if (volIssueMatch) {
+          if (!volume) volume = volIssueMatch[1];
+          if (!issue) issue = volIssueMatch[2];
+      }
+
+      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: page || "", volume: volume || "", issue: issue || "", publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "", doiUrl: "" } };
+    };
+
+    let htmlContent = "", contentType = "", finalUrl = targetUrl;
+    const proxies = [ `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}` ];
+    for (let proxy of proxies) { try { const res = await fetch(proxy); if (!res.ok) continue; htmlContent = await res.text(); contentType = res.headers.get("content-type") || ""; if (!htmlContent.toLowerCase().includes("just a moment") && htmlContent.trim() !== "") break; } catch (e) {} }
+    
+    if (htmlContent && !htmlContent.toLowerCase().includes("just a moment")) {
+        let parsed = parseHTML(htmlContent, contentType);
+        if (parsed.isPdfFile) { const extractedDoi = extractDoiFromUrl(targetUrl); if (extractedDoi) return await processDOI(extractedDoi); throw new Error("Tautan PDF mentah tanpa meta. Silakan ketik manual."); }
+        if (parsed.success && !parsed.incomplete && parsed.data.authorFootnote !== "Penulis Tidak Diketahui") {
+            return parsed.data; 
+        }
+    }
+
+    const ssUrlsToTry = [targetUrl, rawUrl.trim()];
     for (const u of ssUrlsToTry) { try { const ssUrlRes = await fetch(`https://api.semanticscholar.org/graph/v1/paper/URL:${encodeURIComponent(u)}?fields=title,authors,year,venue,journal`); if (ssUrlRes.ok) { const ssData = await ssUrlRes.json(); if (ssData.title && ssData.authors && ssData.authors.length > 0) return formatFromSS(ssData); } } catch (e) {} }
+    
     try {
       const mlRes = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(targetUrl)}`);
       if (mlRes.ok) {
@@ -524,47 +679,7 @@ export default function App() {
       }
     } catch (e) {}
 
-    const parseHTML = (html, contentType) => {
-      const isBase64Pdf = html.startsWith("JVBERi"); const isRawPdf = html.trim().startsWith("%PDF-"); const isPdfType = (contentType || "").toLowerCase().includes("pdf") || (contentType || "").toLowerCase().includes("octet-stream"); const isPdfUrl = targetUrl.toLowerCase().split("?")[0].endsWith(".pdf");
-      if (isPdfType || isRawPdf || isBase64Pdf || isPdfUrl) return { isPdfFile: true };
-      const parser = new DOMParser(); const doc = parser.parseFromString(html, "text/html");
-      const getMeta = (names) => { for (const n of names) { const el = doc.querySelector(`meta[name="${n}" i]`) || doc.querySelector(`meta[property="${n}" i]`); if (el && el.getAttribute("content")) return el.getAttribute("content").trim(); } return ""; };
-      let title = getMeta(["citation_title", "DC.Title", "og:title"]) || doc.title || "Judul Tidak Diketahui"; title = title.replace(/(\s*[-|]\s*Academia\.edu|\s*[-|]\s*ResearchGate|\s*[-|]\s*Google Scholar)/i, "").trim();
-      const blockedKeywords = ["just a moment", "cloudflare", "attention required", "security check", "robot or human"]; if (blockedKeywords.some((kw) => title.toLowerCase().includes(kw))) return { blocked: true };
-      let authors = []; doc.querySelectorAll('meta[name="citation_author" i], meta[name="DC.Creator.PersonalName" i], meta[name="DC.Creator" i]').forEach((node) => { const content = node.getAttribute("content"); if (content && !authors.includes(content)) authors.push(content); });
-      if (authors.length === 0 && title !== "Judul Tidak Diketahui") return { incomplete: true, title };
-      let fn = "Penulis Tidak Diketahui", dp = "Penulis Tidak Diketahui";
-      if (authors.length > 0) {
-        let firstAuthor = authors[0].trim(); let family = "", given = "";
-        if (firstAuthor.includes(",")) { const parts = firstAuthor.split(","); family = parts[0].trim(); given = parts[1] ? parts[1].trim() : ""; } 
-        else { const parts = firstAuthor.split(" ").filter(Boolean); if (parts.length === 1) { family = parts[0]; given = ""; } else { family = parts.pop(); given = parts.join(" "); } }
-        fn = given ? `${capitalize(given)} ${capitalize(family)}` : capitalize(family); dp = given ? `${capitalize(family)}, ${capitalize(given)}` : capitalize(family);
-        if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
-      }
-      const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || ""; const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun"; const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]); const lastPage = getMeta(["citation_lastpage"]);
-      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]) || "", issue: getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]) || "", publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
-    };
-
-    let htmlContent = "", contentType = "", finalUrl = targetUrl;
-    const proxies = [ `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}` ];
-    for (let proxy of proxies) { try { const res = await fetch(proxy); if (!res.ok) continue; htmlContent = await res.text(); contentType = res.headers.get("content-type") || ""; if (!htmlContent.toLowerCase().includes("just a moment") && htmlContent.trim() !== "") break; } catch (e) {} }
-    if (!htmlContent) throw new Error("Gagal mengakses URL web. Pastikan web bersifat publik.");
-
-    let parsed = parseHTML(htmlContent, contentType);
-    if (parsed.isPdfFile) { const extractedDoi = extractDoiFromUrl(targetUrl); if (extractedDoi) return await processDOI(extractedDoi); throw new Error("Tautan PDF mentah tanpa meta. Silakan ketik manual."); }
-    if (parsed.blocked || parsed.incomplete) {
-      try {
-        const wbRes = await fetch(`https://archive.org/wayback/available?url=${encodeURIComponent(targetUrl)}`); const wbData = await wbRes.json();
-        if (wbData.archived_snapshots?.closest?.url) { const snapFetch = await fetch(wbData.archived_snapshots.closest.url.replace(/^http:/, "https:")); if (snapFetch.ok) { const snapParsed = parseHTML(await snapFetch.text(), "text/html"); if (snapParsed.success || (snapParsed.incomplete && parsed.blocked)) parsed = snapParsed; } }
-      } catch (e) {}
-    }
-    let searchTitle = parsed.incomplete ? parsed.title : "";
-    if (parsed.blocked) { try { const segments = new URL(finalUrl).pathname.split("/").filter(Boolean); const last = segments[segments.length - 1]; if (last && !last.match(/^\d+(\.pdf)?$/i)) searchTitle = decodeURIComponent(last).replace(/[-_]/g, " ").replace(/\.pdf/i, "").trim(); } catch (e) {} }
-    if (searchTitle) { const fallbackResult = await searchByTitleFallback(searchTitle); if (fallbackResult) return fallbackResult; }
-    if (parsed.success) return parsed.data;
-    if (parsed.blocked) throw new Error("Sistem diblokir. Mohon ketik manual.");
-    if (parsed.incomplete) { parsed.data = { authorFootnote: "Penulis Tidak Diketahui", authorDafpus: "Penulis Tidak Diketahui", year: "Tahun", month: "", title: parsed.title || "Judul Artikel", journal: "", page: "", volume: "", issue: "", publisher: "", kotaScraped: "", doiUrl: "" }; return parsed.data; }
-    throw new Error("Gagal mengekstrak data dari tautan ini.");
+    throw new Error("Gagal mengekstrak metadata dari tautan ini. Web sangat terproteksi.");
   };
 
   // ============================================================================
