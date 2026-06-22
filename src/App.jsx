@@ -165,7 +165,7 @@ const AnimatedWorkspaceMock = () => {
               </button>
             </div>
             <p className="text-sm m-0 leading-relaxed text-slate-800 font-medium">
-              Smith J. (2020) “The Architecture Of Modern Saas.” Nature. London, Vol. 1 No. 1, Apr 2020. hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
+              Smith, J. (2020) “The Architecture of Modern SaaS.” Nature. London, Vol. 1 No. 1, April 2020. hal. 10-15. https://doi.org/10.1038/s41586-020-2649-2
             </p>
           </div>
           <div className="result-block border border-color rounded-md p-4 relative bg-slate-50">
@@ -506,12 +506,7 @@ export default function App() {
     if (!res.ok) throw new Error("DOI tidak ditemukan atau salah format.");
     const data = await res.json(); const item = data.message; const yearObj = item["published-print"] || item.issued; const year = yearObj && yearObj["date-parts"] ? yearObj["date-parts"][0][0] : "Tahun";
     const monthNum = yearObj?.["date-parts"]?.[0]?.[1] ?? null; const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-    
-    // Ekstraksi lebih dalam untuk Vol dan No (Mencegah data kosong)
-    const volume = item.volume || item["journal-volume"]?.volume || "";
-    const issue = item.issue || item["journal-issue"]?.issue || "";
-    
-    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: volume, issue: issue, publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
+    return { authorFootnote: formatAuthorsFootnote(item.author), authorDafpus: formatAuthorsDafpus(item.author), year, month: monthNum ? monthNames[monthNum - 1] : "", title: item.title?.[0] ?? "Judul Artikel", journal: item["container-title"]?.[0] ?? "Nama Jurnal", page: item.page || "", volume: item.volume || item["journal-volume"]?.volume || "", issue: item.issue || item["journal-issue"]?.issue || "", publisher: item.publisher || "", kotaScraped: item["publisher-location"] || "", doiUrl: `https://doi.org/${cleanedDoi}` };
   };
 
   const processURL = async (rawUrl) => {
@@ -547,12 +542,7 @@ export default function App() {
         if (authors.length > 1) { fn += " <i>et al.</i>"; dp += " <i>et al.</i>"; }
       }
       const dateStr = getMeta(["citation_date", "citation_publication_date", "DC.Date", "DC.Date.issued", "article:published_time"]) || ""; const year = dateStr ? dateStr.split("/")[0].split("-")[0] : "Tahun"; const firstPage = getMeta(["citation_firstpage", "DC.Identifier.pageNumber"]); const lastPage = getMeta(["citation_lastpage"]);
-      
-      // Peningkatan ekstraksi Volume & Issue dari HTML meta tag
-      const vol = getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]) || "";
-      const iss = getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]) || "";
-
-      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: vol, issue: iss, publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
+      return { success: true, data: { authorFootnote: fn, authorDafpus: dp, year, month: "", title, journal: getMeta(["citation_journal_title", "DC.Source", "og:site_name"]) || "", page: firstPage ? lastPage ? `${firstPage}-${lastPage}` : firstPage : "", volume: getMeta(["citation_volume", "DC.Source.Volume", "prism.volume"]) || "", issue: getMeta(["citation_issue", "DC.Source.Issue", "prism.number"]) || "", publisher: getMeta(["citation_publisher", "DC.Publisher"]) || "", kotaScraped: "" } };
     };
 
     let htmlContent = "", contentType = "", finalUrl = targetUrl;
@@ -581,52 +571,34 @@ export default function App() {
   // FORMATTING LOGIC
   // ============================================================================
   const buildFootnote = (m, kotaManual) => {
-    // Format yang diharapkan: Author (Year) “Title.” Journal. City, Vol. X No. Y, Month Year. hal. Z. URL
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || "";
     const kotaTxt = finalKota ? `${capitalize(finalKota)}, ` : "";
     
-    // Kombinasi Volume dan Issue (Vol. X No. Y)
     let volIssueTxt = "";
     if (m.volume) volIssueTxt += `Vol. ${m.volume}`;
     if (m.issue) volIssueTxt += (volIssueTxt ? ` No. ${m.issue}` : `No. ${m.issue}`);
     
-    // Kombinasi Bulan & Tahun
     let dateTxt = m.month ? `${m.month} ${m.year}` : `${m.year}`;
     
-    // Gabung Volume, Issue dan Date
     let journalMeta = "";
     if (volIssueTxt || dateTxt) {
       const metaParts = [];
       if (volIssueTxt) metaParts.push(volIssueTxt);
       if (dateTxt) metaParts.push(dateTxt);
-      journalMeta = metaParts.join(", ") + ".";
+      journalMeta = metaParts.join(", ") + ". ";
     }
     
-    // Halaman
-    const pageTxt = m.page ? ` hal. ${m.page}.` : "";
-    
-    // Judul dengan tanda kutip ("Judul.")
+    const pageTxt = m.page ? `hal. ${m.page}. ` : "";
     const titleClean = m.title ? capitalize(m.title) : "";
-    const titleTxt = titleClean ? `“${titleClean}.”` : "";
+    const titleTxt = titleClean ? `“${titleClean}.” ` : "";
+    const journalTxt = m.journal ? `${capitalize(m.journal)}. ` : "";
     
-    // Jurnal
-    const journalTxt = m.journal ? ` ${capitalize(m.journal)}.` : "";
-    
-    // Konstruksi Utama Footnote
-    let baseFootnote = `${m.authorFootnote} (${m.year}) ${titleTxt}${journalTxt} ${kotaTxt}${journalMeta}${pageTxt}`;
-    
-    // Pembersihan spasi / titik ganda (kalau kebetulan ada data yang bolong)
-    baseFootnote = baseFootnote.trim()
-      .replace(/\s+/g, ' ')       
-      .replace(/ ,/g, ',')        
-      .replace(/\.\./g, '.')      
-      .replace(/\.”\./g, '.”');   
-
+    let baseFootnote = `${m.authorFootnote} (${m.year}) ${titleTxt}${journalTxt}${kotaTxt}${journalMeta}${pageTxt}`;
+    baseFootnote = baseFootnote.trim().replace(/\s+/g, ' ').replace(/ ,/g, ',').replace(/\.\./g, '.');
     if (m.doiUrl) baseFootnote += ` ${m.doiUrl}`;
     
     return baseFootnote;
   };
-
   const buildDafpus = (m, kotaManual) => {
     // FORMAT DAFPUS TETAP TIDAK DIUBAH SAMA SEKALI
     const finalKota = kotaManual.trim() ? kotaManual : m.kotaScraped || ""; const parts = []; if (m.journal) parts.push(capitalize(m.journal)); if (m.publisher) parts.push(capitalize(m.publisher)); if (finalKota) parts.push(capitalize(finalKota)); let volIssue = ""; if (m.volume) volIssue += `Vol. ${m.volume}`; if (m.issue) volIssue += volIssue ? ` No. ${m.issue}` : `No. ${m.issue}`; if (volIssue) parts.push(volIssue); let datePart = m.month ? `${m.month} ` : ""; datePart += m.year; parts.push(datePart); const journalMeta = parts.join(", ") + "."; const authorDot = m.authorDafpus.endsWith("</i>") || m.authorDafpus.endsWith(".") ? "" : "."; return `${m.authorDafpus}${authorDot} (${m.year}) "${capitalize(m.title)}". ${journalMeta}`;
