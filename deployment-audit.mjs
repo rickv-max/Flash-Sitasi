@@ -16,6 +16,14 @@ if (project !== process.env.VITE_FIREBASE_PROJECT_ID) {
 }
 emit('project', { project, match: true });
 try { paymentConfig({ ...process.env, APP_URL: process.env.APP_URL || 'https://flash-sitasi.vercel.app' }); emit('paymentConfig', { configured: true }); } catch (error) { emit('paymentConfig', fail(error)); }
+try {
+  const config = paymentConfig({ ...process.env, APP_URL: process.env.APP_URL || 'https://flash-sitasi.vercel.app' });
+  const response = await fetch('https://www.bayar.gg/api/get-payment-methods.php', {
+    headers: { 'X-API-Key': config.key }, redirect: 'error', signal: AbortSignal.timeout(15000) });
+  const body = await response.json().catch(() => ({}));
+  emit('paymentGateway', { checked: true, status: response.status, authenticated: response.ok && body.success === true,
+    methods: (body.data?.payment_methods || []).map(({ id, enabled, available }) => ({ id, enabled, available })) });
+} catch (error) { emit('paymentGateway', fail(error)); }
 const owners = (process.env.ADMIN_OWNER_UIDS || '').split(',').map(x => x.trim()).filter(Boolean);
 emit('ownerConfig', { count: owners.length });
 for (const uid of owners) {
@@ -32,7 +40,7 @@ try {
   const content = rules.source.length === 1 ? rules.source[0].content : '';
   const digest = source => createHash('sha256').update(source.replace(/\r\n/g, '\n').trim()).digest('hex');
   emit('firestoreRules', { checked: true, match: digest(expected) === digest(content),
-    currentHash: digest(content), expectedHash: digest(expected), release: rules.name, currentSource: content });
+    currentHash: digest(content), expectedHash: digest(expected), release: rules.name });
 } catch (error) { emit('firestoreRules', fail(error)); }
 const { access_token } = await getApp().options.credential.getAccessToken();
 const google = async (url) => {
@@ -58,7 +66,6 @@ for (const collection of [...new Set(schema.indexes.map(x => x.collectionGroup))
     let nextPageToken;
     do {
       const url = new URL(base + encodeURIComponent(collection) + '/indexes');
-      url.searchParams.set('pageSize', '100');
       if (nextPageToken) url.searchParams.set('pageToken', nextPageToken);
       const page = await google(url);
       indexes.push(...(page.indexes || [])); nextPageToken = page.nextPageToken;
