@@ -3,6 +3,7 @@ import { cleanDOI, isDOI, parseAuthor } from '../shared/citations.js';
 import { AppError } from './errors.js';
 import { fetchPublicHTML, publicURL } from './safe-fetch.js';
 import { cityFromHTML, enrichCity } from './city.js';
+import { publicationDate } from '../shared/publication-date.js';
 
 const text = (value = '') => load(String(value), null, false).text().replace(/\s+/g, ' ').trim().slice(0, 3000);
 
@@ -21,10 +22,11 @@ export async function fromDOI(input, fetcher = fetch) {
     if (response.ok) {
       const { message: item } = await response.json();
       if (!item?.title?.[0]) throw new Error('No title');
-      const date = item['published-print'] || item['published-online'] || item.issued;
+      const date = [item['published-print'], item['published-online'], item.issued]
+        .map((value) => publicationDate(value?.['date-parts']?.[0])).find((value) => value.year) || publicationDate('');
       return completeMetadata({
         title: text(item.title[0]), authors: (item.author || []).map((a) => ({ given: text(a.given), family: text(a.family), ...(a.name ? { literal: text(a.name) } : {}) })),
-        year: String(date?.['date-parts']?.[0]?.[0] || ''),
+        ...date,
         journal: text(item['container-title']?.[0]), volume: text(item.volume), issue: text(item.issue),
         page: text(item.page), publisher: text(item.publisher), city: text(item['publisher-location'] || item['publisher-place']),
         doi: item.DOI || doi, issn: (item.ISSN || []).filter((value) => typeof value === 'string').slice(0, 4),
@@ -54,7 +56,7 @@ export function parseHTMLMetadata(html, url) {
   const last = get('citation_lastpage', 'prism.endingpage');
   const names = meta.citation_author || meta['dc.creator.personalname'] || meta['dc.creator'] || meta.author || [];
   return completeMetadata({ title, authors: [...new Set(names)].map(parseAuthor),
-    year: get('citation_publication_date', 'citation_date', 'dc.date.issued', 'dc.date', 'article:published_time').match(/\b(1[5-9]\d{2}|20\d{2})\b/)?.[0] || '',
+    ...publicationDate(get('citation_publication_date', 'citation_date', 'dc.date.issued', 'dc.date', 'article:published_time')),
     journal: get('citation_journal_title', 'dc.source', 'og:site_name'),
     volume: get('citation_volume', 'prism.volume'), issue: get('citation_issue', 'prism.number'),
     page: first && last && first !== last ? `${first}-${last}` : first,
@@ -93,7 +95,10 @@ export function fromManual(input) {
   }
   const doi = get('doi', 500);
   if (doi && !isDOI(doi)) throw new AppError(400, 'INVALID_DOI', 'DOI opsional belum valid.');
+  const month = get('month', 10);
+  if (month && !/^(?:0?[1-9]|1[0-2])$/.test(month)) throw new AppError(400, 'INVALID_MONTH', 'Pilih bulan terbit antara Januari dan Desember.');
   return completeMetadata({ title, year, authors,
+    month: month ? String(Number(month)) : '',
     journal: get('journal'), volume: get('volume', 50), issue: get('issue', 50), page: get('page', 100),
     publisher: get('publisher'), doi: cleanDOI(doi), source: 'Input manual' });
 }
@@ -109,6 +114,7 @@ export async function resolveMetadata(mode, input, options = {}) {
         const reference = await fromDOI(metadata.doi);
         metadata = { ...reference, ...metadata, journal: metadata.journal || reference.journal,
           publisher: metadata.publisher || reference.publisher, city: reference.city,
+          month: metadata.month || (metadata.year === reference.year ? reference.month : ''),
           sourceURL: reference.sourceURL, issn: reference.issn };
       } catch { /* Manual input remains usable when its optional DOI is unavailable. */ }
     }

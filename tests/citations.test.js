@@ -7,6 +7,37 @@ import { makeHandler } from '../server/handlers.js';
 import { createRepository } from '../server/repository.js';
 import { AppError } from '../server/errors.js';
 import { MemoryFirestore, call, env, user } from './helpers.js';
+import { publicationDate } from '../shared/publication-date.js';
+
+test('custom footnote and bibliography match the requested publication format and capitalization', () => {
+  const title = 'Analisis Peraturan Pemerintah Nomor 28 Tahun 2024 Tentang Peraturan Pelaksanaan Undang-undang Nomor 17 Tahun 2023 Tentang Kesehatan Terkait Pemberian Alat Kontrasepsi Bagi Siswa Dan Remaja';
+  const results = buildCitations({ title, authors: [{ given: 'Pardi', family: 'Hilala' }], year: '2025', month: '3',
+    journal: 'Ganec Swara', publisher: 'Yayasan Al-amin Qalbu', volume: '19', issue: '1', page: '49-55', doi: '10.59896/gara.v19i1.175' }, 'Gorontalo');
+  assert.equal(results.footnote, `Pardi Hilala (2025) “${title}.” <i>Ganec Swara</i>. Gorontalo, Vol. 19 No. 1, Mar 2025. hal. 49-55. https://doi.org/10.59896/gara.v19i1.175.`);
+  assert.equal(plainCitation(results.bibliography), `Hilala, Pardi. (2025) "${title}". Ganec Swara, Yayasan Al-amin Qalbu, Gorontalo, Vol. 19 No. 1, Mar 2025.`);
+  assert.ok(!results.bibliography.includes('<i>'));
+});
+test('custom output preserves mixed case, avoids duplicate title periods and omits unavailable details', () => {
+  const r = buildCitations({ title: 'eDNA, AI dan COVID-19.', authors: [{ given: 'Ana', family: 'de la Cruz' }], year: '2024', journal: 'eLife' });
+  assert.equal(r.footnote, 'Ana de la Cruz (2024) “eDNA, AI dan COVID-19.” <i>eLife</i>.');
+  assert.equal(r.bibliography, 'de la Cruz, Ana. (2024) "eDNA, AI dan COVID-19". eLife.');
+  assert.ok(!r.footnote.includes('Jan'));
+  assert.ok(!r.footnote.includes('undefined'));
+});
+test('publication months come from explicit source dates and invalid months are never fabricated', async () => {
+  assert.deepEqual(publicationDate('2025/03/01'), { year: '2025', month: '3' });
+  assert.deepEqual(publicationDate('2025'), { year: '2025', month: '' });
+  for (const month of [0, 13, 'abc']) assert.equal(publicationDate([2025, month]).month, '');
+  const m = await fromDOI('10.59896/gara.v19i1.175', async () => Response.json({ message: {
+    title: ['Judul Asli eDNA'], author: [{ given: 'Pardi', family: 'Hilala' }], 'published-print': {},
+    'published-online': { 'date-parts': [[2025, 3, 1]] }, 'container-title': ['Ganec Swara'], DOI: '10.59896/gara.v19i1.175',
+  } }));
+  assert.equal(m.month, '3'); assert.equal(m.year, '2025'); assert.equal(m.title, 'Judul Asli eDNA');
+  const html = parseHTMLMetadata('<meta name="citation_title" content="eDNA"><meta name="citation_publication_date" content="2025/03/01">', 'https://example.test/article');
+  assert.equal(html.month, '3');
+  assert.equal(fromManual({ author: 'Pardi Hilala', title: 'Judul', year: '2025', month: '03' }).month, '3');
+  for (const month of ['0', '13', '123']) assert.throws(() => fromManual({ author: 'Pardi Hilala', title: 'Judul', year: '2025', month }), { code: 'INVALID_MONTH' });
+});
 
 test('DOI normalization accepts DOI URLs and rejects malformed IDs', () => {
   assert.equal(cleanDOI(' https://doi.org/10.1038/nature14539 '), '10.1038/nature14539');
@@ -48,6 +79,14 @@ test('legacy history fields remain readable', () => {
   assert.deepEqual(getCitationResults({ footnote: 'A', dafpus: 'B', apaInText: 'C', apaRef: 'D' }), {
     footnote: 'A', bibliography: 'B', apaInText: 'C', apaReference: 'D',
   });
+});
+test('existing metadata-backed history uses the updated custom format without mutating the saved record', () => {
+  const saved = { metadata: { ...DEMO_METADATA }, cityUsed: 'Bandung', results: { footnote: 'Old format', bibliography: 'Old bibliography', apaReference: 'Saved APA reference' } };
+  const snapshot = structuredClone(saved);
+  const result = getCitationResults(saved);
+  assert.ok(result.footnote.includes('Bandung, Vol. 521 No. 7553, Mei 2015. hal. 436-444.'));
+  assert.equal(result.apaReference, 'Saved APA reference');
+  assert.deepEqual(saved, snapshot);
 });
 test('manual author parsing supports semicolons and family, given forms', () => {
   assert.deepEqual(parseAuthor('LeCun, Yann'), { family: 'LeCun', given: 'Yann' });

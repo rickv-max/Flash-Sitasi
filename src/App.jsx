@@ -10,6 +10,11 @@ import { buildCitations, getCitationResults, plainCitation, safeCitationHTML, is
 import { RichCitation } from './components/Primitives';
 import PaymentModal from './components/PaymentModal';
 import AnimatedWorkspaceMock from './components/AnimatedWorkspaceMock';
+import GenerationError from './components/GenerationError';
+import { MONTHS } from '../shared/publication-date';
+import { FAQS } from '../shared/site-content';
+import SiteFooter from './components/SiteFooter';
+import './pages/public-pages.css';
 import './App.css';
 import './responsive.css';
 
@@ -106,6 +111,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   const [mTitle, setMTitle] = useState('');
   const [mJournal, setMJournal] = useState('');
   const [mYear, setMYear] = useState('');
+  const [mMonth, setMMonth] = useState('');
   const [mVolume, setMVolume] = useState('');
   const [mIssue, setMIssue] = useState('');
   const [mPage, setMPage] = useState('');
@@ -214,6 +220,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   }
   async function generateSingle(mode, input) {
     if (busyRef.current || !checkReady()) return;
+    setMetadata(null); setError('');
     if (mode === 'doi' && !isDOI(input)) { setError('Format DOI belum valid. Contoh: 10.1038/nature14539.'); return; }
     if (mode === 'url') { try { if (new URL(input).protocol !== 'https:') throw new Error(); } catch { setError('Masukkan tautan HTTPS lengkap ke halaman artikel.'); return; } }
     if (mode === 'manual' && (!input.author.trim() || !input.title.trim() || !/^(1[5-9]\d{2}|20\d{2})$/.test(input.year))) { setError('Nama penulis, judul, dan tahun empat digit wajib diisi.'); return; }
@@ -227,7 +234,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   }
   const fetchDOI = () => generateSingle('doi', doiInput.trim());
   const fetchURL = () => generateSingle('url', urlInput.trim());
-  const handleGenerateManual = () => generateSingle('manual', { author: mAuthor, title: mTitle, journal: mJournal, year: mYear.trim(), volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, doi: mDOI.trim() });
+  const handleGenerateManual = () => generateSingle('manual', { author: mAuthor, title: mTitle, journal: mJournal, year: mYear.trim(), month: mMonth, volume: mVolume, issue: mIssue, page: mPage, publisher: mPublisher, doi: mDOI.trim() });
   async function handleBatchGenerate() {
     if (busyRef.current || !checkReady()) return;
     const lines = [...new Set(batchInput.split('\n').map((line) => line.trim()).filter(Boolean))];
@@ -415,21 +422,13 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
             </div>
           </section>
 
-          <footer className="footer relative z-20">
-            <div className="container footer-content">
-              <div className="footer-brand flex items-center justify-center mb-5">
-                <div className="logo-icon-wrap footer-logo"><VideoLogo /></div>
-              </div>
-              <p className="mt-0 text-sm max-w-md mx-auto text-muted leading-relaxed">
-                Automasi sitasi akademik pintar untuk penulisan karya ilmiah instan. Desain eksklusif. Performa maksimal.
-              </p>
-              <div className="mt-8 text-xs font-semibold text-muted opacity-60 flex flex-wrap justify-center gap-6">
-                 <span>© {new Date().getFullYear()} FlashCite.</span>
-                 <a href="#" className="footer-link">Kebijakan Privasi</a>
-                 <a href="#" className="footer-link">Syarat & Ketentuan</a>
-              </div>
-            </div>
-          </footer>
+          <section className="site-explainer" aria-labelledby="faq-title"><div className="container"><div className="site-explainer-inner">
+            <h2 id="faq-title">Kenali cara kerja Flash Sitasi</h2>
+            <p className="site-explainer-intro">Dari DOI ke footnote dan daftar pustaka, dengan metadata yang tetap bisa Anda periksa. Berikut hal yang sering ditanyakan sebelum mulai menulis.</p>
+            {FAQS.map(({ question, answer }) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
+            <p className="site-explainer-credit">Flash Sitasi dibuat oleh <a href="/tentang" rel="author">Ricky Maulana dari Lumajang</a> untuk membantu proses penulisan referensi akademik.</p>
+          </div></div></section>
+          <SiteFooter />
         </main>
       )}
 
@@ -479,6 +478,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                  <button onClick={handleLogout} className="btn-logout">
                     <LogoutIcon /> Keluar
                  </button>
+                 <nav className="workspace-info-links" aria-label="Kebijakan layanan"><a href="/kebijakan-privasi" target="_blank" rel="noopener noreferrer">Privasi</a><a href="/syarat-ketentuan" target="_blank" rel="noopener noreferrer">Ketentuan</a><a href="/tentang" target="_blank" rel="noopener noreferrer">Ricky Maulana</a></nav>
               </div>
            </aside>
 
@@ -543,6 +543,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                           <div className="manual-span form-group"><label className="input-label" htmlFor="reference-field-6">Judul Artikel *</label><input id="reference-field-6" type="text" className="input-field-modern" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Masukkan judul artikel" /></div>
                           <div className="form-group"><label className="input-label" htmlFor="reference-field-7">Nama Jurnal</label><input id="reference-field-7" type="text" className="input-field-modern" value={mJournal} onChange={(e) => setMJournal(e.target.value)} placeholder="Jurnal Internasional" /></div>
                           <div className="form-group"><label className="input-label" htmlFor="reference-field-8">Tahun Terbit *</label><input id="reference-field-8" type="text" className="input-field-modern" value={mYear} onChange={(e) => setMYear(e.target.value)} placeholder="2024" /></div>
+                          <div className="form-group"><label className="input-label" htmlFor="manual-month">Bulan Terbit <span className="text-muted font-normal">(Opsional)</span></label><select id="manual-month" className="input-field-modern" value={mMonth} onChange={(e) => setMMonth(e.target.value)}><option value="">Tidak diketahui</option>{MONTHS.map((month, index) => <option key={month} value={String(index + 1)}>{month}</option>)}</select></div>
                           <div className="form-group"><label className="input-label" htmlFor="reference-field-9">Volume</label><input id="reference-field-9" type="text" className="input-field-modern" value={mVolume} onChange={(e) => setMVolume(e.target.value)} placeholder="Misal: 5" /></div>
                           <div className="form-group"><label className="input-label" htmlFor="reference-field-10">Isu / Nomor</label><input id="reference-field-10" type="text" className="input-field-modern" value={mIssue} onChange={(e) => setMIssue(e.target.value)} placeholder="Misal: 2" /></div>
                           <div className="form-group"><label className="input-label" htmlFor="reference-field-11">Halaman</label><input id="reference-field-11" type="text" className="input-field-modern" value={mPage} onChange={(e) => setMPage(e.target.value)} placeholder="Misal: 10-25" /></div>
@@ -600,12 +601,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                       </div>
                     )}
 
-                    {error && (
-                      <div className="error-alert mt-8 animate-slide-up-fade flex items-start p-4 bg-error-subtle border border-error rounded-lg">
-                        <div className="mt-0.5 text-error mr-3"><WarningIcon /></div> 
-                        <span className="leading-relaxed font-semibold text-error text-sm">{error}</span>
-                      </div>
-                    )}
+                    <GenerationError message={error} onDismiss={() => setError('')} onRetry={inputMode === 'batch' ? handleBatchGenerate : inputMode === 'manual' ? handleGenerateManual : inputMode === 'url' ? fetchURL : fetchDOI} />
                   </div>
                 </div>
 

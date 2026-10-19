@@ -1,3 +1,5 @@
+import { MONTHS, publicationDate } from './publication-date.js';
+
 // Only these formatting tags are generated. Every external value is escaped.
 export const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -46,10 +48,12 @@ export function buildCitations(metadata, city = '') {
   const authors = (metadata.authors || []).filter((a) => fullName(a));
   const year = escapeHTML(metadata.year || 'n.d.');
   const title = escapeHTML(metadata.title || 'Tanpa judul');
+  const customTitle = title.replace(/\.+$/, '');
   const journal = escapeHTML(metadata.journal || '');
   const volume = escapeHTML(metadata.volume || '');
   const issue = escapeHTML(metadata.issue || '');
   const pages = escapeHTML(metadata.page || '').replace(/(\d)-(\d)/g, '$1–$2');
+  const customPages = escapeHTML(metadata.page || '').replace(/(\d)\s*[-–—]\s*(?=\d)/g, '$1-');
   const publisher = escapeHTML(metadata.publisher || '');
   const location = escapeHTML(city || metadata.city || '');
   const url = escapeHTML(metadata.doi ? `https://doi.org/${cleanDOI(metadata.doi)}` : metadata.url || '');
@@ -57,10 +61,14 @@ export function buildCitations(metadata, city = '') {
     joinNames(authors.map((a) => escapeHTML(fullName(a)))) || 'Penulis tidak tercantum';
   const bibAuthors = authors.map((a, index) => escapeHTML(index === 0 && !a.literal && a.given ?
     `${a.family}, ${a.given}` : fullName(a)));
-  const journalDetails = [journal ? `<i>${journal}</i>` : publisher, volume,
-    issue ? `no. ${issue}` : ''].filter(Boolean).join(', ');
-  const footnote = `${footAuthors}, “${title},” ${journalDetails ? `${journalDetails} ` : ''}(${location ? `${location}, ` : ''}${year})${pages ? `: ${pages}` : ''}.${url ? ` ${url}` : ''}`;
-  const bibliography = `${joinNames(bibAuthors) || 'Penulis tidak tercantum'}. “${title}.” ${journalDetails}${location ? `, ${location}` : ''}${journalDetails || location ? ', ' : ''}${year}${pages ? `, ${pages}` : ''}.${url ? ` ${url}` : ''}`;
+  const month = publicationDate([metadata.year, metadata.month]).month;
+  const monthYear = month ? `${MONTHS[Number(month) - 1]} ${year}` : '';
+  const edition = [volume ? `Vol. ${volume}` : '', issue ? `No. ${issue}` : ''].filter(Boolean).join(' ');
+  const details = [location, edition, monthYear].filter(Boolean).join(', ');
+  const footTitle = /[!?]$/.test(customTitle) ? customTitle : `${customTitle}.`;
+  const footnote = `${footAuthors} (${year}) “${footTitle}”${journal ? ` <i>${journal}</i>.` : publisher ? ` ${publisher}.` : ''}${details ? ` ${details}.` : ''}${customPages ? ` hal. ${customPages}.` : ''}${url ? ` ${url}.` : ''}`;
+  const bibliographyDetails = [journal, publisher, location, edition, monthYear].filter(Boolean).join(', ');
+  const bibliography = `${joinNames(bibAuthors) || 'Penulis tidak tercantum'}. (${year}) "${customTitle}".${bibliographyDetails ? ` ${bibliographyDetails}.` : ''}`;
   let apaNames = authors.map((a) => escapeHTML(a.literal || `${a.family}${a.given ? `, ${initials(a.given)}` : ''}`));
   let apaAuthors;
   if (apaNames.length > 20) apaAuthors = `${apaNames.slice(0, 19).join(', ')}, … ${apaNames.at(-1)}`;
@@ -74,6 +82,11 @@ export function buildCitations(metadata, city = '') {
 }
 
 export function getCitationResults(item) {
+  // Reformat stored metadata for display/copy without changing saved history or charging again.
+  if (item.metadata?.title && Array.isArray(item.metadata.authors)) {
+    const current = buildCitations(item.metadata, item.cityUsed || '');
+    return { ...current, ...(item.results || {}), footnote: current.footnote, bibliography: current.bibliography };
+  }
   if (item.results) return item.results;
   // Preserve citations saved by the original application.
   return { footnote: item.footnote || '', bibliography: item.dafpus || '',
@@ -84,6 +97,6 @@ export const DEMO_DOI = '10.1038/nature14539';
 export const DEMO_METADATA = {
   title: 'Deep learning', authors: [{ given: 'Yann', family: 'LeCun' },
     { given: 'Yoshua', family: 'Bengio' }, { given: 'Geoffrey', family: 'Hinton' }],
-  year: '2015', journal: 'Nature', volume: '521', issue: '7553', page: '436-444',
+  year: '2015', month: '5', journal: 'Nature', volume: '521', issue: '7553', page: '436-444',
   doi: DEMO_DOI, source: 'Data contoh · Nature', warnings: [],
 };
