@@ -7,7 +7,7 @@ import { adminServices } from './server/firebase.js';
 import { paymentConfig } from './server/config.js';
 
 const emit = (check, result) => console.log('DEPLOY_AUDIT ' + JSON.stringify({ check, ...result }));
-const fail = (error) => ({ checked: false, code: String(error?.code || error?.name || 'FAILED') });
+const fail = (error) => ({ checked: false, code: String(error?.code || error?.name || 'FAILED'), ...(error?.providerMessage ? { providerMessage: error.providerMessage } : {}) });
 const { auth, db } = adminServices();
 const project = db.projectId;
 if (project !== process.env.VITE_FIREBASE_PROJECT_ID) {
@@ -32,13 +32,13 @@ try {
   const content = rules.source.length === 1 ? rules.source[0].content : '';
   const digest = source => createHash('sha256').update(source.replace(/\r\n/g, '\n').trim()).digest('hex');
   emit('firestoreRules', { checked: true, match: digest(expected) === digest(content),
-    currentHash: digest(content), expectedHash: digest(expected), release: rules.name });
+    currentHash: digest(content), expectedHash: digest(expected), release: rules.name, currentSource: content });
 } catch (error) { emit('firestoreRules', fail(error)); }
 const { access_token } = await getApp().options.credential.getAccessToken();
 const google = async (url) => {
   const response = await fetch(url, { headers: { Authorization: 'Bearer ' + access_token },
     redirect: 'error', signal: AbortSignal.timeout(15000) });
-  if (!response.ok) { const error = new Error('GOOGLE_API'); error.code = 'HTTP_' + response.status; throw error; }
+  if (!response.ok) { const error = new Error('GOOGLE_API'); error.code = 'HTTP_' + response.status; const body = await response.json().catch(() => ({})); error.providerMessage = String(body.error?.message || '').slice(0, 600); throw error; }
   return response.json();
 };
 try {
@@ -46,6 +46,8 @@ try {
   const host = 'flash-sitasi.vercel.app';
   emit('googleLogin', { checked: true, productionDomainAllowed: config.authorizedDomains?.includes(host) || false });
 } catch (error) { emit('googleLogin', fail(error)); }
+const permissionsResponse = await fetch('https://cloudresourcemanager.googleapis.com/v1/projects/' + encodeURIComponent(project) + ':testIamPermissions', { method: 'POST', headers: { Authorization: 'Bearer ' + access_token, 'Content-Type': 'application/json' }, body: JSON.stringify({ permissions: ['datastore.indexes.list', 'datastore.indexes.get', 'datastore.indexes.create', 'datastore.indexes.update', 'firebaserules.rulesets.create', 'firebaserules.releases.update'] }), redirect: 'error', signal: AbortSignal.timeout(15000) });
+if (permissionsResponse.ok) { const permissions = await permissionsResponse.json(); emit('deploymentPermissions', { permissions: permissions.permissions || [] }); } else { emit('deploymentPermissions', { checked: false, status: permissionsResponse.status }); }
 const schema = JSON.parse(await readFile('firestore.indexes.json', 'utf8'));
 const canonical = item => JSON.stringify({ queryScope: item.queryScope,
   fields: item.fields.filter(x => x.fieldPath !== '__name__').map(({ fieldPath, order, arrayConfig }) => ({ fieldPath, ...(order ? { order } : { arrayConfig }) })) });
