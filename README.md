@@ -273,3 +273,17 @@ tests/              Pengujian perilaku dan keamanan
 - [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js)
 
 Dokumentasi bayar.gg diperiksa pada 18 Oktober 2026. Ketentuan merchant dan akses metode dapat berubah; cek dashboard akun yang digunakan.
+
+## Halaman publik dan SEO
+
+Halaman `/`, `/tentang`, `/kebijakan-privasi`, dan `/syarat-ketentuan` dirender menjadi HTML saat build. Informasi publik bisa dibaca tanpa JavaScript; fitur akun dan sitasi tetap memakai React. `scripts/prerender.mjs` hanya mengompilasi komponen dalam memori dan tidak menjalankan server HTTP, migrasi, atau akses database. Saat prerender, SDK Firebase browser tidak diinisialisasi.
+
+Build menghasilkan `robots.txt`, `sitemap.xml`, canonical per halaman, metadata Open Graph/Twitter, serta data terstruktur WebSite, WebApplication, WebPage, dan Person. Identitas pembuat: **Ricky Maulana**, juga dikenal sebagai **Ricky Maulana Lumajang**. Preview memakai `noindex, nofollow`; hanya produksi yang dibuka untuk pengindeksan. Tautan kebijakan tersedia di footer dan ruang kerja. Isi halaman ada di `shared/site-content.js`; kanal kontak diarahkan ke profil resmi GitHub pembuat.
+
+Sitemap produksi: `https://flash-sitasi.vercel.app/sitemap.xml`. Pemilik dapat mengirim sitemap dan meminta pengindeksan URL melalui Google Search Console setelah memverifikasi kepemilikan situs. Menyiapkan SEO dan sitemap tidak menjamin kapan Google mengindeks atau menentukan peringkat.
+
+## Template footnote
+
+Template khusus menggunakan pola `Penulis (Tahun) “Judul.” Nama Jurnal. Kota, Vol. X No. Y, Bulan Tahun. hal. X-Y. DOI.` Nama jurnal dicetak miring pada footnote. Daftar pustaka menggunakan nama penulis pertama yang dibalik, judul di dalam tanda kutip, jurnal, penerbit, kota, volume, nomor, dan bulan/tahun. DOI dan halaman tetap tersedia di metadata/footnote; template daftar pustaka mengikuti contoh tanpa keduanya. Spasi setelah tanda koma diseragamkan.
+
+Kapitalisasi judul dan nama mengikuti metadata atau input manual, termasuk teks campuran seperti `eDNA`. Bulan dibaca dari metadata publikasi Crossref/HTML atau pilihan manual; bulan yang tidak diketahui tidak ditebak. APA 7 tetap terpisah. Riwayat yang memiliki metadata dapat ditampilkan/disalin dengan template terbaru tanpa menulis ulang data atau memotong kredit; riwayat lama tanpa metadata tetap dapat dibaca.

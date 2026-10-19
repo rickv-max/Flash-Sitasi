@@ -14,7 +14,10 @@ const { default: App } = await compiler.ssrLoadModule('/src/App.jsx');
 const { default: PaymentModal } = await compiler.ssrLoadModule('/src/components/PaymentModal.jsx');
 const { default: AdminPanel, AdminOverview, AdminActionDialog } = await compiler.ssrLoadModule('/src/components/AdminPanel.jsx');
 const { default: CityField, CitySource } = await compiler.ssrLoadModule('/src/components/CityField.jsx');
-const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
+const { default: GenerationError } = await compiler.ssrLoadModule('/src/components/GenerationError.jsx');
+const { default: InfoPage } = await compiler.ssrLoadModule('/src/pages/InfoPage.jsx');
+const { PUBLIC_PAGES } = await import('../shared/site-content.js');
+const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
 const $workspace = load(renderToStaticMarkup(React.createElement(App, { initialView: 'tool', initialDemo: true })));
 
 function mediaApplies(query, width, height = 900) {
@@ -47,6 +50,30 @@ function styleOf($, selector, width, height = 900) {
 }
 
 test.after(async () => { await compiler.close(); });
+test('generation error fits its form at mobile widths and does not inherit the centered toast transform', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(GenerationError, { message: 'Format DOI belum valid.', onDismiss() {}, onRetry() {} })));
+  assert.equal($('[role="alert"][tabindex="-1"]').length, 1);
+  assert.equal($('button[aria-label="Tutup pesan gagal generate"]').length, 1);
+  assert.ok($('button').text().includes('Coba lagi'));
+  for (const width of [320, 390, 768, 1440]) {
+    const style = styleOf($, '.generation-error', width);
+    assert.equal(style.width, '100%'); assert.equal(style['min-width'], '0');
+    assert.equal(style.transform, undefined); assert.equal(style.position, undefined);
+  }
+  const frames = {}; css.walkAtRules('keyframes', (rule) => { frames[rule.params] = rule.toString(); });
+  assert.ok(!frames.slideUpFade.includes('-50%'));
+  assert.ok(frames.toastSlideUp.includes('-50%'));
+});
+test('privacy, terms and creator pages have readable content and working navigation without JavaScript', () => {
+  for (const page of Object.values(PUBLIC_PAGES)) {
+    const $ = load(renderToStaticMarkup(React.createElement(InfoPage, { page })));
+    assert.equal($('h1').length, 1); assert.ok($('article').text().length > 1500);
+    assert.ok($('article').text().includes('Ricky Maulana'));
+    assert.equal($('a[href="#"]').length, 0);
+    for (const href of Object.keys(PUBLIC_PAGES)) assert.ok($(`a[href="${href}"]`).length);
+    assert.equal(styleOf($, '.public-content-layout', 320)['grid-template-columns'], 'minmax(0,1fr)');
+  }
+});
 test('restored landing retains original logo, headline, preview and primary action', () => {
   const $ = load(renderToStaticMarkup(React.createElement(App)));
   assert.equal($('.navbar-wrapper .video-logo-asset[src="/logo.mp4"]').length, 1);

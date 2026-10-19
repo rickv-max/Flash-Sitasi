@@ -12,6 +12,6 @@ const config = {
 };
 
 export const firebaseReady = !!(config.apiKey && config.authDomain && config.projectId && config.appId);
-const app = firebaseReady ? initializeApp(config) : null;
+const app = firebaseReady && !import.meta.env.SSR ? initializeApp(config) : null;
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
