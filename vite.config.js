@@ -36,7 +36,9 @@ function localAPI() {
 }
 export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, process.cwd(), ''));
-  return { plugins: [react(), localAPI()], build: { rollupOptions: { output: {
+  return { envPrefix: ['VITE_FIREBASE_API_KEY', 'VITE_FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_APP_ID'],
+    plugins: [react(), localAPI()], build: { rollupOptions: { output: {
     manualChunks: (id) => id.includes('node_modules/@firebase') || id.includes('node_modules/firebase/') ? 'firebase' : undefined,
   } } } };
 });

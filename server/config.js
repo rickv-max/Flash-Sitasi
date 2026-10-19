@@ -12,7 +12,10 @@ export function appURL(env = process.env) {
 }
 
 export function paymentConfig(env = process.env) {
-  if (!env.BAYAR_GG_API_KEY || !env.BAYAR_GG_WEBHOOK_SECRET) {
+  // Legacy Vercel Sensitive variables cannot be renamed without re-entering
+  // their value. Keep that existing key server-only during migration.
+  const key = env.BAYAR_GG_API_KEY || env.VITE_BAYAR_GG_API_KEY;
+  if (!key || !env.BAYAR_GG_WEBHOOK_SECRET) {
     throw new AppError(503, 'PAYMENT_CONFIG', 'Pembayaran belum tersedia. Silakan coba kembali nanti.');
   }
   const origin = appURL(env);
@@ -23,6 +26,6 @@ export function paymentConfig(env = process.env) {
   } catch {
     throw new AppError(503, 'PAYMENT_CONFIG', 'Konfigurasi halaman pembayaran perlu diperiksa pengelola.');
   }
-  return { key: env.BAYAR_GG_API_KEY, secret: env.BAYAR_GG_WEBHOOK_SECRET,
+  return { key, secret: env.BAYAR_GG_WEBHOOK_SECRET,
     method: env.BAYAR_GG_PAYMENT_METHOD || '', checkout, origin };
 }

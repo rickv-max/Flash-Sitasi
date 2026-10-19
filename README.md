@@ -105,7 +105,7 @@ Panel admin dimuat terpisah saat dibuka dan mengikuti tampilan putih–slate awa
 4. Pembayaran sebelumnya belum terhubung ke penambahan kredit. Sekarang ada webhook dengan pemeriksaan HMAC saat signature dikirim, verifikasi status langsung melalui API merchant, dan endpoint pemeriksaan status milik akun.
 5. Kredit bertambah dalam transaksi database bersama penandaan invoice dan pencatatan ledger. Callback berulang dan pemeriksaan status secara bersamaan tidak menambah kredit dua kali.
 6. Default pembelian minimal 10 kredit = Rp7.500; maksimal 500 kredit = Rp375.000, harga Rp750 per kredit. Admin dapat mengubahnya dalam rentang nominal Rp5.000–Rp500.000. Harga baru tidak mengubah invoice yang sudah dibuat.
-7. API key pembayaran memakai variabel server `BAYAR_GG_API_KEY`. Hapus penggunaan `VITE_BAYAR_GG_API_KEY` di konfigurasi deployment. Jika kunci lama pernah masuk ke bundle browser, regenerasi kunci tersebut di bayar.gg.
+7. API key pembayaran baru memakai variabel server `BAYAR_GG_API_KEY`. Untuk deployment lama dengan variabel Sensitive yang tidak dapat diubah namanya, server masih dapat memakai `VITE_BAYAR_GG_API_KEY`. Vite hanya mempublikasikan enam variabel Firebase client sehingga key pembayaran lama tetap tidak masuk ke client environment. `BAYAR_GG_API_KEY` diprioritaskan saat tersedia; pindahkan ke nama server tersebut saat memperbarui key. Jika kunci lama pernah masuk ke bundle browser versi terdahulu, regenerasi kunci tersebut di bayar.gg.
 8. Timeout, respons HTML, respons tidak valid, dan penolakan penyedia mendapat pesan yang dapat dipahami. Request pembuatan invoice tidak diulang otomatis ketika hasilnya ambigu.
 
 ## Konfigurasi produksi
@@ -222,7 +222,7 @@ npm run check
 
 Pengujian juga mencakup sumber kota (metadata/JSON-LD/microdata/kontak), prioritas direktori/cache, pengabaian afiliasi penulis, preview gratis dan rate limit, bootstrap owner, penolakan role palsu, audit dan ledger atomik, konflik saldo, blokir/sinkronisasi Auth, pencabutan sesi, pencarian/pagination, rekonsiliasi, pengaturan dinamis, serta komponen admin responsif. Pengujian pembayaran mencakup normalisasi respons bayar.gg, URL checkout wajib, harga server, idempotensi invoice, signature palsu/kedaluwarsa, nominal tidak cocok, callback ganda, polling, kepemilikan tagihan, kegagalan metadata, saldo bersamaan, format APA, payload HTML berbahaya, validasi URL, render komponen tanpa browser, konsistensi breakpoint pada 320/360/390/640/700/768/769/1024/1440px, navigasi layar pendek, scroll root, serta batas tinggi dialog.
 
-Saat paket difinalkan, 99 pengujian otomatis lulus. Lint tanpa error/warning dan build produksi juga lulus. `npm ci` dari lockfile baru berhasil.
+Saat paket difinalkan, 102 pengujian otomatis lulus. Lint tanpa error/warning dan build produksi juga lulus. `npm ci` dari lockfile baru berhasil.
 
 Transaksi database diuji dengan adapter database dalam memori yang menjalankan transaksi secara serial dan rollback. Pengujian ini tidak menggantikan validasi aturan Firestore dengan emulator atau staging proyek asli.
 
