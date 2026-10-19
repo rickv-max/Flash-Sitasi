@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) { return request.auth != null && request.auth.uid == uid; }
+    function sessionAllowed(uid) {
+      let profile = get(/databases/$(database)/documents/users/$(uid)).data;
+      return !('sessionRevokedAt' in profile) || request.auth.token.auth_time > profile.sessionRevokedAt / 1000;
+    }
+    function active(uid) {
+      let profile = get(/databases/$(database)/documents/users/$(uid)).data;
+      return (!('status' in profile) || profile.status != 'blocked') && sessionAllowed(uid);
+    }
+    match /users/{uid} {
+      allow read: if owns(uid) && sessionAllowed(uid);
+      allow write: if false;
+      match /history/{citationId} {
+        allow read, delete: if owns(uid) && active(uid);
+        allow create, update: if false;
+      }
+      match /creditLedger/{entryId} {
+        allow read: if owns(uid) && active(uid);
+        allow write: if false;
+      }
+    }
+    match /payments/{id} { allow read, write: if false; }
+    match /paymentRequests/{id} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
