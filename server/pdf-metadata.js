@@ -20,7 +20,7 @@ function authorList(value) {
     let names = name.split(/\s*(?:;|\band\b|\bdan\b|&)\s*/i);
     if (names.length === 1 && name.includes(',') && name.split(',').every((part) => part.trim().split(/\s+/).length >= 2)) names = name.split(',');
     return names.map((part) => part.trim()).filter((part) => part.length >= 3 && part.length <= 150 &&
-      /^[\p{L}\p{M}\s,.'’\-]+$/u.test(part) && !/\b(?:universit|university|department|fakultas|jurusan|abstract|abstrak|email|issn|microsoft|administrator|user|author|penulis|windows)\b/i.test(part)).map(parseAuthor);
+      /^[\p{L}\p{M}\s,.'’-]+$/u.test(part) && !/\b(?:universit|university|department|fakultas|jurusan|abstract|abstrak|email|issn|microsoft|administrator|user|author|penulis|windows)\b/i.test(part)).map(parseAuthor);
   }).slice(0, 50);
 }
 export function pdfTextLines(items) {
