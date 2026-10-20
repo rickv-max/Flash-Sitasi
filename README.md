@@ -96,13 +96,13 @@ Di PowerShell, gunakan `npm.cmd run migrate:users` dan `npm.cmd run migrate:user
 | Satuan | Sesuai jumlah yang dipilih | Rp750 per kredit |
 | Pro | 199 | Rp115.000 |
 | Plus | 499 | Rp299.000 |
-| Sultan | 1.999 | Rp999.000 |
+| Sultan | 999 | Rp500.000 |
 
 Semua paket adalah pembelian kredit, tanpa langganan bulanan/tahunan. Di **Panel Admin → Pengaturan**, harga satuan dan ketiga harga paket dapat diubah terpisah. Kuota paket tetap; batas top up satuan tidak membatasi paket Sultan.
 
 `settings/app` menyimpan `pricePerCredit`, `proPackagePrice`, `plusPackagePrice`, dan `sultanPackagePrice`. Dokumen lama otomatis memakai harga paket awal sehingga tidak membutuhkan migrasi. Perubahan admin langsung menyegarkan harga di tab yang sama dan tab lain; pengunjung lain mendapat harga terbaru saat fokus atau dalam 20 detik. Server selalu menghitung nominal dari pengaturan; bila harga berubah sebelum checkout, pengguna diminta meninjau harga baru. Tagihan yang sudah dibuat mempertahankan nominal aslinya.
 
-Server memeriksa metode aktif dan batas nominal dari bayar.gg sebelum membuat tagihan. `/api/payment-options` hanya mengembalikan nama serta batas metode, tanpa informasi akun. Harga paket tetap tampil jika metode belum mendukung nominalnya, dengan keterangan dan tombol pembayaran nonaktif. Untuk Sultan, aktifkan kanal merchant yang mendukung Rp999.000. Jangan menganggap seluruh metode QRIS memiliki batas yang sama. Pemeriksaan ini tidak membuat transaksi; kegagalan sebelum POST tidak mengunci permintaan pembayaran.
+Server memeriksa metode aktif dan batas nominal dari bayar.gg sebelum membuat tagihan. `/api/payment-options` hanya mengembalikan nama serta batas metode, tanpa informasi akun. Harga paket tetap tampil jika metode belum mendukung nominalnya, dengan keterangan dan tombol pembayaran nonaktif. Sultan memakai nominal dasar Rp500.000, sesuai batas QRIS yang dilaporkan akun saat implementasi. Biaya atau kode unik penyedia, jika ada, mengikuti invoice akhir. Jangan menganggap seluruh metode QRIS memiliki batas yang sama. Pemeriksaan ini tidak membuat transaksi; kegagalan sebelum POST tidak mengunci permintaan pembayaran.
 
 Daftar memiliki pagination 25 data; **Ekspor halaman CSV** mengekspor halaman aktif sesuai filter dengan proteksi formula spreadsheet. Ringkasan menghitung data server sesungguhnya, tanpa angka contoh. Ringkasan sitasi menghitung riwayat yang masih tersimpan, bukan jumlah historis seumur hidup bila data lama dihapus. Nilai paket terbayar tidak memasukkan biaya/kode unik penyedia. `lastSeenAt` menunjukkan interaksi API terakhir, bukan indikator online real-time.
 
@@ -237,7 +237,7 @@ npm run check
 
 Pengujian juga mencakup sumber kota (metadata/JSON-LD/microdata/kontak), prioritas direktori/cache, pengabaian afiliasi penulis, preview gratis dan rate limit, bootstrap owner, penolakan role palsu, audit dan ledger atomik, konflik saldo, blokir/sinkronisasi Auth, pencabutan sesi, pencarian/pagination, rekonsiliasi, pengaturan dinamis, serta komponen admin responsif. Pengujian pembayaran mencakup normalisasi respons bayar.gg, URL checkout wajib, harga server, idempotensi invoice, signature palsu/kedaluwarsa, nominal tidak cocok, callback ganda, polling, kepemilikan tagihan, kegagalan metadata, saldo bersamaan, format APA, payload HTML berbahaya, validasi URL, render komponen tanpa browser, konsistensi breakpoint pada 320/360/390/640/700/768/769/1024/1440px, navigasi layar pendek, scroll root, serta batas tinggi dialog.
 
-Pengujian paket kredit mencakup harga tiap paket yang berdiri sendiri, perubahan harga admin dan audit, nominal yang dimanipulasi browser, pembaruan harga sebelum checkout, percobaan ulang tagihan lama, pemilihan metode sesuai batas nominal, serta pengkreditan Sultan tepat 1.999 kredit sekali saja.
+Pengujian paket kredit mencakup harga tiap paket yang berdiri sendiri, perubahan harga admin dan audit, nominal yang dimanipulasi browser, pembaruan harga sebelum checkout, percobaan ulang tagihan lama, pemilihan metode sesuai batas nominal, serta pengkreditan Sultan tepat 999 kredit sekali saja. Pengujian juga mempertahankan invoice lama Rp999.000 / 1.999 kredit.
 
 Transaksi database diuji dengan adapter database dalam memori yang menjalankan transaksi secara serial dan rollback. Pengujian ini tidak menggantikan validasi aturan Firestore dengan emulator atau staging proyek asli.
 
@@ -302,3 +302,19 @@ Sitemap produksi: `https://flash-sitasi.vercel.app/sitemap.xml`. Pemilik dapat m
 Template khusus menggunakan pola `Penulis (Tahun) “Judul.” Nama Jurnal. Kota, Vol. X No. Y, Bulan Tahun. hal. X-Y. DOI.` Nama jurnal dicetak miring pada footnote. Daftar pustaka menggunakan nama penulis pertama yang dibalik, judul di dalam tanda kutip, jurnal, penerbit, kota, volume, nomor, dan bulan/tahun. DOI dan halaman tetap tersedia di metadata/footnote; template daftar pustaka mengikuti contoh tanpa keduanya. Spasi setelah tanda koma diseragamkan.
 
 Kapitalisasi judul dan nama mengikuti metadata atau input manual, termasuk teks campuran seperti `eDNA`. Bulan dibaca dari metadata publikasi Crossref/HTML atau pilihan manual; bulan yang tidak diketahui tidak ditebak. APA 7 tetap terpisah. Riwayat yang memiliki metadata dapat ditampilkan/disalin dengan template terbaru tanpa menulis ulang data atau memotong kredit; riwayat lama tanpa metadata tetap dapat dibaca.
+
+### Badge akun dan profil publik
+
+- Badge **Reguler / Pro / Plus / Sultan** terpisah dari role admin dan saldo kredit. Paket yang sudah lunas menaikkan badge otomatis ke paket tertinggi; top up satuan mengikuti tarif satuan dan mempertahankan badge.
+- **Panel Admin → Pengguna → Lihat detail → Ubah badge** menyediakan semua level dan mode otomatis. Perubahan membutuhkan alasan, dicatat dalam audit, serta memeriksa versi profil agar tidak menimpa perubahan baru. Mode manual bertahan hingga dikembalikan ke otomatis.
+- Paket lama yang sudah dikreditkan dibaca sekali pada login berikutnya untuk memulihkan badge; saldo dan status invoice dipertahankan.
+- **Keanggotaan Saya** mengatur nama tampilan, bio, foto Google opsional, dan pilihan tampil publik. Publikasi tidak aktif secara default.
+- Beranda menampilkan maksimal 48 profil yang memilih tampil, dengan Sultan diprioritaskan. Profil publik hanya berisi ID acak turunan, nama pilihan, bio, badge, dan foto yang disetujui. Email, UID Firebase, saldo, transaksi, serta riwayat tetap privat.
+- Penggantian badge langsung memperbarui profil publik. Badge Reguler atau pemblokiran akun menyembunyikannya; penarikan persetujuan menghapus dokumen publik.
+- Koleksi referensi, ekspor Word/PDF, dan benefit lanjutan belum termasuk rilis badge ini.
+
+Pengaturan Sultan versi lama dibaca sebagai Rp500.000 / 999 kredit. Penyimpanan pengaturan melalui panel menandai revisi katalog; perubahan harga admin berikutnya tetap berlaku. Invoice yang sudah dibuat memakai snapshot lama dan tetap bisa dilanjutkan.
+
+Build Vercel menjalankan `npm run check` (lint → test → build) sebelum deployment dinyatakan berhasil. Pengujian tidak menghubungi database produksi atau membuat pembayaran riil.
+
+Halaman Sultan sebelum perubahan katalog harus dimuat ulang sebelum membuat invoice baru. Server memeriksa revisi katalog dan kuota yang dilihat pengguna; percobaan ulang invoice lama tetap memakai snapshot yang sudah tersimpan.

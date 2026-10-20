@@ -23,7 +23,7 @@ async function setup(settings = {}) {
 test('named packages have the requested credit counts and fixed prices independent of unit pricing', () => {
   const settings = validateSettings({ pricePerCredit: 1000 });
   assert.deepEqual(creditPackages(settings).map(({ id, credits, price }) => ({ id, credits, price })), [
-    { id: 'pro', credits: 199, price: 115000 }, { id: 'plus', credits: 499, price: 299000 }, { id: 'sultan', credits: 1999, price: 999000 },
+    { id: 'pro', credits: 199, price: 115000 }, { id: 'plus', credits: 499, price: 299000 }, { id: 'sultan', credits: 999, price: 500000 },
   ]);
   assert.equal(purchaseQuote({ credits: 199 }, settings).amount, 199000);
   assert.equal(purchaseQuote({ packageId: 'pro' }, settings).amount, 115000);
@@ -34,10 +34,10 @@ test('named packages have the requested credit counts and fixed prices independe
 test('server quotes each package, ignores forged browser prices and rejects mixed selections', async () => {
   const { handler, created } = await setup({ pricePerCredit: 1000 });
   for (const [index, id] of ['pro', 'plus', 'sultan'].entries()) {
-    const result = await call(handler, { body: { packageId: id, amount: 1, packageName: 'forged' }, customHeaders: { 'idempotency-key': `package-request-key-${index}` } });
+    const result = await call(handler, { body: { packageId: id, catalogRevision: 2, amount: 1, packageName: 'forged' }, customHeaders: { 'idempotency-key': `package-request-key-${index}` } });
     assert.equal(result.statusCode, 201); assert.equal(result.body.data.packageId, id);
-    assert.equal(result.body.data.amount, [115000, 299000, 999000][index]);
-    assert.equal(result.body.data.credits, [199, 499, 1999][index]);
+    assert.equal(result.body.data.amount, [115000, 299000, 500000][index]);
+    assert.equal(result.body.data.credits, [199, 499, 999][index]);
   }
   assert.equal(created.length, 3);
   assert.equal((await call(handler, { body: { packageId: 'pro', credits: 199 } })).statusCode, 400);
@@ -67,14 +67,14 @@ test('package invoices retain their price on retry and cannot reuse a unit-credi
   assert.equal((await call(handler, { body: { packageId: 'plus' }, customHeaders: { 'idempotency-key': key } })).statusCode, 409);
 });
 
-test('a paid Sultan invoice grants exactly 1999 credits once and rejects underpayment', async () => {
+test('a paid Sultan invoice grants exactly 999 credits once and rejects underpayment', async () => {
   const { handler, repo, db } = await setup();
-  const response = await call(handler, { body: { packageId: 'sultan' } }); const payment = response.body.data;
-  await assert.rejects(repo.settlePayment(payment.invoice, { invoice_id: payment.invoice, status: 'paid', amount: 999000, final_amount: 998999 }), { code: 'AMOUNT_MISMATCH' });
+  const response = await call(handler, { body: { packageId: 'sultan', catalogRevision: 2 } }); const payment = response.body.data;
+  await assert.rejects(repo.settlePayment(payment.invoice, { invoice_id: payment.invoice, status: 'paid', amount: 500000, final_amount: 499999 }), { code: 'AMOUNT_MISMATCH' });
   assert.equal(db.records.get(`users/${user.uid}`).credits, 5);
-  const verified = { invoice_id: payment.invoice, status: 'paid', amount: 999000, final_amount: 999000 };
+  const verified = { invoice_id: payment.invoice, status: 'paid', amount: 500000, final_amount: 500000 };
   await Promise.all([repo.settlePayment(payment.invoice, verified), repo.settlePayment(payment.invoice, verified)]);
-  assert.equal(db.records.get(`users/${user.uid}`).credits, 2004);
+  assert.equal(db.records.get(`users/${user.uid}`).credits, 1004);
 });
 
 test('method metadata strips account secrets and checks provider-specific nominal limits', () => {
@@ -112,12 +112,12 @@ test('unsupported gateway limits release the reservation and allow a safe retry 
   const { repo, db } = await setup(); let posts = 0, enabled = false;
   const gateway = createGateway({ key: 'test-key', checkout: 'https://www.bayar.gg/pay', origin: env.APP_URL }, async (url) => {
     if (url.endsWith('get-payment-methods.php')) return Response.json({ success: true, data: { payment_methods: [{ id: 'qris_livin', available: enabled, max_amount: 5000000 }] } });
-    posts++; return Response.json({ success: true, data: { invoice_id: 'sultan-retry-enabled', amount: 999000, final_amount: 999000, payment_url: 'https://www.bayar.gg/pay?invoice=sultan-retry-enabled' } });
+    posts++; return Response.json({ success: true, data: { invoice_id: 'sultan-retry-enabled', amount: 500000, final_amount: 500000, payment_url: 'https://www.bayar.gg/pay?invoice=sultan-retry-enabled' } });
   });
   const handler = makeHandler('createPayment', { env, repo, gateway, authenticate: async () => user });
-  const rejected = await call(handler, { body: { packageId: 'sultan' } });
+  const rejected = await call(handler, { body: { packageId: 'sultan', catalogRevision: 2 } });
   assert.equal(rejected.body.error.code, 'PAYMENT_METHOD_UNAVAILABLE'); assert.equal(rejected.body.error.paymentPending, undefined);
   assert.equal(posts, 0); assert.equal([...db.records.keys()].filter((key) => key.startsWith('paymentRequests/')).length, 0);
   enabled = true;
-  assert.equal((await call(handler, { body: { packageId: 'sultan' } })).statusCode, 201); assert.equal(posts, 1);
+  assert.equal((await call(handler, { body: { packageId: 'sultan', catalogRevision: 2 } })).statusCode, 201); assert.equal(posts, 1);
 });

@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // Run the same API handlers in local development; no separate API process needed.
 function localAPI() {
   const routes = { 'create-payment': 'createPayment', 'payment-status': 'paymentStatus',
-    'payment-webhook': 'webhook', 'payment-options': 'paymentOptions', profile: 'profile', citations: 'citations', config: 'config', city: 'city', admin: 'admin' };
+    'payment-webhook': 'webhook', 'payment-options': 'paymentOptions', profile: 'profile', members: 'members', citations: 'citations', config: 'config', city: 'city', admin: 'admin' };
   return { name: 'flashcite-local-api', configureServer(server) {
     server.middlewares.use('/api', async (req, res) => {
       res.setHeader('Content-Type', 'application/json');

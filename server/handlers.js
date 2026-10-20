@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { purchaseQuote, samePurchase } from '../shared/catalog.js';
+import { purchaseQuote, samePurchase, CREDIT_CATALOG_REVISION } from '../shared/catalog.js';
 import { buildCitations } from '../shared/citations.js';
 import { AppError, errorResponse } from './errors.js';
 import { appURL, paymentConfig, paymentMethodsConfig } from './config.js';
@@ -12,7 +12,7 @@ import { allowOperation, assertActive, assertSession, isOwner } from './access.j
 import { DEFAULT_SETTINGS } from '../shared/settings.js';
 import { enrichCity } from './city.js';
 
-const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', paymentOptions: 'GET', webhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
+const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', paymentOptions: 'GET', members: 'GET', webhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
 const publicPayment = ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited }) =>
   ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited: !!credited });
 
@@ -33,6 +33,10 @@ export function makeHandler(action, overrides = {}) {
         const gateway = overrides.gateway || createGateway(paymentMethodsConfig(env));
         return res.status(200).json({ success: true, data: { methods: await gateway.methods() } });
       }
+      if (action === 'members') {
+        const repo = overrides.repo || createRepository(adminServices(env).db);
+        return res.status(200).json({ success: true, data: await repo.publicMembers() });
+      }
       if (!['webhook', 'config'].includes(action) && !req.headers.authorization) throw new AppError(401, 'UNAUTHENTICATED', 'Masuk ke akun untuk melanjutkan.');
       const services = overrides.repo ? null : adminServices(env);
       const repo = overrides.repo || createRepository(services.db);
@@ -42,7 +46,14 @@ export function makeHandler(action, overrides = {}) {
       const profile = user ? await repo.ensureProfile(user, { owner: isOwner(user.uid, env), welcomeCredits: settings.welcomeCredits,
         signupEnabled: settings.signupEnabled, markLogin: action === 'profile' }) : null;
       if (profile) { assertActive(profile); assertSession(user, profile); }
-      if (action === 'profile') return res.status(200).json({ success: true, data: profile });
+      if (action === 'profile') {
+        const body = bodyOf(req);
+        if (body.action === 'updatePublicProfile') {
+          await repo.rateLimit?.(user.uid, 'public-profile', 10);
+          return res.status(200).json({ success: true, data: await repo.updatePublicProfile(user.uid, body.profile) });
+        }
+        return res.status(200).json({ success: true, data: profile });
+      }
       if (action === 'createPayment') {
         const body = bodyOf(req);
         const key = requestKey(req);
@@ -58,7 +69,9 @@ export function makeHandler(action, overrides = {}) {
         }
         let selection;
         allowOperation(settings, profile, 'payment');
+        if (body.packageId === 'sultan' && body.catalogRevision !== CREDIT_CATALOG_REVISION) throw new AppError(409, 'PACKAGE_CHANGED', 'Paket Sultan sekarang 999 kredit seharga Rp500.000. Muat ulang halaman untuk melihat pilihan terbaru sebelum membayar.');
         try { selection = purchaseQuote(body, settings); } catch (error) { throw new AppError(400, 'INVALID_CREDITS', error.message); }
+        if (body.expectedCredits !== undefined && body.expectedCredits !== selection.credits) throw new AppError(409, 'PACKAGE_CHANGED', 'Jumlah kredit paket telah diperbarui. Muat ulang halaman sebelum melanjutkan pembayaran.');
         if (body.expectedAmount !== undefined && body.expectedAmount !== selection.amount) throw new AppError(409, 'PRICE_CHANGED', 'Harga telah diperbarui admin. Periksa harga terbaru sebelum melanjutkan pembayaran.');
         const { credits, amount } = selection;
         const reservation = await repo.reservePayment(user.uid, key, credits, amount, selection);

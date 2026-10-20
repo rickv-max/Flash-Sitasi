@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { WELCOME_CREDITS } from '../shared/catalog.js';
 import { AppError } from './errors.js';
-import { DEFAULT_SETTINGS, validateSettings } from '../shared/settings.js';
+import { DEFAULT_SETTINGS, readStoredSettings } from '../shared/settings.js';
+import { paidMembership, higherMembership, membershipTier } from '../shared/membership.js';
+import { safeAvatar, writePublicMember } from './membership.js';
 import { assertActive } from './access.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
@@ -13,7 +15,7 @@ export function createRepository(db) {
   return {
     async getSettings() {
       const snap = await db.doc('settings/app').get();
-      try { return validateSettings(snap.exists ? snap.data() : DEFAULT_SETTINGS); }
+      try { return readStoredSettings(snap.exists ? snap.data() : DEFAULT_SETTINGS); }
       catch { throw new AppError(503, 'APP_SETTINGS_INVALID', 'Pengaturan aplikasi perlu diperiksa pengelola.'); }
     },
     async ensureProfile(user, { owner = false, welcomeCredits = WELCOME_CREDITS, signupEnabled = true, markLogin = false } = {}) {
@@ -24,6 +26,16 @@ export function createRepository(db) {
           const data = snap.data();
           const patch = {};
           if (data.credits === undefined) patch.credits = welcomeCredits;
+          if (!data.membershipSchemaVersion) {
+            const previousPayments = await tx.get(db.collection('payments').where('uid', '==', user.uid));
+            let purchasedTier = membershipTier(data.purchasedTier).id;
+            for (const item of previousPayments.docs) if (item.data().credited) purchasedTier = higherMembership(purchasedTier, item.data().packageId);
+            patch.purchasedTier = purchasedTier;
+            patch.membershipTier = data.membershipManualOverride ? membershipTier(data.membershipTier).id : higherMembership(data.membershipTier, purchasedTier);
+            patch.membershipSchemaVersion = 1;
+            patch.membershipVersion = (data.membershipVersion || 0) + (patch.membershipTier !== membershipTier(data.membershipTier).id ? 1 : 0);
+          }
+          if (markLogin && safeAvatar(user.picture) && data.photoURL !== safeAvatar(user.picture)) patch.photoURL = safeAvatar(user.picture);
           if (!data.role || owner && data.role !== 'admin') patch.role = owner ? 'admin' : 'user';
           if (!data.status) patch.status = 'active';
           if (owner && data.status === 'blocked') patch.status = 'active';
@@ -32,15 +44,38 @@ export function createRepository(db) {
           if (markLogin || Date.now() - (data.lastSeenAt || 0) > 300000) patch.lastSeenAt = Date.now();
           if (markLogin) patch.lastLoginAt = Date.now();
           if (Object.keys(patch).length) tx.update(ref, patch);
+          if (patch.membershipSchemaVersion) writePublicMember(tx, db, user.uid, { ...data, ...patch });
           return { ...data, ...patch };
         }
         if (!signupEnabled && !owner) throw new AppError(403, 'SIGNUP_PAUSED', 'Pendaftaran akun baru sementara dinonaktifkan.');
         const data = { credits: welcomeCredits, email: user.email || '', emailLower: (user.email || '').toLowerCase(),
           name: user.name || '', nameLower: (user.name || '').toLowerCase(), role: owner ? 'admin' : 'user', status: 'active',
+          membershipTier: 'regular', purchasedTier: 'regular', membershipManualOverride: false, membershipVersion: 0, membershipSchemaVersion: 1, photoURL: safeAvatar(user.picture),
           createdAt: Date.now(), lastSeenAt: Date.now(), lastLoginAt: Date.now() };
         tx.set(ref, data);
         return data;
       });
+    },
+    async updatePublicProfile(uid, input) {
+      if (!input || typeof input.name !== 'string' || input.name.trim().length < 2 || input.name.trim().length > 50 ||
+          typeof input.bio !== 'string' || input.bio.length > 160 || typeof input.visible !== 'boolean' || typeof input.showPhoto !== 'boolean') {
+        throw new AppError(400, 'INVALID_PUBLIC_PROFILE', 'Isi nama tampilan 2–50 karakter dan bio maksimal 160 karakter.');
+      }
+      const publicProfile = { name: input.name.trim(), bio: input.bio.trim(), visible: input.visible, showPhoto: input.showPhoto };
+      return db.runTransaction(async (tx) => {
+        const ref = profileRef(uid), snap = await tx.get(ref);
+        if (!snap.exists) throw new AppError(404, 'PROFILE_MISSING', 'Profil belum tersedia.');
+        const profile = snap.data(); assertActive(profile);
+        const next = { ...profile, publicProfile, publicProfileUpdatedAt: Date.now() };
+        tx.update(ref, { publicProfile, publicProfileUpdatedAt: next.publicProfileUpdatedAt });
+        writePublicMember(tx, db, uid, next);
+        return next;
+      });
+    },
+    async publicMembers() {
+      const snap = await db.collection('publicMembers').orderBy('tierRank', 'desc').limit(48).get();
+      return { items: snap.docs.map((doc) => { const data = doc.data(); return { publicId: doc.id, name: String(data.name || '').slice(0, 50), bio: String(data.bio || '').slice(0, 160),
+        tier: data.tier, photoURL: safeAvatar(data.photoURL) }; }).filter((item) => item.publicId && ['pro', 'plus', 'sultan'].includes(item.tier)), limit: 48 };
     },
     async getPaymentRequest(uid, key) {
       const snap = await db.doc(`paymentRequests/${hash(`${uid}:${key}`)}`).get();
@@ -107,7 +142,10 @@ export function createRepository(db) {
         const oldCredits = profile.data().credits;
         if (!Number.isSafeInteger(oldCredits) || oldCredits < 0 || !Number.isSafeInteger(oldCredits + payment.credits)) throw new AppError(409, 'BALANCE_INVALID', 'Saldo kredit perlu diperiksa pengelola.');
         const paid = { status: 'paid', credited: true, paidAt: Date.now(), lastChecked: Date.now() };
-        tx.update(userRef, { credits: oldCredits + payment.credits });
+        const membership = paidMembership(profile.data(), payment.packageId);
+        const updated = { ...profile.data(), ...membership, credits: oldCredits + payment.credits };
+        tx.update(userRef, { credits: updated.credits, ...membership });
+        if (Object.keys(membership).length) writePublicMember(tx, db, payment.uid, updated);
         tx.update(ref, paid);
         tx.set(db.doc(`users/${payment.uid}/creditLedger/${paymentDocId(invoice)}`), {
           invoice, amount: payment.amount, credits: payment.credits, timestamp: Date.now(), type: 'topup',

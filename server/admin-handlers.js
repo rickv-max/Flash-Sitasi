@@ -51,6 +51,7 @@ export function makeAdminHandler(overrides = {}) {
         const input = bodyOf(req); const key = requestKey(req);
         switch (input.action) {
           case 'adjustCredits': data = await admin.adjustCredits(user, key, input); break;
+          case 'setMembership': data = await admin.setMembership(user, key, input); break;
           case 'setRole': case 'setStatus': case 'revokeSessions': case 'saveNotes': {
             data = await admin.changeUser(user, key, input.action, input);
             if (input.action === 'setStatus' || input.action === 'revokeSessions') {
