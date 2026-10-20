@@ -11,6 +11,7 @@ import { RichCitation } from './components/Primitives';
 import PaymentModal from './components/PaymentModal';
 import AnimatedWorkspaceMock from './components/AnimatedWorkspaceMock';
 import GenerationError from './components/GenerationError';
+import MetadataNotice from './components/MetadataNotice';
 import { MONTHS } from '../shared/publication-date';
 import { FAQS, CREATOR } from '../shared/site-content';
 import PricingSection from './components/PricingSection';
@@ -241,7 +242,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
     if (busyRef.current || !checkReady()) return;
     setMetadata(null); setError('');
     if (mode === 'doi' && !isDOI(input)) { setError('Format DOI belum valid. Contoh: 10.1038/nature14539.'); return; }
-    if (mode === 'url') { try { if (new URL(input).protocol !== 'https:') throw new Error(); } catch { setError('Masukkan tautan HTTPS lengkap ke halaman artikel.'); return; } }
+    if (mode === 'url') { try { if (!['https:', 'http:'].includes(new URL(input).protocol)) throw new Error(); } catch { setError('Masukkan tautan HTTP/HTTPS lengkap ke halaman artikel atau PDF publik.'); return; } }
     if (mode === 'manual' && (!input.author.trim() || !input.title.trim() || !/^(1[5-9]\d{2}|20\d{2})$/.test(input.year))) { setError('Nama penulis, judul, dan tahun empat digit wajib diisi.'); return; }
     busyRef.current = true; setLoading(true); setError(''); setMetadata(null);
     try {
@@ -530,7 +531,8 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                       <div className="animate-fade-in">
                         <div className="form-group mb-5 relative">
                           <label className="input-label" htmlFor="reference-field-3">Tautan Artikel / PDF</label>
-                          <input id="reference-field-3" type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} placeholder="Paste link Academia, ResearchGate, OJS, dll" />
+                          <input id="reference-field-3" type="text" className="input-field-modern" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchURL()} aria-describedby="url-source-help" placeholder="https://jurnal.ac.id/article/view/123 atau tautan PDF" />
+                          <p className="url-source-help" id="url-source-help">Mendukung halaman artikel, tautan unduh OJS, dan PDF publik hingga 10 MB. PDF harus memiliki teks atau metadata yang cukup. Tautan HTTP dicoba melalui HTTPS; sumber yang memerlukan login mungkin dibatasi.</p>
                         </div>
                         {citationStyle === "footnote" && (
                           <CityField state={city} />
@@ -620,6 +622,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                   <div className="card glass-panel mt-8 animate-slide-up border-t-success relative overflow-hidden bg-white border-0 shadow-premium">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><CheckIcon /></div>
                     <div className="card-body p-6 sm:p-8">
+                      <MetadataNotice metadata={metadata} />
                       {citationStyle === 'footnote' && <CitySource metadata={metadata} />}
                       <div className="result-block bg-slate-50 border-color rounded-lg mb-8">
                         <div className="result-header border-b border-color">
@@ -663,7 +666,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                                     {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                {citationStyle === 'footnote' && <div className="batch-city-source"><CitySource metadata={r.meta} /></div>}
+                                <MetadataNotice metadata={r.meta} />{citationStyle === 'footnote' && <div className="batch-city-source"><CitySource metadata={r.meta} /></div>}
                                 <RichCitation className="result-html text-sm font-medium text-slate-800" html={content} />
                               </div>
                             );
@@ -683,7 +686,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                                     {copiedId === copyId ? <span className="text-success"><CheckIcon /></span> : <CopyIcon />}
                                   </button>
                                 </div>
-                                {citationStyle === 'footnote' && <div className="batch-city-source"><CitySource metadata={r.meta} /></div>}
+                                <MetadataNotice metadata={r.meta} />{citationStyle === 'footnote' && <div className="batch-city-source"><CitySource metadata={r.meta} /></div>}
                                 <RichCitation className="result-html text-sm font-medium text-slate-800" html={content} />
                               </div>
                             );

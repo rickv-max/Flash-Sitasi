@@ -20,9 +20,10 @@ const { default: CreditBalance } = await compiler.ssrLoadModule('/src/components
 const { DEFAULT_SETTINGS } = await import('../shared/settings.js');
 const { default: CityField, CitySource } = await compiler.ssrLoadModule('/src/components/CityField.jsx');
 const { default: GenerationError } = await compiler.ssrLoadModule('/src/components/GenerationError.jsx');
+const { default: MetadataNotice } = await compiler.ssrLoadModule('/src/components/MetadataNotice.jsx');
 const { default: InfoPage } = await compiler.ssrLoadModule('/src/pages/InfoPage.jsx');
 const { PUBLIC_PAGES } = await import('../shared/site-content.js');
-const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css', 'src/components/pricing.css', 'src/components/membership.css', 'src/components/credit-balance.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
+const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css', 'src/components/pricing.css', 'src/components/membership.css', 'src/components/credit-balance.css', 'src/components/metadata-notice.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
 const $workspace = load(renderToStaticMarkup(React.createElement(App, { initialView: 'tool', initialDemo: true })));
 
 function mediaApplies(query, width, height = 900) {
@@ -316,4 +317,14 @@ test('admin credit adjustment keeps the stored finite balance explicit', () => {
   const $ = load(renderToStaticMarkup(React.createElement(AdminActionDialog, { user: { uid: 'operator' }, task: { action: 'adjustCredits', uid: 'another-admin', profile: { role: 'admin', name: 'Admin lain', credits: 7 } }, onClose() {}, onSuccess() {} })));
   assert.ok($.text().includes('Saldo tersimpan: 7 kredit'));
   assert.ok($.text().includes('Admin dapat generate tanpa batas'));
+});
+
+test('citation metadata notices reveal missing fields, escape input and fit narrow result cards', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(MetadataNotice, { metadata: { source: 'Crossref + PDF', warnings: ['Tahun terbit tidak tercantum.', '<script>bad</script>', 'Tahun terbit tidak tercantum.'] } })));
+  assert.equal($('[role="status"]').length, 1); assert.equal($('li').length, 2); assert.equal($('script').length, 0);
+  assert.ok($('.metadata-source').text().includes('Crossref + PDF'));
+  assert.ok($.text().includes('Input Manual'));
+  for (const width of [320, 390, 768, 1440]) assert.equal(styleOf($, '.metadata-notice', width)['min-width'], '0');
+  const complete = load(renderToStaticMarkup(React.createElement(MetadataNotice, { metadata: { source: 'DataCite', warnings: [] } })));
+  assert.equal(complete('[role="status"]').length, 0); assert.ok(complete.text().includes('DataCite'));
 });

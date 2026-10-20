@@ -8,7 +8,7 @@ export function useCity({ user, demo, mode, input, enabled = true }) {
   const [override, setOverride] = useState({ key: '', value: '' });
   let valid = false;
   if (mode === 'doi') valid = isDOI(input || '');
-  if (mode === 'url') { try { valid = new URL(input).protocol === 'https:'; } catch { /* Incomplete input. */ } }
+  if (mode === 'url') { try { valid = ['https:', 'http:'].includes(new URL(input).protocol); } catch { /* Incomplete input. */ } }
   if (mode === 'manual') valid = !!(input?.journal?.trim().length >= 3 || input?.publisher?.trim().length >= 3);
   const inputJSON = JSON.stringify(input);
   useEffect(() => {
