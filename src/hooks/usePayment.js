@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS } from '../../shared/settings';
 import { api, readStorage, writeStorage } from '../lib/api';
-import { purchaseQuote, samePurchase } from '../../shared/catalog';
+import { purchaseQuote, samePurchase, CREDIT_CATALOG_REVISION } from '../../shared/catalog';
 
 export function usePayment({ user, notify, settings = DEFAULT_SETTINGS, initialPackageId = '', onPricingChange }) {
   const storageKey = `flashcite:payment:${user?.uid || 'guest'}`;
@@ -58,7 +58,7 @@ export function usePayment({ user, notify, settings = DEFAULT_SETTINGS, initialP
     savedRequest.current = request;
     writeStorage(requestStorage, request);
     try {
-      const next = await api('create-payment', { user, body: { ...(request.packageId ? { packageId: request.packageId } : { credits: request.credits }), expectedAmount: request.amount }, key: request.key });
+      const next = await api('create-payment', { user, body: { ...(request.packageId ? { packageId: request.packageId } : { credits: request.credits }), expectedAmount: request.amount, expectedCredits: request.credits, catalogRevision: CREDIT_CATALOG_REVISION }, key: request.key });
       writeStorage(storageKey, next); setPending(next); setUncertain(false);
     } catch (error) {
       setError(error.message); setUncertain(!!error.paymentPending);

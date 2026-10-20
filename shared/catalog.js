@@ -1,3 +1,4 @@
+export const CREDIT_CATALOG_REVISION = 2;
 export const CREDIT_PRICE = 750;
 export const MIN_TOPUP = 10;
 export const MAX_TOPUP = 500;
@@ -9,7 +10,7 @@ export const MAX_PAYMENT_AMOUNT = 5000000;
 export const CREDIT_PACKAGES = Object.freeze([
   Object.freeze({ id: 'pro', name: 'Pro', credits: 199, priceKey: 'proPackagePrice', price: 115000 }),
   Object.freeze({ id: 'plus', name: 'Plus', credits: 499, priceKey: 'plusPackagePrice', price: 299000 }),
-  Object.freeze({ id: 'sultan', name: 'Sultan', credits: 1999, priceKey: 'sultanPackagePrice', price: 999000 }),
+  Object.freeze({ id: 'sultan', name: 'Sultan', credits: 999, priceKey: 'sultanPackagePrice', price: 500000 }),
 ]);
 
 export const creditPackages = (settings = {}) => CREDIT_PACKAGES.map((item) => ({ ...item, price: settings[item.priceKey] ?? item.price }));

@@ -16,9 +16,10 @@ export class MemoryFirestore {
     const task = this.queue.then(async () => {
       const draft = new Map([...this.records].map(([key, value]) => [key, structuredClone(value)]));
       let written = false;
-      const tx = { get: async (ref) => { if (written) throw new Error('Transaction read after write'); return this.snapshot(ref.path, draft); },
+      const tx = { get: async (ref) => { if (written) throw new Error('Transaction read after write'); return ref instanceof MemoryQuery ? ref.get() : this.snapshot(ref.path, draft); },
         set: (ref, data) => { written = true; draft.set(ref.path, structuredClone(data)); },
         update: (ref, data) => { written = true; if (!draft.has(ref.path)) throw new Error('Missing document'); draft.set(ref.path, { ...draft.get(ref.path), ...structuredClone(data) }); } };
+      tx.delete = (ref) => { written = true; draft.delete(ref.path); };
       const result = await callback(tx); this.records = draft; return result;
     });
     this.queue = task.catch(() => {});

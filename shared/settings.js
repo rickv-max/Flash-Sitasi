@@ -29,3 +29,9 @@ export function validateSettings(input = {}) {
   settings.maintenanceMessage = settings.maintenanceMessage.trim() || DEFAULT_SETTINGS.maintenanceMessage;
   return settings;
 }
+
+// Apply the new Sultan catalogue once to settings saved by older releases.
+// Existing invoices keep their own amount and credit snapshot.
+export function readStoredSettings(input = {}) {
+  return validateSettings({ ...input, ...(input.sultanPackageRevision === 2 ? {} : { sultanPackagePrice: 500000 }) });
+}

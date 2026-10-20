@@ -2,14 +2,16 @@ import { createHash } from 'node:crypto';
 import { AggregateField } from 'firebase-admin/firestore';
 import { AppError } from './errors.js';
 import { assertAdmin, assertSession, protectAdminTarget, validUID } from './access.js';
-import { DEFAULT_SETTINGS, validateSettings } from '../shared/settings.js';
+import { validateSettings, readStoredSettings } from '../shared/settings.js';
+import { MEMBERSHIP_TIERS, membershipTier } from '../shared/membership.js';
+import { writePublicMember } from './membership.js';
 import { locationKey, cleanCity } from './city.js';
 import { publicURL } from './safe-fetch.js';
 import { paymentDocId } from './repository.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const clean = (value = '', max = 300) => typeof value === 'string' ? value.trim().slice(0, max) : '';
-const fields = ['name', 'email', 'role', 'status', 'credits', 'createdAt', 'lastSeenAt', 'lastLoginAt', 'authSyncError'];
+const fields = ['name', 'email', 'role', 'status', 'credits', 'createdAt', 'lastSeenAt', 'lastLoginAt', 'authSyncError', 'membershipTier', 'purchasedTier', 'membershipManualOverride', 'membershipVersion'];
 const userRow = (doc) => ({ uid: doc.id, ...Object.fromEntries(fields.filter((field) => doc.data()[field] !== undefined).map((field) => [field, doc.data()[field]])) });
 function reasonOf(reason) {
   if (typeof reason !== 'string' || reason.trim().length < 5 || reason.length > 500) throw new AppError(400, 'REASON_REQUIRED', 'Isi alasan tindakan sepanjang 5–500 karakter.');
@@ -174,6 +176,22 @@ export function createAdminRepository(db, env = process.env) {
         } };
       });
     },
+    async setMembership(actor, key, input) {
+      const { uid, tier, mode, expectedVersion } = input;
+      if (!validUID(uid) || !['manual', 'automatic'].includes(mode) || !MEMBERSHIP_TIERS.some((item) => item.id === tier) || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
+        throw new AppError(400, 'INVALID_MEMBERSHIP', 'Pilih badge dan mode yang tersedia, lalu muat data pengguna terbaru.');
+      }
+      return audited(actor, key, 'setMembership', uid, input.reason, { tier, mode, expectedVersion }, async (tx) => {
+        const ref = userRef(uid), snap = await tx.get(ref);
+        if (!snap.exists) throw new AppError(404, 'USER_NOT_FOUND', 'Pengguna tidak ditemukan.');
+        const profile = snap.data(), version = profile.membershipVersion || 0;
+        if (version !== expectedVersion) throw new AppError(409, 'MEMBERSHIP_CHANGED', 'Badge berubah sejak data ditampilkan. Muat ulang detail pengguna.');
+        const before = { membershipTier: membershipTier(profile.membershipTier).id, membershipManualOverride: !!profile.membershipManualOverride, membershipVersion: version };
+        const after = { membershipTier: mode === 'automatic' ? membershipTier(profile.purchasedTier).id : tier, membershipManualOverride: mode === 'manual',
+          membershipSource: mode === 'manual' ? 'admin' : 'payment', membershipVersion: version + 1, membershipUpdatedAt: Date.now() };
+        return { before, after, result: { uid, ...after }, write() { tx.update(ref, after); writePublicMember(tx, db, uid, { ...profile, ...after }); } };
+      });
+    },
     async changeUser(actor, key, action, input) {
       const { uid } = input;
       if (!validUID(uid)) throw new AppError(400, 'INVALID_UID', 'UID pengguna tidak valid.');
@@ -194,7 +212,10 @@ export function createAdminRepository(db, env = process.env) {
         else throw new AppError(400, 'INVALID_ACTION', 'Tindakan tidak valid.');
         return { before, after, result: { uid, ...after }, write() {
           if (action === 'saveNotes') tx.set(db.doc(`adminUserNotes/${uid}`), { text: after.text, updatedAt: Date.now(), actorUID: actor.uid });
-          else tx.update(userRef(uid), { ...after, updatedAt: Date.now() });
+          else {
+            tx.update(userRef(uid), { ...after, updatedAt: Date.now() });
+            if (action === 'setStatus') writePublicMember(tx, db, uid, { ...target.data(), ...after });
+          }
         } };
       });
     },
@@ -213,14 +234,14 @@ export function createAdminRepository(db, env = process.env) {
         const ref = db.doc('settings/app'); const snap = await tx.get(ref); const existing = snap.data() || {};
         if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== (existing.updatedAt || 0)) throw new AppError(409, 'SETTINGS_CHANGED', 'Pengaturan sudah diubah admin lain. Muat ulang data.');
         let settings;
-        try { settings = validateSettings({ ...DEFAULT_SETTINGS, ...existing, ...input.settings }); }
+        try { settings = validateSettings({ ...readStoredSettings(existing), ...input.settings }); }
         catch (error) { throw new AppError(400, 'INVALID_SETTINGS', error.message); }
-        const after = { ...settings, updatedAt: Date.now() };
-        return { before: validateSettings(existing), after, result: after, write() { tx.set(ref, after); } };
+        const after = { ...settings, sultanPackageRevision: 2, updatedAt: Date.now() };
+        return { before: readStoredSettings(existing), after, result: after, write() { tx.set(ref, after); } };
       });
     },
     async settings() {
-      const snap = await db.doc('settings/app').get(); return { ...validateSettings(snap.data() || {}), updatedAt: snap.data()?.updatedAt || 0 };
+      const snap = await db.doc('settings/app').get(); return { ...readStoredSettings(snap.data() || {}), updatedAt: snap.data()?.updatedAt || 0 };
     },
     async upsertLocation(actor, key, input) {
       const { kind, matchValue, sourceURL, enabled = true } = input;

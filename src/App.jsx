@@ -15,6 +15,9 @@ import { MONTHS } from '../shared/publication-date';
 import { FAQS, CREATOR } from '../shared/site-content';
 import PricingSection from './components/PricingSection';
 import SiteFooter from './components/SiteFooter';
+import MembershipBadge from './components/MembershipBadge';
+import MembershipProfile from './components/MembershipProfile';
+import PublicMembers from './components/PublicMembers';
 import './pages/public-pages.css';
 import './App.css';
 import './responsive.css';
@@ -101,6 +104,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   const canGenerate = demo || !!account.ready && (!settings.maintenance || isAdmin);
   const [showTopupModal, setShowTopupModal] = useState(returning);
   const [preferredPackageId, setPreferredPackageId] = useState('');
+  const [showMembership, setShowMembership] = useState(false);
   const [inputMode, setInputMode] = useState('doi');
   const [citationStyle, setCitationStyle] = useState('footnote');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -204,7 +208,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   }
   async function handleLogout() {
     if (busyRef.current) return;
-    try { if (!demo) await account.logout(); setDemo(false); setIsSidebarOpen(false); setShowTopupModal(false); setCurrentView('landing'); window.scrollTo(0, 0); }
+    try { if (!demo) await account.logout(); setDemo(false); setIsSidebarOpen(false); setShowTopupModal(false); setShowMembership(false); setCurrentView('landing'); window.scrollTo(0, 0); }
     catch { showNotificationMsg('Belum berhasil keluar. Coba lagi sebentar.', 'error'); }
   }
   async function makeCitation(mode, input) {
@@ -303,6 +307,8 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
         notify={showNotificationMsg} initialPackageId={preferredPackageId} pricingReady={pricingReady} onPricingChange={refreshSettings} onClose={() => setShowTopupModal(false)}
         onLogin={() => { setShowTopupModal(false); handleLoginAndEnter(); }} />}
 
+      {showMembership && !demo && account.user && account.profile && <MembershipProfile user={account.user} profile={account.profile} notify={showNotificationMsg} onClose={() => setShowMembership(false)} />}
+
       {/* --- LANDING PAGE NAVBAR --- */}
       {currentView === "landing" && (
         <div className="navbar-wrapper" aria-label="Navigasi utama">
@@ -370,6 +376,8 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
               </div>
             </div>
           </section>
+
+          <PublicMembers />
 
           <section className="preview-section mt-12 pb-24 relative z-20">
             <div className="container preview-card-anim">
@@ -463,7 +471,8 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
               </nav>
 
               <div className="sidebar-footer">
-                 {!demo && <div className="sidebar-account"><strong>{user?.displayName || userData.name || 'Pengguna'}</strong><span>{user?.email}</span>{isAdmin && <small>ADMIN</small>}</div>}
+                 {!demo && <div className="sidebar-account"><strong>{user?.displayName || userData.name || 'Pengguna'}</strong><span>{user?.email}</span><MembershipBadge tier={userData.membershipTier} />{isAdmin && <small>ADMIN</small>}</div>}
+                 {!demo && <button type="button" className="sidebar-membership-button" onClick={() => { setIsSidebarOpen(false); setShowMembership(true); }}>Keanggotaan Saya</button>}
                  <div className="credit-box">
                     <p className="credit-label">{demo ? "Kredit Contoh (Demo)" : "Sisa Kredit"}</p>
                     <div className="credit-amount"><CoinIcon /> <span>{userData.credits || 0}</span></div>
