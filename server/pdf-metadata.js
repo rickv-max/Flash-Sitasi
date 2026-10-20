@@ -31,7 +31,10 @@ export function pdfTextLines(items) {
     const y = item.transform[5], fontSize = Math.hypot(item.transform[2], item.transform[3]) || item.height || 10;
     let line = lines.at(-1);
     if (!line || Math.abs(line.y - y) > 2.5) { line = { text: '', y, fontSize }; lines.push(line); }
-    line.text += (line.text && !line.text.endsWith('-') ? ' ' : '') + item.str;
+    const gap = item.transform[4] - (line.endX ?? item.transform[4]);
+    const separated = line.text && gap > Math.max(1, fontSize * .12) && !/[\s-]$/.test(line.text) && !/^\s/.test(item.str);
+    line.text += (separated ? ' ' : '') + item.str;
+    line.endX = item.transform[4] + (item.width || 0);
     line.fontSize = Math.max(line.fontSize, fontSize);
   }
   return lines.map((line) => ({ ...line, text: text(line.text) }));
@@ -42,7 +45,7 @@ export function draftPDFMetadata({ info = {}, xmp = {}, pages = [] }, url) {
   };
   const value = (item) => Array.isArray(item) ? item.map(text).join('; ') : text(typeof item === 'object' && item ? item['x-default'] || Object.values(item)[0] : item);
   const first = pages.find((page) => page.map((line) => line.text).join(' ').trim().length >= 60) || pages[0] || [], firstText = first.map((line) => line.text).join('\n');
-  const articleText = firstText.split(/\n\s*(?:references|bibliography|daftar pustaka|daftar referensi)\s*[:.]?\s*\n/i)[0].slice(0, 16000);
+  const articleText = firstText.split(/(?:^|\n)\s*(?:references|bibliography|daftar pustaka|daftar referensi)\s*[:.]?\s*(?:\n|$)/i)[0].slice(0, 16000);
   const usableTitle = (title) => title.length >= 8 && !/^(?:untitled|document\d*|microsoft\s+(?:word|powerpoint)|[^\s]+\.docx?\b)/i.test(title);
   const embeddedTitle = value(get('dc:title')) || text(info.Title);
   const candidates = first.filter((line) => line.text.length >= 12 && line.text.length <= 500 &&
@@ -67,7 +70,7 @@ export function draftPDFMetadata({ info = {}, xmp = {}, pages = [] }, url) {
   const issue = value(get('prism:number')) || articleText.match(/\b(?:no(?:mor|\.)?|issue)\s*[:.]?\s*(\d{1,5})\b/i)?.[1] || '';
   const page = value(get('prism:pagerange')) || articleText.match(/\b(?:pp?\.|pages?|hal\.?)\s*[:.]?\s*(\d+\s*[-–]\s*\d+)/i)?.[1]?.replace(/\s+/g, '') || '';
   const explicitDOI = value(get('prism:doi') || get('dc:identifier') || info.DOI || '');
-  const laterText = pages.filter((page) => page !== first).map((page) => page.map((line) => line.text).join('\n').split(/\n\s*(?:references|bibliography|daftar pustaka)\s*[:.]?\s*\n/i)[0]).join('\n').slice(0, 16000);
+  const laterText = pages.filter((page) => page !== first).map((page) => page.map((line) => line.text).join('\n').split(/(?:^|\n)\s*(?:references|bibliography|daftar pustaka|daftar referensi)\s*[:.]?\s*(?:\n|$)/i)[0]).join('\n').slice(0, 16000);
   const doiCandidates = [...new Set([...findDOIs(explicitDOI), ...findDOIs(articleText), ...findDOIs(laterText)])].slice(0, 3);
   return completeMetadata({ title, authors, ...publication, volume, issue, page,
     journal: value(get('prism:publicationname')), publisher: value(get('dc:publisher')),

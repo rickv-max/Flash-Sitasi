@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fromURL, fromDOI, parseHTMLMetadata } from '../server/metadata.js';
 import { articleLandingURL, documentLinks } from '../server/html-metadata.js';
-import { readPDFMetadata, draftPDFMetadata } from '../server/pdf-metadata.js';
+import { readPDFMetadata, draftPDFMetadata, pdfTextLines } from '../server/pdf-metadata.js';
 import { findDOIs, matchingTitles, mergeMetadata } from '../server/source-metadata.js';
 import { normalizeSourceURL } from '../server/safe-fetch.js';
 import { buildCitations, plainCitation } from '../shared/citations.js';
@@ -208,4 +208,22 @@ test('failed PDF extraction cannot create history, ledger entries or deduct cred
     assert.equal(response.statusCode, 422); assert.equal(db.records.get('users/' + user.uid).credits, 5);
     assert.equal([...db.records.keys()].filter((path) => /\/(?:history|creditLedger)\//.test(path)).length, 0);
   }
+});
+
+test('PDF text fragments keep contiguous DOI characters together while retaining word gaps', () => {
+  const lines = pdfTextLines([
+    { str: 'https://doi.org/10.1234/', transform: [10, 0, 0, 10, 60, 100], width: 100 },
+    { str: 'eDNA', transform: [10, 0, 0, 10, 160, 100], width: 25 },
+    { str: 'Pardi', transform: [11, 0, 0, 11, 60, 80], width: 28 },
+    { str: 'Hilala', transform: [11, 0, 0, 11, 92, 80], width: 31 },
+  ]);
+  assert.deepEqual(findDOIs(lines[0].text), ['10.1234/eDNA']);
+  assert.equal(lines[1].text, 'Pardi Hilala');
+});
+test('a references section at the start of a later PDF page cannot supply the article DOI', () => {
+  const draft = draftPDFMetadata({ info: { Title: article.title, Author: 'Pardi Hilala' }, pages: [
+    [{ text: article.title, y: 700, fontSize: 18 }, { text: 'Pardi Hilala', y: 680, fontSize: 11 }],
+    [{ text: 'References', y: 800, fontSize: 12 }, { text: 'Unrelated https://doi.org/10.5555/unrelated', y: 780, fontSize: 10 }],
+  ] }, url);
+  assert.deepEqual(draft.doiCandidates, []);
 });
