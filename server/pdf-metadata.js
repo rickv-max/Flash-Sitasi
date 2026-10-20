@@ -62,10 +62,12 @@ export function draftPDFMetadata({ info = {}, xmp = {}, pages = [] }, url) {
     const bylines = first.filter((line) => line.y < lastY - 2 && line.y > lastY - 55 && !/\b(?:universitas|university|fakultas|department|abstract|abstrak|journal|jurnal)\b/i.test(line.text));
     authors = bylines.flatMap((line) => authorList(line.text)).slice(0, 25);
   }
-  const headerDate = first.slice(0, 12).map((line) => line.text).find((line) => /\b(?:vol(?:ume)?\.?|no\.?|issue|published|publication|terbit|diterbitkan)\b/i.test(line) && /\b(?:19|20)\d{2}\b/.test(line)) || '';
-  const date = labeledDate(value(get('prism:publicationdate') || get('prism:coverdate') || get('dc:date') || info.PublicationDate) || headerDate);
-  const labeled = articleText.match(/(?:published(?:\s+online)?|tanggal\s+terbit|diterbitkan|terbit)\s*[:.]?\s*([^\n]{0,70})/i)?.[1];
-  const publication = date.year ? date : labeledDate(labeled);
+  const headerDate = first.slice(0, 12).map((line) => line.text).find((line) => /\b(?:vol(?:ume)?\.?|no\.?|issue)\b/i.test(line) && /\b(?:19|20)\d{2}\b/.test(line)) || '';
+  const date = labeledDate(value(get('prism:publicationdate') || get('prism:coverdate') || get('dc:date') || info.PublicationDate));
+  const labeled = articleText.match(/\b(?:published(?:\s+(?:online|date))?|tanggal\s+terbit|diterbitkan|terbit)\s*:\s*([^\n;|]{1,70})/i)?.[1] ||
+    articleText.match(/(?:^|\n)\s*(?:published(?:\s+online)?|tanggal\s+terbit|diterbitkan|terbit)\s+((?:\d|jan|feb|mar|apr|may|mei|jun|jul|aug|agu|sep|oct|okt|nov|dec|des)[^\n;|]{0,69})/i)?.[1];
+  const published = labeledDate(labeled);
+  const publication = date.year ? date : published.year ? published : labeledDate(headerDate);
   const volume = value(get('prism:volume')) || articleText.match(/\bvol(?:ume|\.)?\s*[:.]?\s*(\d{1,5})\b/i)?.[1] || '';
   const issue = value(get('prism:number')) || articleText.match(/\b(?:no(?:mor|\.)?|issue)\s*[:.]?\s*(\d{1,5})\b/i)?.[1] || '';
   const page = value(get('prism:pagerange')) || articleText.match(/\b(?:pp?\.|pages?|hal\.?)\s*[:.]?\s*(\d+\s*[-–]\s*\d+)/i)?.[1]?.replace(/\s+/g, '') || '';

@@ -227,3 +227,25 @@ test('a references section at the start of a later PDF page cannot supply the ar
   ] }, url);
   assert.deepEqual(draft.doiCandidates, []);
 });
+
+test('PDF publication date wins over received or accepted dates on the same header line', () => {
+  const draft = draftPDFMetadata({ info: { Title: article.title, Author: 'Pardi Hilala', CreationDate: 'D:20261021000000Z' }, pages: [[
+    { text: 'Received: 12 June 2023; Accepted: 10 January 2024; Published: 2 Maret 2025', y: 800, fontSize: 9 },
+    { text: article.title, y: 740, fontSize: 18 }, { text: 'Pardi Hilala', y: 710, fontSize: 11 },
+  ]] }, url);
+  assert.equal(draft.year, '2025'); assert.equal(draft.month, '3');
+});
+test('prose about another published work cannot supply a PDF publication date', () => {
+  const draft = draftPDFMetadata({ info: { Title: article.title, Author: 'Pardi Hilala' }, pages: [[
+    { text: article.title, y: 740, fontSize: 18 }, { text: 'Pardi Hilala', y: 710, fontSize: 11 },
+    { text: 'Prior research was published in 2024 and discussed public health.', y: 600, fontSize: 11 },
+  ]] }, url);
+  assert.equal(draft.year, ''); assert.equal(draft.month, '');
+});
+test('DataCite publicationYear is preserved when repository availability or issued dates differ', async () => {
+  const result = await fromDOI('10.5281/zenodo.123456', async (input) => input.includes('crossref') ? new Response(null, { status: 404 }) : Response.json({ data: { attributes: {
+    doi: '10.5281/zenodo.123456', titles: [{ title: 'Dataset eDNA Indonesia' }], creators: [{ nameType: 'Personal', name: 'Dewi Lestari' }],
+    publicationYear: 2024, dates: [{ dateType: 'Available', date: '2026-10-21' }, { dateType: 'Issued', date: '2025-03-12' }], publisher: 'Zenodo',
+  } } }));
+  assert.equal(result.year, '2024'); assert.equal(result.month, ''); assert.equal(result.authors[0].family, 'Lestari');
+});

@@ -43,8 +43,9 @@ export async function fromDOI(input, fetcher = fetch, { deadline = Date.now() + 
       const { data } = await response.json(), item = data?.attributes;
       const title = item?.titles?.find((entry) => entry.title && entry.titleType !== 'Subtitle')?.title;
       if (!title || item.doi && item.doi.toLowerCase() !== doi.toLowerCase()) throw new Error('No matching DataCite record');
-      const issued = item.dates?.find((entry) => /^(?:issued|published|available)$/i.test(entry.dateType))?.date;
-      const date = publicationDate(issued || item.publicationYear);
+      const issued = item.dates?.find((entry) => /^(?:issued|published)$/i.test(entry.dateType))?.date;
+      const published = publicationDate(item.publicationYear), detail = publicationDate(issued);
+      const date = { year: published.year || detail.year, month: !published.year || published.year === detail.year ? detail.month : '' };
       const container = item.container || {};
       return completeMetadata({ title: text(title), authors: authorsOf(item.creators), ...date,
         journal: text(container.title), volume: text(container.volume), issue: text(container.issue),
