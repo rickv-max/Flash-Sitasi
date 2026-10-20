@@ -318,3 +318,11 @@ Pengaturan Sultan versi lama dibaca sebagai Rp500.000 / 999 kredit. Penyimpanan 
 Build Vercel menjalankan `npm run check` (lint → test → build) sebelum deployment dinyatakan berhasil. Pengujian tidak menghubungi database produksi atau membuat pembayaran riil.
 
 Halaman Sultan sebelum perubahan katalog harus dimuat ulang sebelum membuat invoice baru. Server memeriksa revisi katalog dan kuota yang dilihat pengguna; percobaan ulang invoice lama tetap memakai snapshot yang sudah tersimpan.
+
+### Dialog anggota, benefit paket, dan kredit admin
+
+Dialog bersama memakai portal ke `document.body` setelah hidrasi agar terlepas dari lapisan konten beranda. Token warna dan font ikut tersedia di backdrop; fokus keyboard, Escape, pengembalian fokus, dan penguncian scroll tetap aktif. Dialog anggota dibatasi lebar serta tinggi layar dan dapat digulir pada ponsel.
+
+Kartu harga dan checkout menampilkan benefit badge/bingkai/profil publik yang sudah tersedia. Profil publik tetap memerlukan persetujuan. Checkout menjelaskan bila badge sedang dikunci manual oleh admin.
+
+Admin aktif memiliki akses sitasi tanpa batas. Antarmuka menampilkan simbol ∞ bergradasi dengan animasi halus yang berhenti pada pengaturan pengurangan gerak. Server memeriksa role terbaru kembali dalam transaksi: sitasi admin mencatat `creditsSpent: 0` dan mutasi 0; saldo tersimpan tidak diubah. Role yang dicabut segera kembali memakai saldo biasa. Badge Sultan tidak memberi akses admin. Tidak ada nilai Infinity yang disimpan atau dikirim sebagai saldo.

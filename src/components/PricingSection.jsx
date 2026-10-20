@@ -1,6 +1,7 @@
 import { creditPackages, rupiah } from '../../shared/catalog';
 import { methodSupports } from '../../shared/payment-methods';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
+import PackageBenefits from './PackageBenefits';
 import './pricing.css';
 
 export default function PricingSection({ settings, ready, error, onRefresh, onChoose }) {
@@ -17,13 +18,14 @@ export default function PricingSection({ settings, ready, error, onRefresh, onCh
           return <article key={item.id} className={`credit-plan credit-plan-${item.id} pricing-card-anim`}>
             <span className="credit-plan-label">PAKET KREDIT</span><h3>{item.name}</h3><p className="credit-plan-description">{item.id === 'pro' ? 'Untuk referensi tugas dan tulisan Anda.' : item.id === 'plus' ? 'Lebih banyak ruang untuk riset Anda.' : 'Untuk kebutuhan referensi yang lebih besar.'}</p>
             <div className="credit-plan-price">{ready ? rupiah(item.price) : '—'}<span>/ paket</span></div><p className="credit-plan-quota">{item.credits.toLocaleString('id-ID')} kredit</p>
-            <ul><li>Sekali bayar untuk seluruh kredit</li><li>Harga paket terpisah dari tarif satuan</li><li>{ready && savings > 0 ? `Hemat ${rupiah(savings)} dari satuan` : 'Gunakan saldo sesuai kebutuhan'}</li></ul>
+            <PackageBenefits packageId={item.id}><li>{ready && savings > 0 ? `Hemat ${rupiah(savings)} dari satuan` : 'Gunakan saldo sesuai kebutuhan'}</li></PackageBenefits>
             <button type="button" className="btn-primary" disabled={!ready || unavailable} onClick={() => onChoose(item.id)}>{unavailable ? 'Metode Bayar Belum Tersedia' : `Pilih ${item.name}`}</button>
             {unavailable && <p className="credit-plan-unavailable">Pengelola perlu mengaktifkan metode bayar untuk nominal ini.</p>}
           </article>;
         })}
       </div>
-      <p className="credit-pricing-note">Biaya penyedia, jika ada, ditampilkan pada tagihan. Kredit ditambahkan setelah pembayaran terverifikasi.</p>
+      <p className="credit-pricing-note">Semua pilihan mendukung footnote, daftar pustaka, APA 7, pencarian kota terbit otomatis, input DOI/tautan/manual/batch, dan riwayat sitasi. Satu kredit dipakai untuk satu sitasi yang berhasil dibuat.</p>
+      <p className="credit-pricing-note">Profil publik perlu diaktifkan melalui Keanggotaan Saya. Badge otomatis mengikuti paket tertinggi yang sudah lunas, kecuali ditetapkan manual oleh admin. Biaya penyedia, jika ada, ditampilkan pada tagihan.</p>
     </div>
   </section>;
 }

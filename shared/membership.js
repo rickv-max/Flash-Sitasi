@@ -13,3 +13,9 @@ export function paidMembership(profile, packageId, now = Date.now()) {
   return { purchasedTier, membershipTier: membership, membershipManualOverride: !!profile.membershipManualOverride,
     membershipSource: profile.membershipManualOverride ? 'admin' : 'payment', membershipUpdatedAt: now, membershipVersion: (profile.membershipVersion || 0) + 1 };
 }
+
+export const PACKAGE_BENEFITS = Object.freeze({
+  pro: Object.freeze(['Badge Pro biru di akun dan profil publik', 'Bingkai profil biru', 'Nama tampilan dan bio di profil publik opsional', 'Foto akun Google opsional', 'Badge tetap melekat setelah kredit digunakan']),
+  plus: Object.freeze(['Badge Plus ungu di akun dan profil publik', 'Bingkai profil ungu', 'Nama tampilan dan bio di profil publik opsional', 'Foto akun Google opsional', 'Badge tetap melekat setelah kredit digunakan']),
+  sultan: Object.freeze(['Mahkota dan badge Sultan emas', 'Bingkai profil emas dengan animasi halus', 'Prioritas urutan di daftar anggota publik', 'Nama tampilan, bio, dan foto Google opsional', 'Badge tetap melekat setelah kredit digunakan']),
+});
