@@ -10,6 +10,7 @@ import { MemoryFirestore, call, env, user } from './helpers.js';
 const invoice = 'BAYAR-1234567890-ABC123';
 const providerData = { invoice_id: invoice, amount: 7500, final_amount: 7523, payment_url: `https://www.bayar.gg/pay?invoice=${invoice}`, status: 'pending' };
 const payment = { invoice, amount: 7500, finalAmount: 7523, paymentURL: providerData.payment_url, status: 'pending', expiresAt: null };
+const availableMethods = { success: true, data: { payment_methods: [{ id: 'qris', name: 'QRIS', enabled: true, available: true, min_amount: 5000, max_amount: 500000 }] } };
 function signedBody(overrides = {}, timestamp = String(Math.floor(Date.now() / 1000))) {
   const body = { event: 'payment.paid', invoice_id: invoice, status: 'paid', amount: 7500, final_amount: 7523, timestamp: Number(timestamp), ...overrides };
   const signature = createHmac('sha256', env.BAYAR_GG_WEBHOOK_SECRET).update(`${body.invoice_id}|${body.status}|${body.final_amount}|${timestamp}`).digest('hex');
@@ -40,6 +41,7 @@ test('rejects missing invoice, invalid amount and unsafe checkout URLs', () => {
 test('create request includes required checkout URL, server redirects and server price', async () => {
   let sent;
   const gateway = createGateway({ key: env.BAYAR_GG_API_KEY, origin: env.APP_URL, checkout: 'https://www.bayar.gg/pay', method: '' }, async (url, options) => {
+    if (url.endsWith('get-payment-methods.php')) return Response.json(availableMethods);
     sent = { url, options, body: JSON.parse(options.body) }; return Response.json({ success: true, data: providerData });
   });
   await gateway.create({ amount: 7500, credits: 10, user });
@@ -48,7 +50,7 @@ test('create request includes required checkout URL, server redirects and server
   assert.equal(sent.body.amount, 7500);
   assert.equal(sent.body.callback_url, `${env.APP_URL}/api/payment-webhook`);
   assert.equal(sent.body.redirect_url, `${env.APP_URL}/?payment=return`);
-  assert.equal(sent.body.payment_method, undefined);
+  assert.equal(sent.body.payment_method, 'qris');
 });
 test('handles provider HTTP errors without exposing provider bodies', async () => {
   for (const status of [400, 401, 429, 500]) {
@@ -58,7 +60,7 @@ test('handles provider HTTP errors without exposing provider bodies', async () =
 });
 test('handles HTML responses and timeouts, never retries create requests', async () => {
   let calls = 0;
-  const html = createGateway({}, async () => { calls++; return new Response('<html>cloudflare</html>'); });
+  const html = createGateway({}, async (url) => { if (url.endsWith('get-payment-methods.php')) return Response.json(availableMethods); calls++; return new Response('<html>cloudflare</html>'); });
   await assert.rejects(html.create({ amount: 7500, credits: 10, user }), { code: 'GATEWAY_FORMAT' });
   assert.equal(calls, 1);
   const timeout = createGateway({}, async () => { throw new DOMException('timed out', 'TimeoutError'); });

@@ -252,7 +252,7 @@ export function createAdminRepository(db, env = process.env) {
         if (Date.now() - data.createdAt < 120000) throw new AppError(409, 'REQUEST_BUSY', 'Tunggu minimal dua menit sejak request dibuat sebelum rekonsiliasi.');
         if (verified.invoice_id !== invoice || Number(verified.amount) !== data.amount || !Number.isSafeInteger(Number(verified.final_amount)) || Number(verified.final_amount) < data.amount) throw new AppError(409, 'AMOUNT_MISMATCH', 'Invoice penyedia tidak cocok dengan permintaan tersimpan.');
         const url = new URL(checkout); url.searchParams.set('invoice', invoice);
-        const recovered = { invoice, uid: data.uid, credits: data.credits, amount: data.amount, finalAmount: Number(verified.final_amount), paymentURL: url.href,
+        const recovered = { invoice, uid: data.uid, credits: data.credits, packageId: data.packageId || '', packageName: data.packageName || 'Satuan', amount: data.amount, finalAmount: Number(verified.final_amount), paymentURL: url.href,
           status: 'pending', credited: false, expiresAt: verified.expires_at || null, createdAt: data.createdAt, lastChecked: 0, recoveredAt: Date.now() };
         return { before: { state: data.state }, after: { invoice, uid: data.uid, state: 'ready' }, result: { invoice, uid: data.uid }, write() {
           tx.set(payRef, recovered); tx.update(requestRef, { state: 'ready', payment: recovered, updatedAt: Date.now() });

@@ -46,13 +46,13 @@ export function createRepository(db) {
       const snap = await db.doc(`paymentRequests/${hash(`${uid}:${key}`)}`).get();
       return snap.exists ? snap.data() : null;
     },
-    async reservePayment(uid, key, credits, amount) {
+    async reservePayment(uid, key, credits, amount, selection = {}) {
       const ref = db.doc(`paymentRequests/${hash(`${uid}:${key}`)}`);
       return db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         if (snap.exists) {
           const data = snap.data();
-          if (data.credits !== credits) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk jumlah kredit lain.');
+          if (data.credits !== credits || (data.packageId || '') !== (selection.packageId || '')) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk pilihan kredit lain.');
           if (data.state === 'ready') return { ref, existing: data.payment };
           const error = new AppError(409, 'PAYMENT_PROCESSING',
             data.state === 'unknown' ? 'Tagihan mungkin sudah dibuat. Periksa transaksi di bayar.gg atau hubungi pengelola sebelum membuat tagihan baru.' :
@@ -61,7 +61,7 @@ export function createRepository(db) {
           throw error;
         }
         // Persist before contacting the provider: never retry an ambiguous POST.
-        tx.set(ref, { uid, credits, amount, state: 'creating', createdAt: Date.now() });
+        tx.set(ref, { uid, credits, amount, packageId: selection.packageId || '', packageName: selection.packageName || 'Satuan', state: 'creating', createdAt: Date.now() });
         return { ref };
       });
     },

@@ -1,5 +1,11 @@
 import { AppError } from './errors.js';
 
+export function paymentMethodsConfig(env = process.env) {
+  const key = env.BAYAR_GG_API_KEY || env.VITE_BAYAR_GG_API_KEY;
+  if (!key) throw new AppError(503, 'PAYMENT_CONFIG', 'Pembayaran belum tersedia. Silakan coba kembali nanti.');
+  return { key, method: env.BAYAR_GG_PAYMENT_METHOD || '' };
+}
+
 export function appURL(env = process.env) {
   try {
     const url = new URL(env.APP_URL);

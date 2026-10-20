@@ -11,8 +11,8 @@ export function pageSEO(path = '/', { preview = false } = {}) {
   const canonical = `${SITE_URL}${normalized === '/' ? '/' : normalized}`;
   const creatorId = `${SITE_URL}/tentang#ricky-maulana`;
   const graph = [
-    { '@type': 'Person', '@id': creatorId, name: CREATOR.name, alternateName: CREATOR.alternateName,
-      url: `${SITE_URL}/tentang`, sameAs: [CREATOR.url] },
+    { '@type': 'Person', '@id': creatorId, name: CREATOR.name,
+      url: CREATOR.url },
     { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: 'Flash Sitasi', alternateName: 'FlashCite',
       url: `${SITE_URL}/`, inLanguage: 'id-ID', creator: { '@id': creatorId } },
     { '@type': normalized === '/tentang' ? 'AboutPage' : 'WebPage', '@id': `${canonical}#webpage`,

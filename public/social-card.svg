@@ -10,7 +10,7 @@
     <text x="90" y="375" font-size="24" fill="#64748b">DOI · Footnote · Daftar Pustaka · APA 7</text>
     <path d="M90 433h1020" stroke="#e2e8f0" stroke-width="2"/>
     <text x="90" y="490" font-size="21" font-weight="700">Dibuat oleh Ricky Maulana</text>
-    <text x="90" y="526" font-size="18" fill="#64748b">Lumajang, Indonesia</text>
+    <text x="90" y="526" font-size="18" fill="#64748b">Pembuat Sistem Flash Sitasi</text>
     <text x="1110" y="526" text-anchor="end" font-size="18" fill="#64748b">flash-sitasi.vercel.app</text>
   </g>
 </svg>

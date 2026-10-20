@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { topupPrice } from '../shared/catalog.js';
+import { purchaseQuote, samePurchase } from '../shared/catalog.js';
 import { buildCitations } from '../shared/citations.js';
 import { AppError, errorResponse } from './errors.js';
-import { appURL, paymentConfig } from './config.js';
+import { appURL, paymentConfig, paymentMethodsConfig } from './config.js';
 import { adminServices, authenticate } from './firebase.js';
 import { createGateway, verifyWebhook } from './gateway.js';
 import { createRepository } from './repository.js';
@@ -12,9 +12,9 @@ import { allowOperation, assertActive, assertSession, isOwner } from './access.j
 import { DEFAULT_SETTINGS } from '../shared/settings.js';
 import { enrichCity } from './city.js';
 
-const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', webhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
-const publicPayment = ({ invoice, amount, finalAmount, credits, paymentURL, status, expiresAt, credited }) =>
-  ({ invoice, amount, finalAmount, credits, paymentURL, status, expiresAt, credited: !!credited });
+const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', paymentOptions: 'GET', webhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
+const publicPayment = ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited }) =>
+  ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited: !!credited });
 
 export function makeHandler(action, overrides = {}) {
   return async function handler(req, res) {
@@ -28,6 +28,10 @@ export function makeHandler(action, overrides = {}) {
     try {
       if (action !== 'webhook' && req.headers.origin && env.APP_URL && req.headers.origin !== appURL(env)) {
         throw new AppError(403, 'ORIGIN_DENIED', 'Asal permintaan tidak diizinkan.');
+      }
+      if (action === 'paymentOptions') {
+        const gateway = overrides.gateway || createGateway(paymentMethodsConfig(env));
+        return res.status(200).json({ success: true, data: { methods: await gateway.methods() } });
       }
       if (!['webhook', 'config'].includes(action) && !req.headers.authorization) throw new AppError(401, 'UNAUTHENTICATED', 'Masuk ke akun untuk melanjutkan.');
       const services = overrides.repo ? null : adminServices(env);
@@ -45,23 +49,26 @@ export function makeHandler(action, overrides = {}) {
         const config = paymentConfig(env);
         const previous = await repo.getPaymentRequest?.(user.uid, key);
         if (previous) {
-          if (previous.credits !== body.credits) {
-            try { topupPrice(body.credits, settings); } catch (error) { throw new AppError(400, 'INVALID_CREDITS', error.message); }
-            throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk jumlah kredit lain.');
+          if (!samePurchase(previous, body)) {
+            try { purchaseQuote(body, settings); } catch (error) { throw new AppError(400, 'INVALID_CREDITS', error.message); }
+            throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk pilihan kredit lain.');
           }
-          const reservation = await repo.reservePayment(user.uid, key, previous.credits, previous.amount);
+          const reservation = await repo.reservePayment(user.uid, key, previous.credits, previous.amount, previous);
           return res.status(200).json({ success: true, data: publicPayment({ ...reservation.existing, credits: previous.credits }) });
         }
-        let amount;
+        let selection;
         allowOperation(settings, profile, 'payment');
-        try { amount = topupPrice(body.credits, settings); } catch (error) { throw new AppError(400, 'INVALID_CREDITS', error.message); }
-        const reservation = await repo.reservePayment(user.uid, key, body.credits, amount);
-        if (reservation.existing) return res.status(200).json({ success: true, data: publicPayment({ ...reservation.existing, credits: body.credits }) });
+        try { selection = purchaseQuote(body, settings); } catch (error) { throw new AppError(400, 'INVALID_CREDITS', error.message); }
+        if (body.expectedAmount !== undefined && body.expectedAmount !== selection.amount) throw new AppError(409, 'PRICE_CHANGED', 'Harga telah diperbarui admin. Periksa harga terbaru sebelum melanjutkan pembayaran.');
+        const { credits, amount } = selection;
+        const reservation = await repo.reservePayment(user.uid, key, credits, amount, selection);
+        if (reservation.existing) return res.status(200).json({ success: true, data: publicPayment({ ...reservation.existing, credits }) });
         try {
           const gateway = overrides.gateway || createGateway(config);
-          const payment = await gateway.create({ amount, credits: body.credits, user });
-          await repo.finishPayment(reservation.ref, user.uid, body.credits, payment);
-          return res.status(201).json({ success: true, data: publicPayment({ ...payment, credits: body.credits }) });
+          const created = await gateway.create({ amount, credits, user, packageName: selection.packageName });
+          const payment = { ...created, packageId: selection.packageId, packageName: selection.packageName };
+          await repo.finishPayment(reservation.ref, user.uid, credits, payment);
+          return res.status(201).json({ success: true, data: publicPayment({ ...payment, credits }) });
         } catch (error) {
           try { await repo.failPayment(reservation.ref, !!error.definitive); } catch { /* Keep reservation: fail closed. */ }
           error.paymentPending = !error.definitive;

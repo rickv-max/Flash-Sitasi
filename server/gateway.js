@@ -1,5 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AppError } from './errors.js';
+import { methodSupports, publicPaymentMethods } from '../shared/payment-methods.js';
+
+let methodsCache;
 
 export function normalizePayment(body, checkout) {
   if (!body || body.success !== true) throw new AppError(502, 'GATEWAY_REJECTED', 'Tagihan belum dapat dibuat. Periksa kembali ketersediaan metode pembayaran.');
@@ -50,13 +53,32 @@ export function createGateway(config, fetcher = fetch) {
     }
     return body;
   };
+  async function methods() {
+    if (fetcher === fetch && methodsCache?.key === config.key && methodsCache.method === config.method && methodsCache.expires > Date.now()) return methodsCache.promise;
+    const promise = request('get-payment-methods.php').then((body) => {
+      try { return publicPaymentMethods(body, config.method); }
+      catch { throw new AppError(502, 'GATEWAY_FORMAT', 'Informasi metode pembayaran belum dapat dibaca.'); }
+    });
+    if (fetcher === fetch) methodsCache = { key: config.key, method: config.method, expires: Date.now() + 60000, promise };
+    try { return await promise; } catch (error) { if (fetcher === fetch) methodsCache = null; throw error; }
+  }
   return {
-    async create({ amount, credits, user }) {
+    methods,
+    async create({ amount, credits, user, packageName }) {
+      let selected;
+      try {
+        selected = (await methods()).find((method) => methodSupports(method, amount));
+        if (!selected) throw new AppError(503, 'PAYMENT_METHOD_UNAVAILABLE', 'Belum ada metode pembayaran aktif untuk nominal ini. Hubungi pengelola agar mengaktifkan metode yang mendukung nominal paket.');
+      } catch (error) {
+        // No create-payment POST has been sent, so clearing its reservation is safe.
+        error.definitive = true;
+        throw error;
+      }
       const body = await request('create-payment.php', { method: 'POST', body: JSON.stringify({
-        amount, description: `Top Up ${credits} Kredit FlashCite`,
+        amount, description: `Top Up ${packageName && packageName !== 'Satuan' ? `Paket ${packageName} · ` : ''}${credits} Kredit FlashCite`,
         customer_name: user.name || 'Pengguna FlashCite', customer_email: user.email || '',
         payment_url: config.checkout,
-        ...(config.method ? { payment_method: config.method } : {}),
+        payment_method: selected.id,
         callback_url: `${config.origin}/api/payment-webhook`,
         redirect_url: `${config.origin}/?payment=return`,
       }) });
