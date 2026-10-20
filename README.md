@@ -326,3 +326,18 @@ Dialog bersama memakai portal ke `document.body` setelah hidrasi agar terlepas d
 Kartu harga dan checkout menampilkan benefit badge/bingkai/profil publik yang sudah tersedia. Profil publik tetap memerlukan persetujuan. Checkout menjelaskan bila badge sedang dikunci manual oleh admin.
 
 Admin aktif memiliki akses sitasi tanpa batas. Antarmuka menampilkan simbol ∞ bergradasi dengan animasi halus yang berhenti pada pengaturan pengurangan gerak. Server memeriksa role terbaru kembali dalam transaksi: sitasi admin mencatat `creditsSpent: 0` dan mutasi 0; saldo tersimpan tidak diubah. Role yang dicabut segera kembali memakai saldo biasa. Badge Sultan tidak memberi akses admin. Tidak ada nilai Infinity yang disimpan atau dikirim sebagai saldo.
+
+
+### Pengambilan metadata Web/PDF
+
+Mode Link Web/PDF mendukung tag sitasi jurnal (Highwire/Dublin Core/PRISM), JSON-LD Article/ScholarlyArticle beserta graph penulis/penerbit/jurnal, dan byline/heading semantik. Tautan OJS download/viewFile/galley dicoba melalui halaman artikel; viewer dapat meneruskan ke PDF publik terkait. Bila DOI di path gagal, metadata halaman tetap dicoba. Crossref dilengkapi fallback DataCite untuk DOI repositori; metadata dengan judul berbeda tidak menggantikan artikel yang diminta.
+
+PDF langsung dibaca memakai serverless PDF.js melalui unpdf. Pembacaan mengambil metadata file, teks berposisi pada maksimal tiga halaman awal, dan DOI sebelum daftar referensi; hasil dicocokkan dengan judul sumber. Tanggal pembuatan/modifikasi file dan jumlah halaman PDF tidak dianggap sebagai tanggal publikasi atau rentang halaman artikel. Kapitalisasi judul/nama dipertahankan.
+
+Batas sumber: HTML 2 MB, PDF 10 MB, maksimal tiga sumber per resolusi, empat redirect per sumber, dan batas waktu gabungan. Gzip/Brotli/deflate serta charset HTML lama didukung. HTTP yang ditempel dicoba sebagai HTTPS; sumber yang hanya menyediakan HTTP belum didukung. PDF pindai tanpa teks/metadata cukup, PDF bersandi/rusak, login, paywall dan CAPTCHA tetap dapat memerlukan DOI atau input manual. Situs tidak menjalankan OCR dan tidak melewati kontrol akses penerbit.
+
+Seluruh koneksi sumber dan redirect memakai validasi IP publik serta DNS pinning ke soket. Tautan PDF/iframe tidak memberi akses ke jaringan privat. Buffer terkompresi maupun hasil dekompresi dibatasi. Parser hanya menerima byte yang sudah diunduh lewat jalur aman, tanpa mengambil URL atau mengeksekusi JavaScript di PDF.
+
+Hanya metadata publik yang disimpan sementara dalam memori selama maksimal 60 detik (64 URL) untuk mengurangi pembacaan ulang pada pratinjau kota dan generate; byte PDF tidak disimpan. Hasil yang belum lengkap diberi catatan. Sumber yang tidak memiliki metadata layak gagal sebelum transaksi kredit, sehingga tidak membuat riwayat/mutasi atau memotong saldo. Permintaan ulang yang sama tetap idempoten.
+
+Deployment memasang dependensi dari lockfile dengan npm ci, lalu menjalankan npm run check. Uji meliputi PDF riil yang dibuat dari fixture kecil, metadata JSON-LD/OJS/DataCite, sumber rusak/pindai, pencocokan DOI, DNS/redirect privat, dekompresi berbatas, dan transaksi kredit. Pengujian tidak menulis database produksi atau membuat pembayaran.

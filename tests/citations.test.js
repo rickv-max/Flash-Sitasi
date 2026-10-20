@@ -118,7 +118,7 @@ test('Crossref uses encoded DOI and stops safely on lookup failures', async () =
   assert.ok(url.includes('10.1038%2Fnature14539')); assert.equal(metadata.year, '2015'); assert.equal(metadata.authors.length, 3);
   let calls = 0;
   await assert.rejects(fromDOI('10.1038/notfound', async () => { calls++; return new Response(null, { status: 404 }); }), { code: 'DOI_NOT_FOUND' });
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
 });
 async function setup(balance = 5) {
   const db = new MemoryFirestore(); const repo = createRepository(db); await repo.ensureProfile(user);
