@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { purchaseQuote, samePurchase, CREDIT_CATALOG_REVISION } from '../shared/catalog.js';
 import { buildCitations } from '../shared/citations.js';
+import { canGenerateWithCredits } from '../shared/credits.js';
 import { AppError, errorResponse } from './errors.js';
 import { appURL, paymentConfig, paymentMethodsConfig } from './config.js';
 import { adminServices, authenticate } from './firebase.js';
@@ -152,7 +153,7 @@ export function makeHandler(action, overrides = {}) {
           if (existing.requestHash !== fingerprint) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk referensi lain.');
           return res.status(200).json({ success: true, data: existing });
         }
-        if (profile.credits < 1) throw new AppError(402, 'INSUFFICIENT_CREDITS', 'Kredit habis. Isi ulang untuk melanjutkan.');
+        if (!canGenerateWithCredits(profile)) throw new AppError(402, 'INSUFFICIENT_CREDITS', 'Kredit habis. Isi ulang untuk melanjutkan.');
         const metadata = await (overrides.resolveMetadata || resolveMetadata)(mode, input, { repo, enabled: settings.autoCityEnabled });
         const citation = await repo.saveCitation(user.uid, key, { metadata, title: metadata.title,
           results: buildCitations(metadata, city), cityUsed: city.trim() || metadata.city || '', cityManual: !!city.trim(), type: mode.toUpperCase(),

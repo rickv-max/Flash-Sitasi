@@ -2,3 +2,5 @@
 @media(max-width:1100px){.credit-pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.credit-plan-price{font-size:30px}}
 @media(max-width:600px){.credit-pricing-section{padding:44px 0 56px}.credit-pricing-grid{grid-template-columns:minmax(0,1fr);gap:14px}.credit-pricing-heading{margin-bottom:26px}.credit-plan{padding:24px}.credit-plan-description{min-height:0;margin-bottom:18px}.credit-plan ul{padding-top:16px}.credit-bundle-option{padding:12px}.credit-bundle-option b{font-size:12px}.admin-package-prices{padding:16px}}
 @media(prefers-reduced-motion:reduce){.credit-bundle-option{transition:none}}
+
+.checkout-benefits{min-width:0;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.checkout-benefits h3{font-size:13px;line-height:1.5;margin:0 0 10px;color:#0f172a}.checkout-benefits .package-benefits{margin:0;padding-left:18px;font-size:12px;line-height:1.8;color:#475569;overflow-wrap:anywhere}.checkout-benefits .package-benefits li{margin-bottom:5px}.checkout-benefits .classic-payment-note{margin-bottom:0}.credit-plan-sultan{border-color:#e9d798;background:linear-gradient(155deg,#fff,#fffbeb)}

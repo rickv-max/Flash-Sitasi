@@ -15,13 +15,14 @@ const { default: PaymentModal } = await compiler.ssrLoadModule('/src/components/
 const { default: AdminPanel, AdminOverview, AdminActionDialog, Settings } = await compiler.ssrLoadModule('/src/components/AdminPanel.jsx');
 const { default: PricingSection } = await compiler.ssrLoadModule('/src/components/PricingSection.jsx');
 const { default: MembershipProfile } = await compiler.ssrLoadModule('/src/components/MembershipProfile.jsx');
-const { MemberCard } = await compiler.ssrLoadModule('/src/components/PublicMembers.jsx');
+const { MemberCard, MemberProfileDialog } = await compiler.ssrLoadModule('/src/components/PublicMembers.jsx');
+const { default: CreditBalance } = await compiler.ssrLoadModule('/src/components/CreditBalance.jsx');
 const { DEFAULT_SETTINGS } = await import('../shared/settings.js');
 const { default: CityField, CitySource } = await compiler.ssrLoadModule('/src/components/CityField.jsx');
 const { default: GenerationError } = await compiler.ssrLoadModule('/src/components/GenerationError.jsx');
 const { default: InfoPage } = await compiler.ssrLoadModule('/src/pages/InfoPage.jsx');
 const { PUBLIC_PAGES } = await import('../shared/site-content.js');
-const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css', 'src/components/pricing.css', 'src/components/membership.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
+const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css', 'src/components/pricing.css', 'src/components/membership.css', 'src/components/credit-balance.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
 const $workspace = load(renderToStaticMarkup(React.createElement(App, { initialView: 'tool', initialDemo: true })));
 
 function mediaApplies(query, width, height = 900) {
@@ -239,4 +240,80 @@ test('admin membership confirmation has all four badges, an automatic mode and a
   assert.deepEqual($('select').last().find('option').map((_, el) => $(el).attr('value')).get(), ['regular', 'pro', 'plus', 'sultan']);
   assert.equal($('option[value="automatic"]').length, 1); assert.equal($('textarea[required]').length, 1);
   assert.equal($('button[type="submit"]').is('[disabled]'), true);
+});
+
+test('member dialog retains its own theme, title and scroll bounds outside the app wrapper', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(MemberProfileDialog, { member: { name: 'Nama anggota yang panjang', bio: 'Penelitian dan penulisan.', tier: 'sultan' }, onClose() {} })));
+  assert.equal($('.app-wrapper').length, 0);
+  assert.equal($('[role="dialog"][aria-modal="true"]').length, 1);
+  assert.equal($('h2').attr('id'), $('[role="dialog"]').attr('aria-labelledby'));
+  assert.equal($('h2').text(), 'Profil Anggota');
+  assert.equal($('button[type="button"][aria-label="Tutup dialog"]').length, 1);
+  assert.equal($('.membership-public-detail h3').text(), 'Nama anggota yang panjang');
+  assert.equal($('[aria-label="Keanggotaan Sultan"]').length, 1);
+  for (const width of [320, 390, 768, 1440]) {
+    const backdrop = styleOf($, '.modal-backdrop', width, 390);
+    assert.equal(backdrop.position, 'fixed');
+    assert.equal(backdrop.inset, '0');
+    assert.equal(backdrop['z-index'], '1100');
+    assert.equal(backdrop['--text-main'], '#0f172a');
+    assert.match(backdrop['font-family'], /Plus Jakarta Sans/);
+    const dialog = styleOf($, '.membership-profile-modal', width, 390);
+    assert.equal(dialog['max-width'], '520px');
+    assert.equal(dialog['max-height'], 'calc(100dvh - 32px)');
+    assert.equal(dialog['overflow-y'], 'auto');
+  }
+});
+
+test('credit balance renders an accessible animated infinity only for active admins', () => {
+  const render = (profile, compact = false) => load(renderToStaticMarkup(React.createElement(CreditBalance, { profile, compact })));
+  const $ = render({ role: 'admin', credits: 0 });
+  assert.equal($('[role="img"][aria-label="Kredit admin tanpa batas"]').length, 1);
+  assert.equal($('.credit-infinity[aria-hidden="true"]').text(), '∞');
+  assert.equal($('.credit-unlimited-label').text(), 'Tanpa batas');
+  assert.match(styleOf($, '.credit-infinity', 320).animation, /creditInfinityDrift/);
+  assert.match(styleOf($, '.credit-infinity', 320)['background-image'], /linear-gradient/);
+  assert.equal(render({ role: 'admin', credits: 4 }, true)('.credit-unlimited-label').length, 0);
+  for (const profile of [{ role: 'user', membershipTier: 'sultan', credits: 999 }, { role: 'admin', status: 'blocked', credits: 4 }, { role: 'admin', archived: true, credits: 3 }, { credits: 5 }, undefined]) {
+    const regular = render(profile);
+    assert.equal(regular('.credit-infinity').length, 0);
+    assert.equal(regular('.credit-balance').text(), String(profile?.credits || 0));
+  }
+  let respectsReducedMotion = false;
+  css.walkAtRules('media', (rule) => {
+    if (!rule.params.includes('prefers-reduced-motion:reduce')) return;
+    rule.walkRules('.credit-infinity', (entry) => entry.walkDecls('animation', (declaration) => { if (declaration.value === 'none') respectsReducedMotion = true; }));
+  });
+  assert.equal(respectsReducedMotion, true);
+});
+
+test('each package lists its active profile benefits on pricing and checkout', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PricingSection, { settings: DEFAULT_SETTINGS, ready: true, onChoose() {} })));
+  for (const [id, name, color] of [['pro', 'Pro', 'biru'], ['plus', 'Plus', 'ungu'], ['sultan', 'Sultan', 'emas']]) {
+    const benefits = $('.credit-plan-' + id + ' .package-benefits');
+    assert.equal(benefits.attr('aria-label'), 'Benefit paket ' + name);
+    assert.ok(benefits.text().includes(color));
+    assert.ok(benefits.text().includes('bio'));
+    assert.ok(benefits.text().includes('opsional'));
+    assert.ok(benefits.text().includes('tetap melekat'));
+    const checkout = load(renderToStaticMarkup(React.createElement(PaymentModal, { user: { uid: 'benefit-test' }, initialPackageId: id, settings: DEFAULT_SETTINGS, onClose() {}, notify() {} })));
+    assert.equal(checkout('.checkout-benefits .package-benefits').text(), benefits.find('li').slice(0, -1).text());
+    assert.ok(checkout('.checkout-benefits').text().includes('perlu diaktifkan'));
+    assert.equal(styleOf(checkout, '.checkout-benefits', 320)['min-width'], '0');
+  }
+  assert.ok($('.credit-plan-sultan .package-benefits').text().includes('Prioritas urutan'));
+  assert.ok(!$('.package-benefits').text().includes('Word'));
+  assert.ok(!$('.package-benefits').text().includes('PDF'));
+});
+
+test('checkout explains manually assigned badges without promising an automatic badge change', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PaymentModal, { user: { uid: 'manual-badge-test' }, membershipProfile: { membershipManualOverride: true, membershipTier: 'pro' }, initialPackageId: 'sultan', settings: DEFAULT_SETTINGS, onClose() {}, notify() {} })));
+  assert.ok($('.checkout-benefits').text().includes('Badge Anda ditetapkan manual oleh admin'));
+  assert.ok($('.checkout-benefits').text().includes('hubungi admin'));
+});
+
+test('admin credit adjustment keeps the stored finite balance explicit', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(AdminActionDialog, { user: { uid: 'operator' }, task: { action: 'adjustCredits', uid: 'another-admin', profile: { role: 'admin', name: 'Admin lain', credits: 7 } }, onClose() {}, onSuccess() {} })));
+  assert.ok($.text().includes('Saldo tersimpan: 7 kredit'));
+  assert.ok($.text().includes('Admin dapat generate tanpa batas'));
 });

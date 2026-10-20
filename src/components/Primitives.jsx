@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { citationParts, plainCitation, safeCitationHTML } from '../../shared/citations';
 import Icon from './Icon';
 
@@ -38,16 +39,23 @@ export function CopyButton({ value, label = 'Salin', notify, compact = false }) 
   </button>;
 }
 
+// Hydration starts with the server markup, then moves dialogs outside page stacking contexts.
+const subscribeToDOM = () => () => {};
+const clientDOMReady = () => true;
+const serverDOMReady = () => false;
+
 export function Modal({ title, children, onClose, className = '' }) {
+  const portalReady = useSyncExternalStore(subscribeToDOM, clientDOMReady, serverDOMReady);
   const id = useId();
   const ref = useRef();
   const closeRef = useRef(onClose);
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
   useEffect(() => {
+    if (!portalReady) return;
     const previous = document.activeElement;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const selector = 'button:not([disabled]), a[href], input:not([disabled]), select, textarea, [tabindex="0"]';
+    const selector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
     ref.current.querySelector(selector)?.focus();
     function keydown(event) {
       if (event.key === 'Escape') closeRef.current();
@@ -59,13 +67,14 @@ export function Modal({ title, children, onClose, className = '' }) {
     }
     document.addEventListener('keydown', keydown);
     return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); previous?.focus(); };
-  }, []);
-  return <div className="modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  }, [portalReady]);
+  const dialog = <div className="modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section ref={ref} className={`modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={id}>
-      <button className="icon-button modal-close" onClick={onClose} aria-label="Tutup dialog"><Icon name="close" /></button>
+      <button type="button" className="icon-button modal-close" onClick={onClose} aria-label="Tutup dialog"><Icon name="close" /></button>
       <h2 id={id}>{title}</h2>{children}
     </section>
   </div>;
+  return portalReady ? createPortal(dialog, document.body) : dialog;
 }
 
 export function Segmented({ options, value, onChange, label, disabled = false, className = '' }) {

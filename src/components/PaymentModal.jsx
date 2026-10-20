@@ -5,9 +5,11 @@ import Icon from './Icon';
 import { Modal, Spinner } from './Primitives';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { methodSupports } from '../../shared/payment-methods';
+import PackageBenefits from './PackageBenefits';
+import { membershipTier } from '../../shared/membership';
 import './pricing.css';
 
-export default function PaymentModal({ user, demo, onLogin, onClose, notify, settings = DEFAULT_SETTINGS, initialPackageId = '', pricingReady = true, onPricingChange }) {
+export default function PaymentModal({ user, membershipProfile, demo, onLogin, onClose, notify, settings = DEFAULT_SETTINGS, initialPackageId = '', pricingReady = true, onPricingChange }) {
   const payment = usePayment({ user, notify, settings, initialPackageId, onPricingChange });
   const { minTopup: MIN_TOPUP, maxTopup: MAX_TOPUP } = settings;
   const packages = [50, 75, 100, 125].filter((value) => value >= MIN_TOPUP && value <= MAX_TOPUP);
@@ -48,7 +50,12 @@ export default function PaymentModal({ user, demo, onLogin, onClose, notify, set
           {!!packages.length && <div className="grid-packages mb-5">{packages.map((number) => <button className={`btn-package ${count === number ? 'active' : ''}`} key={number} onClick={() => { setCredits(String(number)); setError(''); }} disabled={paying || uncertain}>{number} Kredit</button>)}</div>}
           <div className="form-group"><label className="input-label" htmlFor="topup-credit-count">Jumlah Kredit Satuan <span className="text-muted font-normal">({MIN_TOPUP}–{MAX_TOPUP} kredit)</span></label><input id="topup-credit-count" className="input-field-modern" type="number" min={MIN_TOPUP} max={MAX_TOPUP} step="1" inputMode="numeric" value={credits} onChange={(event) => { setCredits(event.target.value); setError(''); }} disabled={paying || uncertain} /></div>
         </>}
-        {packageId && <p className="classic-payment-note">Paket sekali beli: {count.toLocaleString('id-ID')} kredit. Harga paket tidak mengikuti perkalian harga satuan.</p>}
+        {packageId && <section className="checkout-benefits" aria-label="Benefit paket yang dipilih">
+          <h3>Benefit Paket {membershipTier(packageId).name}</h3>
+          <PackageBenefits packageId={packageId} />
+          <p className="classic-payment-note">Sekali beli: {count.toLocaleString('id-ID')} kredit. Aktif setelah pembayaran terverifikasi. Profil publik perlu diaktifkan melalui Keanggotaan Saya.</p>
+          <p className="classic-payment-note">{membershipProfile?.membershipManualOverride ? 'Badge Anda ditetapkan manual oleh admin. Pembelian ini menambah kredit; hubungi admin untuk mengubah badge.' : 'Badge mengikuti paket tertinggi yang sudah lunas dan tetap melekat setelah kredit digunakan.'}</p>
+        </section>}
         <div className="price-tag mt-6"><span className="text-muted font-medium text-sm">Total Pembayaran</span><strong className="text-xl text-main">{valid && (pricingReady || uncertain) ? rupiah(amount) : '—'}</strong></div>
         {!valid && <p className="classic-payment-error" role="alert">Masukkan {MIN_TOPUP}–{MAX_TOPUP} kredit dalam bilangan bulat.</p>}
         {error && <p className="classic-payment-error" role="alert">{error}</p>}

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { WELCOME_CREDITS } from '../shared/catalog.js';
+import { canGenerateWithCredits, hasUnlimitedCredits } from '../shared/credits.js';
 import { AppError } from './errors.js';
 import { DEFAULT_SETTINGS, readStoredSettings } from '../shared/settings.js';
 import { paidMembership, higherMembership, membershipTier } from '../shared/membership.js';
@@ -161,18 +162,23 @@ export function createRepository(db) {
       return db.runTransaction(async (tx) => {
         const ref = db.doc(`users/${uid}/history/${key}`);
         const [existing, profile] = await Promise.all([tx.get(ref), tx.get(profileRef(uid))]);
+        const currentProfile = profile.data();
+        assertActive(currentProfile);
         if (existing.exists) {
           if (existing.data().requestHash !== citation.requestHash) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk referensi lain.');
           return { id: existing.id, ...existing.data() };
         }
-        const balance = profile.data()?.credits;
-        assertActive(profile.data());
-        if (!Number.isSafeInteger(balance) || balance < 1) throw new AppError(402, 'INSUFFICIENT_CREDITS', 'Kredit habis. Isi ulang untuk melanjutkan.');
-        const saved = { ...citation, timestamp: Date.now() };
+        // Recheck the role in the same transaction as history and ledger writes.
+        const balance = currentProfile?.credits;
+        if (!canGenerateWithCredits(currentProfile)) throw new AppError(402, 'INSUFFICIENT_CREDITS', 'Kredit habis. Isi ulang untuk melanjutkan.');
+        const unlimitedCredits = hasUnlimitedCredits(currentProfile);
+        const creditsSpent = unlimitedCredits ? 0 : 1;
+        const saved = { ...citation, creditsSpent, unlimitedCredits, timestamp: Date.now() };
         tx.set(ref, saved);
-        tx.update(profileRef(uid), { credits: balance - 1 });
-        tx.set(db.doc(`users/${uid}/creditLedger/citation_${key}`), { type: 'citation', credits: -1, balanceAfter: balance - 1,
-          citationID: key, description: 'Pembuatan sitasi', timestamp: saved.timestamp });
+        if (!unlimitedCredits) tx.update(profileRef(uid), { credits: balance - creditsSpent });
+        tx.set(db.doc(`users/${uid}/creditLedger/citation_${key}`), { type: 'citation', credits: creditsSpent ? -creditsSpent : 0,
+          ...(Number.isSafeInteger(balance) ? { balanceAfter: balance - creditsSpent } : {}), unlimitedCredits,
+          citationID: key, description: unlimitedCredits ? 'Sitasi admin tanpa batas' : 'Pembuatan sitasi', timestamp: saved.timestamp });
         return { id: key, ...saved };
       });
     },

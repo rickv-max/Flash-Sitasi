@@ -5,7 +5,7 @@
         /* Document scrolling is handled in index.css; original visual tokens follow. */
 
 
-        .app-wrapper {
+        .app-wrapper, .modal-backdrop {
           --bg-body: #f8fafc;
           --bg-surface: rgba(255, 255, 255, 1);
           --bg-surface-hover: #f1f5f9;
@@ -36,7 +36,14 @@
           --radius-sm: 8px;
           --radius-md: 16px;
           --radius-lg: 24px;
-          
+        }
+
+        .modal-backdrop {
+          color: var(--text-main);
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+
+        .app-wrapper {
           min-height: 100vh;
           background-color: var(--bg-body);
           color: var(--text-main);

@@ -9,6 +9,11 @@ export function MemberCard({ member, onOpen }) {
     <MembershipAvatar name={member.name} photoURL={member.photoURL} tier={member.tier} /><span className="public-member-info"><strong>{member.name}</strong><MembershipBadge tier={member.tier} /><span>{member.bio || 'Anggota Flash Sitasi'}</span></span>
   </button>;
 }
+export function MemberProfileDialog({ member, onClose }) {
+  return <Modal title="Profil Anggota" className="membership-profile-modal" onClose={onClose}>
+    <div className="membership-public-detail"><MembershipAvatar name={member.name} photoURL={member.photoURL} tier={member.tier} /><h3>{member.name}</h3><MembershipBadge tier={member.tier} /><p>{member.bio || 'Anggota Flash Sitasi'}</p></div>
+  </Modal>;
+}
 export default function PublicMembers() {
   const [state, setState] = useState({ items: [], ready: false, error: '' });
   const [expanded, setExpanded] = useState(false), [selected, setSelected] = useState(null);
@@ -28,6 +33,6 @@ export default function PublicMembers() {
       <div className="public-members-grid">{(expanded ? state.items : state.items.slice(0, 6)).map((member) => <MemberCard key={member.publicId} member={member} onOpen={setSelected} />)}</div>
       {state.items.length > 6 && <button className="btn-secondary members-expand" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>{expanded ? 'Tampilkan lebih sedikit' : 'Lihat lebih banyak anggota'}</button>}
     </> : <p className="public-members-empty">Belum ada profil yang dibagikan. Pemilik paket dapat mengaktifkan profil publik melalui Keanggotaan Saya.</p>}
-    {selected && <Modal title="Profil Anggota" className="membership-profile-modal" onClose={() => setSelected(null)}><div className="membership-public-detail"><MembershipAvatar name={selected.name} photoURL={selected.photoURL} tier={selected.tier} /><h3>{selected.name}</h3><MembershipBadge tier={selected.tier} /><p>{selected.bio || 'Anggota Flash Sitasi'}</p></div></Modal>}
+    {selected && <MemberProfileDialog member={selected} onClose={() => setSelected(null)} />}
   </div></section>;
 }

@@ -16,6 +16,8 @@ import { FAQS, CREATOR } from '../shared/site-content';
 import PricingSection from './components/PricingSection';
 import SiteFooter from './components/SiteFooter';
 import MembershipBadge from './components/MembershipBadge';
+import CreditBalance from './components/CreditBalance';
+import { canGenerateWithCredits, hasUnlimitedCredits } from '../shared/credits';
 import MembershipProfile from './components/MembershipProfile';
 import PublicMembers from './components/PublicMembers';
 import './pages/public-pages.css';
@@ -93,7 +95,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   }, []);
   const account = useAccount(showNotificationMsg);
   const { settings, ready: pricingReady, error: pricingError, refresh: refreshSettings } = useSettings();
-  const isAdmin = !demo && account.profile?.role === 'admin' && account.profile?.status !== 'blocked';
+  const isAdmin = !demo && hasUnlimitedCredits(account.profile);
   const user = demo ? { uid: 'demo', displayName: 'Demo', email: '' } : account.user;
   const userData = demo ? { credits: 5 } : account.profile || { credits: 0 };
   const history = (demo ? demoHistory : account.history).map((item) => {
@@ -232,7 +234,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   }
   function checkReady() {
     if (!canGenerate) { showNotificationMsg('Tunggu sampai akun dan kredit selesai tersambung.', 'error'); return false; }
-    if (!demo && userData.credits < 1) { setShowTopupModal(true); return false; }
+    if (!demo && !canGenerateWithCredits(userData)) { setShowTopupModal(true); return false; }
     return true;
   }
   async function generateSingle(mode, input) {
@@ -303,7 +305,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
         </div>
       )}
 
-      {showTopupModal && user && <PaymentModal key={demo ? 'demo' : user.uid} user={demo ? null : user} demo={demo} settings={settings}
+      {showTopupModal && user && <PaymentModal key={demo ? 'demo' : user.uid} user={demo ? null : user} demo={demo} settings={settings} membershipProfile={account.profile}
         notify={showNotificationMsg} initialPackageId={preferredPackageId} pricingReady={pricingReady} onPricingChange={refreshSettings} onClose={() => setShowTopupModal(false)}
         onLogin={() => { setShowTopupModal(false); handleLoginAndEnter(); }} />}
 
@@ -474,8 +476,8 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                  {!demo && <div className="sidebar-account"><strong>{user?.displayName || userData.name || 'Pengguna'}</strong><span>{user?.email}</span><MembershipBadge tier={userData.membershipTier} />{isAdmin && <small>ADMIN</small>}</div>}
                  {!demo && <button type="button" className="sidebar-membership-button" onClick={() => { setIsSidebarOpen(false); setShowMembership(true); }}>Keanggotaan Saya</button>}
                  <div className="credit-box">
-                    <p className="credit-label">{demo ? "Kredit Contoh (Demo)" : "Sisa Kredit"}</p>
-                    <div className="credit-amount"><CoinIcon /> <span>{userData.credits || 0}</span></div>
+                    <p className="credit-label">{demo ? "Kredit Contoh (Demo)" : isAdmin ? "Kredit Admin" : "Sisa Kredit"}</p>
+                    <div className="credit-amount">{!isAdmin && <CoinIcon />}<CreditBalance profile={userData} /></div>
                     <button onClick={() => { setIsSidebarOpen(false); setPreferredPackageId(''); setShowTopupModal(true); }} className="btn-topup">Top Up Token</button>
                  </div>
                  <button onClick={handleLogout} className="btn-logout">
@@ -519,7 +521,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                           <CityField state={city} />
                         )}
                         <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchDOI} disabled={loading || !doiInput.trim() || !canGenerate}>
-                          {loading ? "Mengeksekusi Proses..." : "Generate Sitasi (1 Kredit)"}
+                          {loading ? "Mengeksekusi Proses..." : isAdmin ? "Generate Sitasi (Tanpa Batas)" : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
@@ -534,7 +536,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                           <CityField state={city} />
                         )}
                         <button className="btn-primary w-full py-3.5 shadow-glow" onClick={fetchURL} disabled={loading || !urlInput.trim() || !canGenerate}>
-                          {loading ? "Menganalisis Tautan..." : "Generate Sitasi (1 Kredit)"}
+                          {loading ? "Menganalisis Tautan..." : isAdmin ? "Generate Sitasi (Tanpa Batas)" : "Generate Sitasi (1 Kredit)"}
                         </button>
                       </div>
                     )}
@@ -554,7 +556,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                           <div className="manual-span form-group"><label className="input-label" htmlFor="manual-doi">DOI <span className="text-muted font-normal">(Opsional, untuk mencari kota terbit)</span></label><input id="manual-doi" className="input-field-modern" value={mDOI} onChange={(e) => setMDOI(e.target.value)} placeholder="10.1234/..." /></div>
                           {citationStyle === 'footnote' && <div className="manual-span"><CityField state={city} /></div>}
                         </div>
-                        <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual} disabled={loading || !canGenerate}>Generate Manual (1 Kredit)</button>
+                        <button className="btn-primary w-full mt-8 py-3.5 shadow-glow" onClick={handleGenerateManual} disabled={loading || !canGenerate}>{isAdmin ? "Generate Manual (Tanpa Batas)" : "Generate Manual (1 Kredit)"}</button>
                       </div>
                     )}
 
@@ -565,7 +567,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                           <div className="form-group mb-8 animate-fade-in"><label className="input-label" htmlFor="reference-field-14">Kota Terbit Global <span className="text-muted font-normal">(Opsional)</span></label><input id="reference-field-14" type="text" className="input-field-modern" value={kotaInput} onChange={(e) => setKotaInput(e.target.value)} maxLength={100} placeholder="Kosongkan untuk kota otomatis per referensi" /><p className="city-note">Bila dikosongkan, kota dicari untuk masing-masing referensi. Isi hanya jika semua referensi berasal dari kota yang sama.</p></div>
                         )}
                         <button className="btn-primary w-full py-3.5 shadow-glow" onClick={handleBatchGenerate} disabled={loading || !batchInput.trim() || !canGenerate}>
-                          {loading ? "Memproses Batch..." : "Generate Semua (1 Kredit/Sukses)"}
+                          {loading ? "Memproses Batch..." : isAdmin ? "Generate Semua (Tanpa Batas)" : "Generate Semua (1 Kredit/Sukses)"}
                         </button>
                       </div>
                     )}
