@@ -143,6 +143,23 @@ test('public config exposes only whitelisted settings and server uses dynamic pr
   const profile = await call(makeHandler('profile', { ...overrides, authenticate: async () => newcomer })); assert.equal(profile.body.data.credits, 8);
   assert.equal((await repo.ensureProfile(user)).credits, 5);
 });
+test('admin can change each package price independently, with an audit and public price refresh', async () => {
+  const { handler, repo, db, overrides } = await setup();
+  for (const [index, [key, value]] of [['pricePerCredit', 1000], ['proPackagePrice', 129000], ['plusPackagePrice', 319000], ['sultanPackagePrice', 1099000]].entries()) {
+    const current = await repo.getSettings();
+    const response = await call(handler, { body: { action: 'updateSettings', settings: { [key]: value }, expectedUpdatedAt: db.records.get('settings/app')?.updatedAt || 0, reason: 'Perbarui tarif kredit dan paket' }, customHeaders: { 'idempotency-key': `admin-package-price-${index}` } });
+    assert.equal(response.statusCode, 200);
+    const next = await repo.getSettings(); assert.equal(next[key], value);
+    for (const other of ['pricePerCredit', 'proPackagePrice', 'plusPackagePrice', 'sultanPackagePrice'].filter((item) => item !== key)) assert.equal(next[other], current[other]);
+  }
+  const response = await call(makeHandler('config', overrides), { method: 'GET', customHeaders: { authorization: undefined } });
+  for (const [key, value] of Object.entries({ pricePerCredit: 1000, proPackagePrice: 129000, plusPackagePrice: 319000, sultanPackagePrice: 1099000 })) assert.equal(response.body.data[key], value);
+  const audits = [...db.records.entries()].filter(([key]) => key.startsWith('adminAudit/')).map(([, value]) => value);
+  assert.equal(audits.length, 4); assert.ok(audits.some((item) => item.before.proPackagePrice === 115000 && item.after.proPackagePrice === 129000));
+  const ordinary = makeAdminHandler({ ...overrides, authenticate: async () => user });
+  assert.equal((await call(ordinary, { body: { action: 'updateSettings', settings: { proPackagePrice: 5000 }, reason: 'Percobaan mengubah harga' } })).statusCode, 403);
+  assert.equal((await repo.getSettings()).proPackagePrice, 129000);
+});
 test('maintenance and feature switches block new operations but paid callbacks still credit', async () => {
   const { db, repo, overrides } = await setup();
   await db.doc('settings/app').set({ ...DEFAULT_SETTINGS, maintenance: true });
@@ -195,6 +212,17 @@ test('payment reconciliation verifies merchant amount before linking and credits
   assert.equal(db.records.get(`users/${user.uid}`).credits, 15); assert.equal(db.records.get(`payments/${paymentDocId(input.invoice)}`).credited, true);
   assert.equal((await admin.recoverPayment(adminUser, 'admin-recover-key-001', input, verified, 'https://www.bayar.gg/pay')).replayed, true);
   await assert.rejects(admin.recoverPayment(adminUser, 'admin-recover-key-002', input, verified, 'https://www.bayar.gg/pay'), { code: 'INVOICE_EXISTS' });
+});
+test('package reconciliation retains its fixed credit count and package identity', async () => {
+  const { db, admin, repo } = await setup(); const requestID = createHash('sha256').update('unknown-sultan-request').digest('hex');
+  await db.doc(`paymentRequests/${requestID}`).set({ uid: user.uid, packageId: 'sultan', packageName: 'Sultan', credits: 1999, amount: 999000, state: 'unknown', createdAt: Date.now() - 180000 });
+  const input = { requestID, invoice: 'merchant-sultan-001', reason: 'Cocokkan tagihan paket Sultan' };
+  const verified = { invoice_id: input.invoice, amount: 999000, final_amount: 999000, status: 'paid' };
+  await admin.recoverPayment(adminUser, 'admin-sultan-recover-001', input, verified, 'https://www.bayar.gg/pay');
+  await repo.settlePayment(input.invoice, verified);
+  const payment = await repo.getPayment(input.invoice, user.uid);
+  assert.equal(payment.packageId, 'sultan'); assert.equal(payment.packageName, 'Sultan'); assert.equal(payment.credits, 1999);
+  assert.equal(db.records.get(`users/${user.uid}`).credits, 2004);
 });
 test('admin cannot mark an invoice paid when gateway still reports pending', async () => {
   const { overrides, repo, db } = await setup(); const invoice = 'pending-invoice-001';

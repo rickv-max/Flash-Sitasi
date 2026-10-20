@@ -12,7 +12,8 @@ import PaymentModal from './components/PaymentModal';
 import AnimatedWorkspaceMock from './components/AnimatedWorkspaceMock';
 import GenerationError from './components/GenerationError';
 import { MONTHS } from '../shared/publication-date';
-import { FAQS } from '../shared/site-content';
+import { FAQS, CREATOR } from '../shared/site-content';
+import PricingSection from './components/PricingSection';
 import SiteFooter from './components/SiteFooter';
 import './pages/public-pages.css';
 import './App.css';
@@ -88,7 +89,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
     notifyTimer.current = setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), type === 'error' ? 8000 : 4000);
   }, []);
   const account = useAccount(showNotificationMsg);
-  const { settings, refresh: refreshSettings } = useSettings();
+  const { settings, ready: pricingReady, error: pricingError, refresh: refreshSettings } = useSettings();
   const isAdmin = !demo && account.profile?.role === 'admin' && account.profile?.status !== 'blocked';
   const user = demo ? { uid: 'demo', displayName: 'Demo', email: '' } : account.user;
   const userData = demo ? { credits: 5 } : account.profile || { credits: 0 };
@@ -99,6 +100,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
   const currentView = requestedView === 'tool' && !user ? 'landing' : requestedView;
   const canGenerate = demo || !!account.ready && (!settings.maintenance || isAdmin);
   const [showTopupModal, setShowTopupModal] = useState(returning);
+  const [preferredPackageId, setPreferredPackageId] = useState('');
   const [inputMode, setInputMode] = useState('doi');
   const [citationStyle, setCitationStyle] = useState('footnote');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -187,6 +189,17 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
     busyRef.current = true; setLoading(true);
     try { const signedIn = await account.login(); if (signedIn) { setDemo(false); setCurrentView('tool'); window.scrollTo(0, 0); } }
     catch (error) { showNotificationMsg(error.message, 'error'); }
+    finally { busyRef.current = false; setLoading(false); }
+  }
+  async function chooseCreditPackage(packageId) {
+    if (busyRef.current) return;
+    setPreferredPackageId(packageId);
+    if (account.user) { setDemo(false); setShowTopupModal(true); return; }
+    busyRef.current = true; setLoading(true);
+    try {
+      const signedIn = await account.login();
+      if (signedIn) { setDemo(false); setCurrentView('tool'); setShowTopupModal(true); window.scrollTo(0, 0); }
+    } catch (error) { showNotificationMsg(error.message, 'error'); }
     finally { busyRef.current = false; setLoading(false); }
   }
   async function handleLogout() {
@@ -287,7 +300,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
       )}
 
       {showTopupModal && user && <PaymentModal key={demo ? 'demo' : user.uid} user={demo ? null : user} demo={demo} settings={settings}
-        notify={showNotificationMsg} onClose={() => setShowTopupModal(false)}
+        notify={showNotificationMsg} initialPackageId={preferredPackageId} pricingReady={pricingReady} onPricingChange={refreshSettings} onClose={() => setShowTopupModal(false)}
         onLogin={() => { setShowTopupModal(false); handleLoginAndEnter(); }} />}
 
       {/* --- LANDING PAGE NAVBAR --- */}
@@ -401,32 +414,13 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
             </div>
           </section>
 
-          <section className="pricing-section pb-24 relative z-10">
-            <div className="container text-center">
-              <div className="pricing-card-anim pricing-card glass-panel relative overflow-hidden shadow-premium-glow bg-white">
-                <div className="badge-pill mx-auto mb-4 bg-primary text-body border-none text-xs relative z-10">Paling Diminati</div>
-                <h2 className="m-0 mb-3 text-2xl font-extrabold relative z-10">Transparan. Pay-As-You-Go.</h2>
-                <p className="text-muted m-0 mb-8 relative z-10 text-sm max-w-sm mx-auto">Tanpa langganan bulanan. Anda hanya membayar apa yang Anda gunakan.</p>
-                <div className="price-huge relative z-10"><span className="currency font-semibold">Rp</span>{settings.pricePerCredit.toLocaleString('id-ID')}<span className="suffix font-medium text-muted">/ Sitasi Sukses</span></div>
-                <div className="pricing-divider relative z-10"></div>
-                <ul className="pricing-list relative z-10">
-                  <li><div className="icon-wrap"><CheckIcon /></div><span>{settings.welcomeCredits} Kredit untuk pengguna baru.</span></li>
-                  <li><div className="icon-wrap"><CheckIcon /></div><span>Kredit <strong>TIDAK HANGUS</strong> jika ekstraksi gagal.</span></li>
-                  <li><div className="icon-wrap"><CheckIcon /></div><span>Mendukung format Footnote & APA 7th Edition.</span></li>
-                  <li><div className="icon-wrap"><CheckIcon /></div><span>Pembayaran melalui metode aktif di bayar.gg.</span></li>
-                </ul>
-                <button onClick={handleLoginAndEnter} className="btn-primary w-full flex justify-center items-center gap-3 relative z-10 py-4 mt-8 text-base shadow-glow">
-                  Mulai Ruang Kerja Anda <ArrowRightIcon />
-                </button>
-              </div>
-            </div>
-          </section>
+          <PricingSection settings={settings} ready={pricingReady} error={pricingError} onRefresh={refreshSettings} onChoose={chooseCreditPackage} />
 
           <section className="site-explainer" aria-labelledby="faq-title"><div className="container"><div className="site-explainer-inner">
             <h2 id="faq-title">Kenali cara kerja Flash Sitasi</h2>
             <p className="site-explainer-intro">Dari DOI ke footnote dan daftar pustaka, dengan metadata yang tetap bisa Anda periksa. Berikut hal yang sering ditanyakan sebelum mulai menulis.</p>
             {FAQS.map(({ question, answer }) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
-            <p className="site-explainer-credit">Flash Sitasi dibuat oleh <a href="/tentang" rel="author">Ricky Maulana dari Lumajang</a> untuk membantu proses penulisan referensi akademik.</p>
+            <p className="site-explainer-credit">Flash Sitasi dibuat oleh <a href={CREATOR.url} rel="author noopener noreferrer" target="_blank">Ricky Maulana</a> untuk membantu proses penulisan referensi akademik.</p>
           </div></div></section>
           <SiteFooter />
         </main>
@@ -473,7 +467,7 @@ export default function App({ initialView = 'landing', initialDemo = false }) {
                  <div className="credit-box">
                     <p className="credit-label">{demo ? "Kredit Contoh (Demo)" : "Sisa Kredit"}</p>
                     <div className="credit-amount"><CoinIcon /> <span>{userData.credits || 0}</span></div>
-                    <button onClick={() => { setIsSidebarOpen(false); setShowTopupModal(true); }} className="btn-topup">Top Up Token</button>
+                    <button onClick={() => { setIsSidebarOpen(false); setPreferredPackageId(''); setShowTopupModal(true); }} className="btn-topup">Top Up Token</button>
                  </div>
                  <button onClick={handleLogout} className="btn-logout">
                     <LogoutIcon /> Keluar

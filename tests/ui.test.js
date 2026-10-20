@@ -12,12 +12,14 @@ const compiler = await createServer({ server: { middlewareMode: true, hmr: false
 const { RichCitation } = await compiler.ssrLoadModule('/src/components/Primitives.jsx');
 const { default: App } = await compiler.ssrLoadModule('/src/App.jsx');
 const { default: PaymentModal } = await compiler.ssrLoadModule('/src/components/PaymentModal.jsx');
-const { default: AdminPanel, AdminOverview, AdminActionDialog } = await compiler.ssrLoadModule('/src/components/AdminPanel.jsx');
+const { default: AdminPanel, AdminOverview, AdminActionDialog, Settings } = await compiler.ssrLoadModule('/src/components/AdminPanel.jsx');
+const { default: PricingSection } = await compiler.ssrLoadModule('/src/components/PricingSection.jsx');
+const { DEFAULT_SETTINGS } = await import('../shared/settings.js');
 const { default: CityField, CitySource } = await compiler.ssrLoadModule('/src/components/CityField.jsx');
 const { default: GenerationError } = await compiler.ssrLoadModule('/src/components/GenerationError.jsx');
 const { default: InfoPage } = await compiler.ssrLoadModule('/src/pages/InfoPage.jsx');
 const { PUBLIC_PAGES } = await import('../shared/site-content.js');
-const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
+const css = postcss.parse((await Promise.all(['src/index.css', 'src/App.css', 'src/responsive.css', 'src/components/admin.css', 'src/pages/public-pages.css', 'src/components/pricing.css'].map((path) => readFile(path, 'utf8')))).join('\n'));
 const $workspace = load(renderToStaticMarkup(React.createElement(App, { initialView: 'tool', initialDemo: true })));
 
 function mediaApplies(query, width, height = 900) {
@@ -50,6 +52,32 @@ function styleOf($, selector, width, height = 900) {
 }
 
 test.after(async () => { await compiler.close(); });
+test('pricing uses admin unit and package prices, with no stale default prices in prerendered loading content', () => {
+  const render = (settings, ready = true) => load(renderToStaticMarkup(React.createElement(PricingSection, { settings, ready, onChoose() {} })));
+  const settings = { ...DEFAULT_SETTINGS, pricePerCredit: 1000, proPackagePrice: 129000 };
+  const $ = render(settings);
+  assert.match($('.credit-plan-unit .credit-plan-price').text(), /1\.000/);
+  assert.match($('.credit-plan-pro .credit-plan-price').text(), /129\.000/);
+  assert.match($('.credit-plan-plus .credit-plan-price').text(), /299\.000/);
+  assert.match($('.credit-plan-sultan .credit-plan-price').text(), /999\.000/);
+  assert.match($('.credit-plan-sultan .credit-plan-quota').text(), /1\.999/);
+  assert.ok(!render(DEFAULT_SETTINGS, false)('.credit-plan-price').text().includes('750'));
+  for (const width of [320, 390, 600]) assert.equal(styleOf($, '.credit-pricing-grid', width)['grid-template-columns'], 'minmax(0,1fr)');
+});
+test('top up can select Sultan beyond the custom-credit limit and keeps its fixed total', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PaymentModal, { user: { uid: 'test-writer' }, notify() {}, onClose() {}, settings: { ...DEFAULT_SETTINGS, pricePerCredit: 1000 }, initialPackageId: 'sultan' })));
+  assert.match($('.price-tag').text(), /999\.000/); assert.ok($.text().includes('1.999 kredit'));
+  assert.equal($('input#topup-credit-count').length, 0); assert.equal($('.credit-bundle-option[aria-pressed="true"] strong').text(), 'Sultan');
+});
+test('admin has three separate package price controls and the footer logo stays uncropped', () => {
+  const settings = load(renderToStaticMarkup(React.createElement(Settings, { data: DEFAULT_SETTINGS, onSave() {} })));
+  assert.equal(settings('.admin-package-prices input').length, 3);
+  assert.deepEqual(settings('.admin-package-prices input').map((_, el) => settings(el).attr('value')).get(), ['115000', '299000', '999000']);
+  const $ = load(renderToStaticMarkup(React.createElement(App)));
+  assert.equal($('.site-creator a').attr('href'), 'https://rickymaulana.page.gd/');
+  assert.ok(!$.text().includes('Lumajang')); assert.equal($('.site-footer-brand img').attr('width'), '72');
+  assert.equal(styleOf($, '.site-footer-brand img', 390).transform, 'none'); assert.equal(styleOf($, '.site-footer-brand', 390).overflow, 'visible');
+});
 test('generation error fits its form at mobile widths and does not inherit the centered toast transform', () => {
   const $ = load(renderToStaticMarkup(React.createElement(GenerationError, { message: 'Format DOI belum valid.', onDismiss() {}, onRetry() {} })));
   assert.equal($('[role="alert"][tabindex="-1"]').length, 1);

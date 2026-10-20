@@ -1,4 +1,4 @@
-# Flash Sitasi v2.2 · Kota Otomatis + Panel Admin
+# Flash Sitasi · Paket Kredit + Panel Admin
 
 Ruang kerja sitasi React + Vite, Firebase Authentication/Firestore, dan pembayaran bayar.gg melalui Vercel Functions.
 
@@ -89,6 +89,21 @@ Di PowerShell, gunakan `npm.cmd run migrate:users` dan `npm.cmd run migrate:user
 | Log Audit | Admin pelaksana, alasan, waktu, target, nilai sebelum/sesudah, filter tindakan/pengguna/tanggal |
 | Pengaturan | Harga, kredit awal, batas top up/batch, buka/tutup pendaftaran, top up, kota otomatis, dan mode pemeliharaan |
 
+### Paket kredit sekali beli
+
+| Pilihan | Kredit | Harga awal |
+| --- | ---: | ---: |
+| Satuan | Sesuai jumlah yang dipilih | Rp750 per kredit |
+| Pro | 199 | Rp115.000 |
+| Plus | 499 | Rp299.000 |
+| Sultan | 1.999 | Rp999.000 |
+
+Semua paket adalah pembelian kredit, tanpa langganan bulanan/tahunan. Di **Panel Admin → Pengaturan**, harga satuan dan ketiga harga paket dapat diubah terpisah. Kuota paket tetap; batas top up satuan tidak membatasi paket Sultan.
+
+`settings/app` menyimpan `pricePerCredit`, `proPackagePrice`, `plusPackagePrice`, dan `sultanPackagePrice`. Dokumen lama otomatis memakai harga paket awal sehingga tidak membutuhkan migrasi. Perubahan admin langsung menyegarkan harga di tab yang sama dan tab lain; pengunjung lain mendapat harga terbaru saat fokus atau dalam 20 detik. Server selalu menghitung nominal dari pengaturan; bila harga berubah sebelum checkout, pengguna diminta meninjau harga baru. Tagihan yang sudah dibuat mempertahankan nominal aslinya.
+
+Server memeriksa metode aktif dan batas nominal dari bayar.gg sebelum membuat tagihan. `/api/payment-options` hanya mengembalikan nama serta batas metode, tanpa informasi akun. Harga paket tetap tampil jika metode belum mendukung nominalnya, dengan keterangan dan tombol pembayaran nonaktif. Untuk Sultan, aktifkan kanal merchant yang mendukung Rp999.000. Jangan menganggap seluruh metode QRIS memiliki batas yang sama. Pemeriksaan ini tidak membuat transaksi; kegagalan sebelum POST tidak mengunci permintaan pembayaran.
+
 Daftar memiliki pagination 25 data; **Ekspor halaman CSV** mengekspor halaman aktif sesuai filter dengan proteksi formula spreadsheet. Ringkasan menghitung data server sesungguhnya, tanpa angka contoh. Ringkasan sitasi menghitung riwayat yang masih tersimpan, bukan jumlah historis seumur hidup bila data lama dihapus. Nilai paket terbayar tidak memasukkan biaya/kode unik penyedia. `lastSeenAt` menunjukkan interaksi API terakhir, bukan indikator online real-time.
 
 Perubahan admin membutuhkan alasan dan idempotency key. Perubahan saldo, ledger, dan audit ditulis dalam satu transaksi; retry tidak menggandakan kredit. Saldo akhir diperiksa terhadap saldo yang dilihat admin agar tidak menimpa transaksi baru. Hak admin diperiksa pada setiap API dan di dalam transaksi perubahan. Browser tidak dapat menulis role, saldo, pengaturan, atau audit.
@@ -104,7 +119,7 @@ Panel admin dimuat terpisah saat dibuka dan mengikuti tampilan putih–slate awa
 3. Harga dihitung server dari jumlah kredit. Harga, identitas pelanggan, callback, dan redirect yang dikirim browser tidak dipercaya.
 4. Pembayaran sebelumnya belum terhubung ke penambahan kredit. Sekarang ada webhook dengan pemeriksaan HMAC saat signature dikirim, verifikasi status langsung melalui API merchant, dan endpoint pemeriksaan status milik akun.
 5. Kredit bertambah dalam transaksi database bersama penandaan invoice dan pencatatan ledger. Callback berulang dan pemeriksaan status secara bersamaan tidak menambah kredit dua kali.
-6. Default pembelian minimal 10 kredit = Rp7.500; maksimal 500 kredit = Rp375.000, harga Rp750 per kredit. Admin dapat mengubahnya dalam rentang nominal Rp5.000–Rp500.000. Harga baru tidak mengubah invoice yang sudah dibuat.
+6. Default pembelian minimal 10 kredit = Rp7.500; maksimal 500 kredit = Rp375.000, harga Rp750 per kredit. Admin dapat mengubahnya dalam rentang nominal Rp5.000–Rp5.000.000. Harga baru tidak mengubah invoice yang sudah dibuat.
 7. API key pembayaran baru memakai variabel server `BAYAR_GG_API_KEY`. Untuk deployment lama dengan variabel Sensitive yang tidak dapat diubah namanya, server masih dapat memakai `VITE_BAYAR_GG_API_KEY`. Vite hanya mempublikasikan enam variabel Firebase client sehingga key pembayaran lama tetap tidak masuk ke client environment. `BAYAR_GG_API_KEY` diprioritaskan saat tersedia; pindahkan ke nama server tersebut saat memperbarui key. Jika kunci lama pernah masuk ke bundle browser versi terdahulu, regenerasi kunci tersebut di bayar.gg.
 8. Timeout, respons HTML, respons tidak valid, dan penolakan penyedia mendapat pesan yang dapat dipahami. Request pembuatan invoice tidak diulang otomatis ketika hasilnya ambigu.
 
@@ -141,7 +156,7 @@ Di pengaturan environment **server** Vercel, isi:
 | `BAYAR_GG_API_KEY` | API key akun merchant |
 | `BAYAR_GG_WEBHOOK_SECRET` | **Webhook Secret Key** dari Developer → Webhook & Callback; berbeda dari API key |
 | `BAYAR_GG_CHECKOUT_URL` | Default `https://www.bayar.gg/pay`, atau Checkout URL HTTPS aktif yang sama persis dengan konfigurasi merchant |
-| `BAYAR_GG_PAYMENT_METHOD` | Opsional; misalnya `qris` jika tersedia di merchant. Kosong berarti dipilih penyedia dari metode yang tersedia. |
+| `BAYAR_GG_PAYMENT_METHOD` | Opsional; misalnya `qris` untuk membatasi satu metode. Kosong atau `all` berarti server memilih metode aktif yang mendukung nominal dari metadata akun bayar.gg. |
 
 Pengaturan merchant:
 
@@ -174,7 +189,7 @@ Gunakan proyek Vercel aplikasi yang sama. Source frontend, `api/`, `server/`, da
 ### 4. Uji transaksi nyata setelah kredensial terpasang
 
 1. Masuk dengan Google dan pastikan saldo akun terbaca.
-2. Pilih 10 kredit, lalu buat tagihan. Harga paket harus Rp7.500; biaya/kode unik penyedia, jika ada, ditampilkan terpisah pada total tagihan.
+2. Pilih 10 kredit, lalu buat tagihan. Nominal harus 10 × harga satuan aktif (Rp7.500 bila masih default); biaya/kode unik penyedia, jika ada, ditampilkan terpisah pada total tagihan. Untuk paket bernama, cocokkan dengan harga paket aktif.
 3. Pastikan checkout bayar.gg terbuka dengan invoice dan nominal yang benar.
 4. Selesaikan pembayaran melalui metode merchant yang aktif.
 5. Kembali ke aplikasi. Kredit bertambah **10**, hanya setelah status diverifikasi server.
@@ -222,7 +237,7 @@ npm run check
 
 Pengujian juga mencakup sumber kota (metadata/JSON-LD/microdata/kontak), prioritas direktori/cache, pengabaian afiliasi penulis, preview gratis dan rate limit, bootstrap owner, penolakan role palsu, audit dan ledger atomik, konflik saldo, blokir/sinkronisasi Auth, pencabutan sesi, pencarian/pagination, rekonsiliasi, pengaturan dinamis, serta komponen admin responsif. Pengujian pembayaran mencakup normalisasi respons bayar.gg, URL checkout wajib, harga server, idempotensi invoice, signature palsu/kedaluwarsa, nominal tidak cocok, callback ganda, polling, kepemilikan tagihan, kegagalan metadata, saldo bersamaan, format APA, payload HTML berbahaya, validasi URL, render komponen tanpa browser, konsistensi breakpoint pada 320/360/390/640/700/768/769/1024/1440px, navigasi layar pendek, scroll root, serta batas tinggi dialog.
 
-Saat paket difinalkan, 102 pengujian otomatis lulus. Lint tanpa error/warning dan build produksi juga lulus. `npm ci` dari lockfile baru berhasil.
+Pengujian paket kredit mencakup harga tiap paket yang berdiri sendiri, perubahan harga admin dan audit, nominal yang dimanipulasi browser, pembaruan harga sebelum checkout, percobaan ulang tagihan lama, pemilihan metode sesuai batas nominal, serta pengkreditan Sultan tepat 1.999 kredit sekali saja.
 
 Transaksi database diuji dengan adapter database dalam memori yang menjalankan transaksi secara serial dan rollback. Pengujian ini tidak menggantikan validasi aturan Firestore dengan emulator atau staging proyek asli.
 
@@ -278,7 +293,7 @@ Dokumentasi bayar.gg diperiksa pada 18 Oktober 2026. Ketentuan merchant dan akse
 
 Halaman `/`, `/tentang`, `/kebijakan-privasi`, dan `/syarat-ketentuan` dirender menjadi HTML saat build. Informasi publik bisa dibaca tanpa JavaScript; fitur akun dan sitasi tetap memakai React. `scripts/prerender.mjs` hanya mengompilasi komponen dalam memori dan tidak menjalankan server HTTP, migrasi, atau akses database. Saat prerender, SDK Firebase browser tidak diinisialisasi.
 
-Build menghasilkan `robots.txt`, `sitemap.xml`, canonical per halaman, metadata Open Graph/Twitter, serta data terstruktur WebSite, WebApplication, WebPage, dan Person. Identitas pembuat: **Ricky Maulana**, juga dikenal sebagai **Ricky Maulana Lumajang**. Preview memakai `noindex, nofollow`; hanya produksi yang dibuka untuk pengindeksan. Tautan kebijakan tersedia di footer dan ruang kerja. Isi halaman ada di `shared/site-content.js`; kanal kontak diarahkan ke profil resmi GitHub pembuat.
+Build menghasilkan `robots.txt`, `sitemap.xml`, canonical per halaman, metadata Open Graph/Twitter, serta data terstruktur WebSite, WebApplication, WebPage, dan Person. Identitas pembuat: **Ricky Maulana**. Preview memakai `noindex, nofollow`; hanya produksi yang dibuka untuk pengindeksan. Tautan kebijakan tersedia di footer dan ruang kerja. Isi halaman ada di `shared/site-content.js`; kanal kontak diarahkan ke website resmi pembuat: https://rickymaulana.page.gd/.
 
 Sitemap produksi: `https://flash-sitasi.vercel.app/sitemap.xml`. Pemilik dapat mengirim sitemap dan meminta pengindeksan URL melalui Google Search Console setelah memverifikasi kepemilikan situs. Menyiapkan SEO dan sitemap tidak menjamin kapan Google mengindeks atau menentukan peringkat.
 
