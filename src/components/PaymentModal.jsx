@@ -63,7 +63,7 @@ export default function PaymentModal({ user, membershipProfile, demo, onLogin, o
         {!uncertain && pricingReady && <>
           {!methods.ready && !methods.error && <p className="classic-payment-note" role="status">Memeriksa metode pembayaran…</p>}
           {methods.error && <p className="classic-payment-error" role="alert">{methods.error} <button type="button" className="payment-method-retry" onClick={methods.refresh}>Coba lagi</button></p>}
-          {methods.ready && valid && !supported && <p className="classic-payment-error" role="alert">Belum ada metode aktif untuk nominal ini. Hubungi pengelola agar mengaktifkan metode yang mendukung nominal paket.</p>}
+          {methods.ready && valid && !supported && <p className="classic-payment-error" role="alert">{methods.methods.length ? 'Nominal ini belum didukung oleh metode pembayaran yang aktif.' : methods.availability?.message || 'Pembayaran sementara belum tersedia dari penyedia. Silakan cek kembali beberapa saat lagi.'} <button type="button" className="payment-method-retry" onClick={methods.refresh} disabled={methods.loading}>{methods.loading ? 'Memeriksa…' : 'Cek ulang'}</button></p>}
         </>}
         <button className="btn-primary w-full mt-6" onClick={createPayment} disabled={paying || !valid || !uncertain && (!settings.paymentEnabled || !pricingReady || !supported)}>{paying ? <><Spinner />Menghubungkan…</> : <>{uncertain ? 'Periksa Tagihan Sebelumnya' : 'Bayar via Bayar.gg'}<Icon name="arrow" size={17} /></>}</button>
         <p className="classic-payment-note"><Icon name="lock" size={12} />Biaya atau kode unik penyedia, jika ada, akan tampil pada tagihan.</p>

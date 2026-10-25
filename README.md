@@ -341,3 +341,11 @@ Seluruh koneksi sumber dan redirect memakai validasi IP publik serta DNS pinning
 Hanya metadata publik yang disimpan sementara dalam memori selama maksimal 60 detik (64 URL) untuk mengurangi pembacaan ulang pada pratinjau kota dan generate; byte PDF tidak disimpan. Hasil yang belum lengkap diberi catatan. Sumber yang tidak memiliki metadata layak gagal sebelum transaksi kredit, sehingga tidak membuat riwayat/mutasi atau memotong saldo. Permintaan ulang yang sama tetap idempoten.
 
 Deployment memasang dependensi dari lockfile dengan npm ci, lalu menjalankan npm run check. Uji meliputi PDF riil yang dibuat dari fixture kecil, metadata JSON-LD/OJS/DataCite, sumber rusak/pindai, pencocokan DOI, DNS/redirect privat, dekompresi berbatas, dan transaksi kredit. Pengujian tidak menulis database produksi atau membuat pembayaran.
+
+### Status metode pembayaran
+
+Pengaturan top up aplikasi dan ketersediaan metode di bayar.gg merupakan pemeriksaan terpisah. API `/api/payment-options` menyertakan status umum `available`, `provider_unavailable`, atau `method_restricted`, tanpa mengirim data akun penyedia. Daftar metode kosong tidak lagi dianggap sebagai bukti bahwa pengelola lupa mengaktifkan pembayaran.
+
+Harga paket dan harga satuan tetap tampil. Pembelian satuan maupun paket dinonaktifkan bila tidak ada metode yang mendukung nominal; pengguna dapat mengecek ulang. Status yang belum tersedia diperiksa kembali setiap 30 detik saat halaman terlihat, serta saat kembali online atau fokus.
+
+Respons tanpa metode aktif disimpan maksimal 15 detik agar pemulihan penyedia cepat terbaca; status sehat disimpan 60 detik. Diagnostik server hanya mencatat ID metode beserta flag enabled/available yang sudah disaring. Kunci API, status akun, detail persyaratan, dan payload penyedia tidak dicatat. Pembatas metode yang dikonfigurasi tetap dihormati; sistem tidak memaksa kanal nonaktif atau membuat invoice saat metode belum tersedia.

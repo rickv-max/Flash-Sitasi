@@ -121,3 +121,10 @@ test('unsupported gateway limits release the reservation and allow a safe retry 
   enabled = true;
   assert.equal((await call(handler, { body: { packageId: 'sultan', catalogRevision: 2 } })).statusCode, 201); assert.equal(posts, 1);
 });
+
+test('public payment options include safe availability status without requiring login or database access', async () => {
+  const gateway = createGateway({ key: 'fixture-key' }, async () => Response.json({ success: true, data: { payment_methods: [{ id: 'qris', enabled: false, available: false, private_key: 'NEVER_EXPOSE' }] } }));
+  const result = await call(makeHandler('paymentOptions', { env: {}, gateway }), { method: 'GET', customHeaders: { authorization: undefined } });
+  assert.equal(result.statusCode, 200); assert.equal(result.body.data.availability.state, 'provider_unavailable');
+  assert.deepEqual(result.body.data.methods, []); assert.ok(!JSON.stringify(result.body).includes('NEVER_EXPOSE'));
+});
