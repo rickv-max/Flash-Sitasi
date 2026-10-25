@@ -1,17 +1,28 @@
 import { creditPackages, rupiah } from '../../shared/catalog';
-import { methodSupports } from '../../shared/payment-methods';
+import { methodSupports, creditRangeSupported } from '../../shared/payment-methods';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import PackageBenefits from './PackageBenefits';
 import './pricing.css';
 
-export default function PricingSection({ settings, ready, error, onRefresh, onChoose }) {
-  const options = usePaymentMethods(ready);
+export default function PricingSection(props) {
+  const options = usePaymentMethods(props.ready && props.settings.paymentEnabled);
+  return <PricingContent {...props} options={options} />;
+}
+export function PricingContent({ settings, ready, error, onRefresh, onChoose, options }) {
+  const noMethods = options.ready && !options.methods.length;
+  const unitUnavailable = options.ready && !creditRangeSupported(options.methods, settings);
+  const unavailableMessage = options.availability?.message || 'Pembayaran sementara belum tersedia dari penyedia. Silakan cek kembali beberapa saat lagi.';
+  const disabledLabel = !settings.paymentEnabled ? 'Top Up Dinonaktifkan' : noMethods ? 'Pembayaran Belum Tersedia' : 'Nominal Belum Didukung';
   return <section className="pricing-section credit-pricing-section" id="harga" aria-labelledby="pricing-title">
     <div className="container">
       <header className="credit-pricing-heading"><span className="public-eyebrow">PILIH SESUAI KEBUTUHAN</span><h2 id="pricing-title">Satuan atau paket kredit. Anda yang pilih.</h2><p>Sekali beli, gunakan sesuai kebutuhan. Tanpa biaya langganan atau perpanjangan otomatis.</p></header>
       {!ready && <p className="pricing-load-note" role="status">{error || 'Menghubungkan harga terbaru…'}{error && <button className="btn-secondary" onClick={onRefresh}>Coba lagi</button>}</p>}
+      {ready && (!settings.paymentEnabled || options.error || noMethods) && <div className="pricing-load-note" role="status">
+        <span>{!settings.paymentEnabled ? 'Top up sedang dinonaktifkan pengelola.' : options.error || unavailableMessage}</span>
+        {settings.paymentEnabled && <button type="button" className="btn-secondary" onClick={options.refresh} disabled={options.loading}>{options.loading ? 'Memeriksa…' : 'Cek Ulang Pembayaran'}</button>}
+      </div>}
       <div className="credit-pricing-grid">
-        <article className="credit-plan credit-plan-unit pricing-card-anim"><span className="credit-plan-label">FLEKSIBEL</span><h3>Satuan</h3><p className="credit-plan-description">Tentukan sendiri jumlah kredit.</p><div className="credit-plan-price">{ready ? rupiah(settings.pricePerCredit) : '—'}<span>/ kredit</span></div><p className="credit-plan-quota">1 kredit untuk 1 sitasi sukses</p><ul><li>Pilih {settings.minTopup}–{settings.maxTopup} kredit</li><li>Tarif mengikuti harga satuan terbaru</li><li>Saldo kredit tetap dapat digunakan</li></ul><button type="button" className="btn-secondary" disabled={!ready} onClick={() => onChoose('')}>Beli Satuan</button></article>
+        <article className="credit-plan credit-plan-unit pricing-card-anim"><span className="credit-plan-label">FLEKSIBEL</span><h3>Satuan</h3><p className="credit-plan-description">Tentukan sendiri jumlah kredit.</p><div className="credit-plan-price">{ready ? rupiah(settings.pricePerCredit) : '—'}<span>/ kredit</span></div><p className="credit-plan-quota">1 kredit untuk 1 sitasi sukses</p><ul><li>Pilih {settings.minTopup}–{settings.maxTopup} kredit</li><li>Tarif mengikuti harga satuan terbaru</li><li>Saldo kredit tetap dapat digunakan</li></ul><button type="button" className="btn-secondary" disabled={!ready || !settings.paymentEnabled || unitUnavailable || !!options.error} onClick={() => onChoose('')}>{!settings.paymentEnabled || unitUnavailable ? disabledLabel : 'Beli Satuan'}</button></article>
         {creditPackages(settings).map((item) => {
           const savings = item.credits * settings.pricePerCredit - item.price;
           const unavailable = options.ready && !options.methods.some((method) => methodSupports(method, item.price));
@@ -19,8 +30,8 @@ export default function PricingSection({ settings, ready, error, onRefresh, onCh
             <span className="credit-plan-label">PAKET KREDIT</span><h3>{item.name}</h3><p className="credit-plan-description">{item.id === 'pro' ? 'Untuk referensi tugas dan tulisan Anda.' : item.id === 'plus' ? 'Lebih banyak ruang untuk riset Anda.' : 'Untuk kebutuhan referensi yang lebih besar.'}</p>
             <div className="credit-plan-price">{ready ? rupiah(item.price) : '—'}<span>/ paket</span></div><p className="credit-plan-quota">{item.credits.toLocaleString('id-ID')} kredit</p>
             <PackageBenefits packageId={item.id}><li>{ready && savings > 0 ? `Hemat ${rupiah(savings)} dari satuan` : 'Gunakan saldo sesuai kebutuhan'}</li></PackageBenefits>
-            <button type="button" className="btn-primary" disabled={!ready || unavailable} onClick={() => onChoose(item.id)}>{unavailable ? 'Metode Bayar Belum Tersedia' : `Pilih ${item.name}`}</button>
-            {unavailable && <p className="credit-plan-unavailable">Pengelola perlu mengaktifkan metode bayar untuk nominal ini.</p>}
+            <button type="button" className="btn-primary" disabled={!ready || !settings.paymentEnabled || unavailable || !!options.error} onClick={() => onChoose(item.id)}>{!settings.paymentEnabled || unavailable ? disabledLabel : `Pilih ${item.name}`}</button>
+            {settings.paymentEnabled && unavailable && <p className="credit-plan-unavailable">{noMethods ? unavailableMessage : 'Nominal paket ini belum didukung oleh metode pembayaran yang aktif.'}</p>}
           </article>;
         })}
       </div>

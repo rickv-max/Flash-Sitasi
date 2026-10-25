@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AppError } from './errors.js';
-import { methodSupports, publicPaymentMethods } from '../shared/payment-methods.js';
+import { methodSupports, paymentAvailability, paymentMethodDiagnostics } from '../shared/payment-methods.js';
 
 let methodsCache;
 
@@ -53,17 +53,25 @@ export function createGateway(config, fetcher = fetch) {
     }
     return body;
   };
-  async function methods() {
+  async function options() {
     if (fetcher === fetch && methodsCache?.key === config.key && methodsCache.method === config.method && methodsCache.expires > Date.now()) return methodsCache.promise;
-    const promise = request('get-payment-methods.php').then((body) => {
-      try { return publicPaymentMethods(body, config.method); }
+    const entry = { key: config.key, method: config.method, expires: Date.now() + 60000 };
+    entry.promise = request('get-payment-methods.php').then((body) => {
+      let result;
+      try { result = paymentAvailability(body, config.method); }
       catch { throw new AppError(502, 'GATEWAY_FORMAT', 'Informasi metode pembayaran belum dapat dibaca.'); }
+      if (!result.methods.length) {
+        entry.expires = Date.now() + 15000;
+        console.warn(JSON.stringify(paymentMethodDiagnostics(body, config.method)));
+      }
+      return result;
     });
-    if (fetcher === fetch) methodsCache = { key: config.key, method: config.method, expires: Date.now() + 60000, promise };
-    try { return await promise; } catch (error) { if (fetcher === fetch) methodsCache = null; throw error; }
+    if (fetcher === fetch) methodsCache = entry;
+    try { return await entry.promise; } catch (error) { if (fetcher === fetch && methodsCache === entry) methodsCache = null; throw error; }
   }
+  const methods = async () => (await options()).methods;
   return {
-    methods,
+    methods, options,
     async create({ amount, credits, user, packageName }) {
       let selected;
       try {

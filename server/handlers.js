@@ -32,7 +32,7 @@ export function makeHandler(action, overrides = {}) {
       }
       if (action === 'paymentOptions') {
         const gateway = overrides.gateway || createGateway(paymentMethodsConfig(env));
-        return res.status(200).json({ success: true, data: { methods: await gateway.methods() } });
+        return res.status(200).json({ success: true, data: gateway.options ? await gateway.options() : { methods: await gateway.methods() } });
       }
       if (action === 'members') {
         const repo = overrides.repo || createRepository(adminServices(env).db);

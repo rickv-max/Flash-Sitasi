@@ -13,7 +13,7 @@ const { RichCitation } = await compiler.ssrLoadModule('/src/components/Primitive
 const { default: App } = await compiler.ssrLoadModule('/src/App.jsx');
 const { default: PaymentModal } = await compiler.ssrLoadModule('/src/components/PaymentModal.jsx');
 const { default: AdminPanel, AdminOverview, AdminActionDialog, Settings } = await compiler.ssrLoadModule('/src/components/AdminPanel.jsx');
-const { default: PricingSection } = await compiler.ssrLoadModule('/src/components/PricingSection.jsx');
+const { default: PricingSection, PricingContent } = await compiler.ssrLoadModule('/src/components/PricingSection.jsx');
 const { default: MembershipProfile } = await compiler.ssrLoadModule('/src/components/MembershipProfile.jsx');
 const { MemberCard, MemberProfileDialog } = await compiler.ssrLoadModule('/src/components/PublicMembers.jsx');
 const { default: CreditBalance } = await compiler.ssrLoadModule('/src/components/CreditBalance.jsx');
@@ -327,4 +327,35 @@ test('citation metadata notices reveal missing fields, escape input and fit narr
   for (const width of [320, 390, 768, 1440]) assert.equal(styleOf($, '.metadata-notice', width)['min-width'], '0');
   const complete = load(renderToStaticMarkup(React.createElement(MetadataNotice, { metadata: { source: 'DataCite', warnings: [] } })));
   assert.equal(complete('[role="status"]').length, 0); assert.ok(complete.text().includes('DataCite'));
+});
+
+test('pricing distinguishes a provider outage, offers retry and disables unit and package purchases', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PricingContent, {
+    settings: { ...DEFAULT_SETTINGS, pricePerCredit: 900 }, ready: true, onChoose() {},
+    options: { ready: true, methods: [], availability: { state: 'provider_unavailable', message: 'Pembayaran sementara belum tersedia dari penyedia.' }, refresh() {} },
+  })));
+  assert.equal($('.credit-plan button:not([disabled])').length, 0);
+  assert.equal($('.credit-plan button[disabled]').length, 4);
+  assert.ok($('[role="status"]').text().includes('belum tersedia dari penyedia'));
+  assert.ok($('[role="status"] button').text().includes('Cek Ulang Pembayaran'));
+  assert.match($('.credit-plan-unit .credit-plan-price').text(), /900/);
+  assert.ok(!$.text().includes('Pengelola perlu mengaktifkan metode'));
+});
+test('an active supported method enables all packages and unit purchases without changing prices', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PricingContent, {
+    settings: { ...DEFAULT_SETTINGS, pricePerCredit: 900 }, ready: true, onChoose() {},
+    options: { ready: true, methods: [{ id: 'qris', minAmount: 5000, maxAmount: 500000 }], refresh() {} },
+  })));
+  assert.equal($('.credit-plan button[disabled]').length, 0);
+  assert.equal($('.credit-plan button').length, 4); assert.equal($('[role="status"]').length, 0);
+  assert.ok($('.credit-plan-pro .credit-plan-price').text().includes('115.000'));
+  assert.ok($('.credit-plan-sultan .credit-plan-price').text().includes('500.000'));
+});
+test('the admin payment switch consistently pauses pricing purchases even if a method is active', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(PricingContent, {
+    settings: { ...DEFAULT_SETTINGS, paymentEnabled: false }, ready: true, onChoose() {},
+    options: { ready: true, methods: [{ id: 'qris', minAmount: 5000, maxAmount: 500000 }], refresh() {} },
+  })));
+  assert.equal($('.credit-plan button[disabled]').length, 4);
+  assert.ok($('[role="status"]').text().includes('dinonaktifkan pengelola'));
 });
