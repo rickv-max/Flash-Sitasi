@@ -4,8 +4,8 @@ import { createAdminRepository } from './admin-repository.js';
 import { assertAdmin, assertSession, isOwner, ownerUIDs } from './access.js';
 import { AppError, errorResponse } from './errors.js';
 import { bodyOf, requestKey, checkOrigin, queryOf, noCache } from './http.js';
-import { createGateway } from './gateway.js';
 import { paymentConfig } from './config.js';
+import { gatewayForPayment } from './payment-providers.js';
 
 export function makeAdminHandler(overrides = {}) {
   return async (req, res) => {
@@ -72,10 +72,10 @@ export function makeAdminHandler(overrides = {}) {
           case 'upsertLocation': data = await admin.upsertLocation(user, key, input); break;
           case 'syncPayment': {
             if (typeof input.invoice !== 'string' || !/^[A-Za-z0-9_-]{3,160}$/.test(input.invoice)) throw new AppError(400, 'INVALID_INVOICE', 'Nomor invoice tidak valid.');
-            await repo.getPayment(input.invoice);
+            const stored = await repo.getPayment(input.invoice);
             await admin.auditPayment(user, key, 'syncPayment', input.invoice, input.reason, { invoice: input.invoice });
-            const gateway = overrides.gateway || createGateway(paymentConfig(env));
-            const verified = await gateway.check(input.invoice);
+            const gateway = overrides.gateway || gatewayForPayment(env, stored);
+            const verified = await gateway.check(input.invoice, stored);
             const payment = await repo.settlePayment(input.invoice, verified);
             data = { invoice: payment.invoice, status: payment.status, credited: payment.credited, credits: payment.credits };
             break;
@@ -84,10 +84,11 @@ export function makeAdminHandler(overrides = {}) {
             if (typeof input.invoice !== 'string' || !/^[A-Za-z0-9_-]{3,160}$/.test(input.invoice)) throw new AppError(400, 'INVALID_INVOICE', 'Nomor invoice tidak valid.');
             // Validate required audit fields before making an external status request.
             if (typeof input.reason !== 'string' || input.reason.trim().length < 5) throw new AppError(400, 'REASON_REQUIRED', 'Isi alasan rekonsiliasi minimal lima karakter.');
-            const config = paymentConfig(env);
-            const gateway = overrides.gateway || createGateway(config);
+            const request = await repo.getPaymentRequestById(input.requestID);
+            if (request.provider === 'doku' && request.providerInvoice !== input.invoice) throw new AppError(409, 'INVOICE_MISMATCH', 'Gunakan nomor tagihan DOKU yang tercatat pada permintaan ini.');
+            const gateway = overrides.gateway || gatewayForPayment(env, request);
             const verified = await gateway.check(input.invoice);
-            data = await admin.recoverPayment(user, key, input, verified, config.checkout);
+            data = await admin.recoverPayment(user, key, input, verified, request.provider === 'doku' ? '' : paymentConfig(env).checkout);
             const payment = await repo.settlePayment(input.invoice, verified);
             data = { ...data, status: payment.status, credited: payment.credited };
             break;

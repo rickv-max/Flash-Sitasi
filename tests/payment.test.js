@@ -105,7 +105,7 @@ test('rejects invalid body, method, missing key, unconfigured gateway, and hosti
   assert.equal((await call(handler, { body: { credits: 1 } })).statusCode, 400);
   assert.equal((await call(handler, { body: { credits: 10 }, customHeaders: { 'idempotency-key': '' } })).statusCode, 400);
   assert.equal((await call(handler, { body: { credits: 10 }, customHeaders: { origin: 'https://evil.test' } })).statusCode, 403);
-  assert.equal((await call(makeHandler('createPayment', { ...overrides, env: { APP_URL: env.APP_URL } }), { body: { credits: 10 } })).statusCode, 503);
+  assert.equal((await call(makeHandler('createPayment', { ...overrides, env: { APP_URL: env.APP_URL } }), { body: { credits: 10 }, customHeaders: { 'idempotency-key': 'unconfigured-new-request-001' } })).statusCode, 503);
 });
 test('retry with the same key returns the same invoice without calling provider', async () => {
   const { overrides } = await setup(); let calls = 0;

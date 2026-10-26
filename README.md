@@ -1,6 +1,6 @@
 # Flash Sitasi · Paket Kredit + Panel Admin
 
-Ruang kerja sitasi React + Vite, Firebase Authentication/Firestore, dan pembayaran bayar.gg melalui Vercel Functions.
+Ruang kerja sitasi React + Vite, Firebase Authentication/Firestore, dan pembayaran QRIS DOKU melalui Vercel Functions. Tagihan bayar.gg lama tetap didukung.
 
 ## Mulai di sini
 
@@ -12,7 +12,7 @@ npm run dev
 
 Buka alamat yang dicetak Vite. Tombol **Coba Demo Tanpa Akun** bisa digunakan tanpa kredensial. Demo memakai DOI `10.1038/nature14539` dan juga mendukung input manual. Riwayat demo hanya tersimpan di browser. Demo tidak membuat pembayaran dan tidak mengubah saldo akun.
 
-Untuk mencoba akun/API secara lokal, isi variabel Firebase dan server di `.env`, lalu atur `APP_URL=http://localhost:5173` sesuai port Vite. Restart setelah mengubah `.env`. API lokal ditangani plugin Vite, sehingga tidak perlu proses server kedua. Callback pembayaran sebenarnya membutuhkan domain HTTPS yang dapat dijangkau bayar.gg; gunakan deployment Vercel untuk pengujian tersebut.
+Untuk mencoba akun/API secara lokal, isi variabel Firebase dan server di `.env`, lalu atur `APP_URL=http://localhost:5173` sesuai port Vite. Restart setelah mengubah `.env`. API lokal ditangani plugin Vite, sehingga tidak perlu proses server kedua. Callback pembayaran sebenarnya membutuhkan domain HTTPS yang dapat dijangkau DOKU; gunakan deployment Vercel untuk pengujian tersebut.
 
 Node.js minimal **22.19**. Untuk Vercel, gunakan Node 22 atau 24 yang memenuhi versi minimum tersebut.
 
@@ -83,7 +83,7 @@ Di PowerShell, gunakan `npm.cmd run migrate:users` dan `npm.cmd run migrate:user
 | Ringkasan | Jumlah akun, admin, akun diblokir, sitasi tersimpan, pembayaran lunas/tertunda, nilai paket terbayar, kredit beredar, aktivitas tujuh hari (WIB) |
 | Pengguna | Pencarian awalan nama/email atau UID persis, filter role/status, halaman data, detail akun/login, 25 riwayat/mutasi/transaksi terbaru, catatan internal |
 | Tindakan akun | Tambah/kurangi/tetapkan kredit, blokir/aktifkan akun, berikan/cabut admin, cabut sesi login |
-| Transaksi | Filter UID/invoice/status/tanggal, periksa ulang ke bayar.gg, pengkreditan pembayaran terverifikasi yang belum masuk |
+| Transaksi | Filter UID/invoice/status/tanggal, periksa ulang ke penyedia asli tagihan, pengkreditan pembayaran terverifikasi yang belum masuk |
 | Rekonsiliasi | Daftar request `unknown`/`creating`/`ready`, hubungkan invoice merchant ke request yang benar setelah minimal dua menit |
 | Direktori Kota | Pemetaan ISSN/jurnal/URL jurnal/penerbit, kota dan URL sumber resmi wajib, aktifkan/nonaktifkan koreksi |
 | Log Audit | Admin pelaksana, alasan, waktu, target, nilai sebelum/sesudah, filter tindakan/pengguna/tanggal |
@@ -102,7 +102,7 @@ Semua paket adalah pembelian kredit, tanpa langganan bulanan/tahunan. Di **Panel
 
 `settings/app` menyimpan `pricePerCredit`, `proPackagePrice`, `plusPackagePrice`, dan `sultanPackagePrice`. Dokumen lama otomatis memakai harga paket awal sehingga tidak membutuhkan migrasi. Perubahan admin langsung menyegarkan harga di tab yang sama dan tab lain; pengunjung lain mendapat harga terbaru saat fokus atau dalam 20 detik. Server selalu menghitung nominal dari pengaturan; bila harga berubah sebelum checkout, pengguna diminta meninjau harga baru. Tagihan yang sudah dibuat mempertahankan nominal aslinya.
 
-Server memeriksa metode aktif dan batas nominal dari bayar.gg sebelum membuat tagihan. `/api/payment-options` hanya mengembalikan nama serta batas metode, tanpa informasi akun. Harga paket tetap tampil jika metode belum mendukung nominalnya, dengan keterangan dan tombol pembayaran nonaktif. Sultan memakai nominal dasar Rp500.000, sesuai batas QRIS yang dilaporkan akun saat implementasi. Biaya atau kode unik penyedia, jika ada, mengikuti invoice akhir. Jangan menganggap seluruh metode QRIS memiliki batas yang sama. Pemeriksaan ini tidak membuat transaksi; kegagalan sebelum POST tidak mengunci permintaan pembayaran.
+Pembelian baru memakai DOKU Checkout dengan `payment.payment_method_types=["QRIS"]`. Nominal berasal dari pengaturan admin dan dikirim tanpa kode unik tambahan aplikasi. `/api/payment-options` hanya mengembalikan provider, mode, batas nominal aplikasi, dan kesiapan konfigurasi. Status `configured` menunjukkan kredensial server telah diisi, bukan konfirmasi bahwa DOKU sudah mengaktifkan QRIS merchant. Aktivasi QRIS tetap harus diperiksa di dashboard DOKU. Tanpa konfigurasi lengkap, tombol beli dinonaktifkan dan menampilkan pesan kesiapan. Harga dan kuota paket tetap ditampilkan. Batas aplikasi untuk QRIS DOKU adalah Rp1.000–Rp5.000.000; batas merchant yang disetujui DOKU tetap berlaku.
 
 Daftar memiliki pagination 25 data; **Ekspor halaman CSV** mengekspor halaman aktif sesuai filter dengan proteksi formula spreadsheet. Ringkasan menghitung data server sesungguhnya, tanpa angka contoh. Ringkasan sitasi menghitung riwayat yang masih tersimpan, bukan jumlah historis seumur hidup bila data lama dihapus. Nilai paket terbayar tidak memasukkan biaya/kode unik penyedia. `lastSeenAt` menunjukkan interaksi API terakhir, bukan indikator online real-time.
 
@@ -112,16 +112,16 @@ Pemblokiran disimpan lebih dulu di database, lalu disinkronkan ke Firebase Auth 
 
 Panel admin dimuat terpisah saat dibuka dan mengikuti tampilan putih–slate awal. Tabel memiliki area scroll horizontal sendiri pada layar sempit; dialog dibatasi tinggi layar dan dapat di-scroll.
 
-## Masalah pembayaran yang diperbaiki
+## Verifikasi pembayaran
 
-1. Request lama tidak mengirim `payment_url`, padahal field itu wajib pada API bayar.gg saat diperiksa.
-2. Parser lama hanya menerima `data.payment_url`. Versi ini menormalkan respons `data`, `payment`, dan root yang ditemukan di contoh dokumentasi.
-3. Harga dihitung server dari jumlah kredit. Harga, identitas pelanggan, callback, dan redirect yang dikirim browser tidak dipercaya.
-4. Pembayaran sebelumnya belum terhubung ke penambahan kredit. Sekarang ada webhook dengan pemeriksaan HMAC saat signature dikirim, verifikasi status langsung melalui API merchant, dan endpoint pemeriksaan status milik akun.
-5. Kredit bertambah dalam transaksi database bersama penandaan invoice dan pencatatan ledger. Callback berulang dan pemeriksaan status secara bersamaan tidak menambah kredit dua kali.
-6. Default pembelian minimal 10 kredit = Rp7.500; maksimal 500 kredit = Rp375.000, harga Rp750 per kredit. Admin dapat mengubahnya dalam rentang nominal Rp5.000–Rp5.000.000. Harga baru tidak mengubah invoice yang sudah dibuat.
-7. API key pembayaran baru memakai variabel server `BAYAR_GG_API_KEY`. Untuk deployment lama dengan variabel Sensitive yang tidak dapat diubah namanya, server masih dapat memakai `VITE_BAYAR_GG_API_KEY`. Vite hanya mempublikasikan enam variabel Firebase client sehingga key pembayaran lama tetap tidak masuk ke client environment. `BAYAR_GG_API_KEY` diprioritaskan saat tersedia; pindahkan ke nama server tersebut saat memperbarui key. Jika kunci lama pernah masuk ke bundle browser versi terdahulu, regenerasi kunci tersebut di bayar.gg.
-8. Timeout, respons HTML, respons tidak valid, dan penolakan penyedia mendapat pesan yang dapat dipahami. Request pembuatan invoice tidak diulang otomatis ketika hasilnya ambigu.
+- Server menghitung harga, kuota, identitas pelanggan, URL kembali, dan URL notifikasi. Browser tidak menentukan nominal tagihan.
+- Pembuatan DOKU Checkout memakai invoice deterministik berdasarkan UID dan idempotency key, signature HMAC-SHA256 Non-SNAP, serta QRIS saja. Response signature, invoice, mata uang, nominal, metode, dan domain checkout diperiksa sebelum tautan disimpan.
+- Notifikasi DOKU diverifikasi terhadap **byte body asli**, Client ID, Request ID, timestamp, path `/api/doku-webhook`, dan Secret Key. Hanya `transaction.status=SUCCESS` dari QRIS dengan nominal yang sesuai dapat dikreditkan. Redirect browser tidak membuktikan pembayaran.
+- Kredit, badge dan ledger tersimpan dalam satu transaksi database. Notifikasi berulang dan polling bersamaan tidak menggandakan kredit. Notifikasi terlambat tetap dapat diverifikasi; invoice yang sudah diproses tidak dikreditkan ulang.
+- Pemeriksaan cadangan DOKU dibatasi 60 detik per tagihan, dimulai setelah satu menit. `Not Found` untuk checkout baru yang sudah tercatat tetap diperlakukan sebagai menunggu. Status awal checkout tidak disamakan dengan pembayaran berhasil.
+- Mode `sandbox` memakai endpoint DOKU sandbox dan selalu ditandai sebagai pengujian. Pembayaran sandbox tidak menambah saldo, badge, pendapatan, atau ledger top up, sekalipun Firebase yang digunakan sama dengan aplikasi produksi.
+- Provider, mode, dan Client ID asal disimpan bersama invoice. Perubahan konfigurasi tidak mengalihkan tagihan lama ke penyedia atau akun yang berbeda. Kredensial bayar.gg lama masih diperlukan untuk tagihan bayar.gg lama.
+- POST pembuatan invoice tidak diulang otomatis saat timeout, respons rusak, signature tidak valid, atau respons duplikat 409. Request tetap tercatat untuk rekonsiliasi admin, termasuk nomor invoice DOKU yang diharapkan.
 
 ## Konfigurasi produksi
 
@@ -146,32 +146,29 @@ Deploy aturan dan indeks dengan Firebase CLI yang sudah terpasang dan terautenti
 
 Profil baru memperoleh kredit sesuai pengaturan admin, default 5, melalui transaksi di server. Saldo profil yang sudah ada dipertahankan. Riwayat lama dengan field `footnote`, `dafpus`, `apaInText`, dan `apaRef` tetap bisa dibaca.
 
-### 2. bayar.gg
+### 2. DOKU Checkout — QRIS
 
-Di pengaturan environment **server** Vercel, isi:
+Gunakan akun **merchant DOKU Business/Checkout**, bukan akun dompet konsumen. Aktifkan layanan QRIS pada akun merchant. Integrasi ini menggunakan **Checkout Non-SNAP**; kredensial private key SNAP tidak digunakan.
+
+Di **Vercel → flash-sitasi → Settings → Environment Variables**, isi pada **Production**:
 
 | Variabel | Isi |
 | --- | --- |
-| `APP_URL` | Origin aplikasi produksi, misalnya `https://flash-sitasi.vercel.app`, tanpa path/query |
-| `BAYAR_GG_API_KEY` | API key akun merchant |
-| `BAYAR_GG_WEBHOOK_SECRET` | **Webhook Secret Key** dari Developer → Webhook & Callback; berbeda dari API key |
-| `BAYAR_GG_CHECKOUT_URL` | Default `https://www.bayar.gg/pay`, atau Checkout URL HTTPS aktif yang sama persis dengan konfigurasi merchant |
-| `BAYAR_GG_PAYMENT_METHOD` | Opsional; misalnya `qris` untuk membatasi satu metode. Kosong atau `all` berarti server memilih metode aktif yang mendukung nominal dari metadata akun bayar.gg. |
+| `APP_URL` | Origin aplikasi produksi, misalnya `https://flash-sitasi.vercel.app`, tanpa path/query; variabel yang sudah ada dapat tetap dipakai |
+| `DOKU_CLIENT_ID` | Client ID merchant DOKU dari lingkungan production |
+| `DOKU_SECRET_KEY` | Secret Key DOKU Checkout production; simpan sebagai Secret/Sensitive, tanpa prefix `VITE_` |
+| `DOKU_ENVIRONMENT` | `production` untuk pembayaran nyata; default bila tidak diisi adalah `production` |
+| `PAYMENT_PROVIDER` | Opsional: `doku`, yang juga merupakan default |
 
-Pengaturan merchant:
+1. Ambil Client ID dan Secret Key dari dashboard merchant DOKU pada lingkungan yang sesuai.
+2. Pastikan QRIS sudah disetujui dan aktif untuk DOKU Checkout merchant tersebut.
+3. Atur **Notification URL** DOKU menjadi `https://flash-sitasi.vercel.app/api/doku-webhook`. Untuk domain lain, sesuaikan dengan `APP_URL`. Aplikasi juga mengirim `additional_info.override_notification_url` setiap membuat tagihan. Notifikasi harus dapat diakses tanpa login atau challenge browser.
+4. Setelah menyimpan environment di Vercel, **redeploy** agar deployment menerima konfigurasi baru. Jangan mengirim Secret Key melalui chat, menaruhnya di frontend, atau memasukkannya ke GitHub.
+5. Periksa `/api/payment-options`: `provider=doku`, metode QRIS, `availability.state=configured`. Ini hanya memeriksa konfigurasi aplikasi; selesaikan satu pengujian pembayaran untuk memverifikasi layanan merchant yang sebenarnya.
 
-1. Pastikan metode pembayaran yang dipilih benar-benar tersedia untuk akun. Syarat tiap metode berbeda.
-2. Atur Default Callback URL menjadi `https://DOMAIN_APLIKASI/api/payment-webhook`. Aplikasi juga mengirim callback ini saat membuat invoice.
-3. Pastikan Checkout URL yang dipakai aktif. `payment_url` berbeda dari `redirect_url`.
-4. Callback harus dapat menerima POST JSON tanpa halaman login atau challenge browser. Periksa Callback Logs bila callback gagal.
+Untuk menguji sandbox, gunakan kredensial sandbox dan `DOKU_ENVIRONMENT=sandbox` pada deployment pengujian. Notifikasi sukses hanya mencatat `testPayment=true`, tanpa kredit atau badge. Gunakan Production untuk transaksi pengguna. Jika mengubah mode/Client ID, invoice yang dibuat dengan konfigurasi lama tidak dialihkan ke akun baru.
 
-Tanda tangan diverifikasi sesuai format resmi:
-
-```text
-HMAC-SHA256(invoice_id|status|final_amount|timestamp, WEBHOOK_SECRET)
-```
-
-Jika header signature dikirim, implementasi memeriksa `X-Webhook-Signature` dan `X-Webhook-Timestamp` dengan perbandingan konstan serta toleransi waktu 5 menit. Signature yang ada tetapi tidak valid ditolak. Dokumentasi API saat diperiksa menjelaskan HMAC, sementara contoh integrasi resmi yang lebih lama menjelaskan callback tanpa signature. Untuk kompatibilitas, callback tanpa header juga bisa diterima, tetapi **tidak pernah dijadikan bukti lunas**. Kedua jalur wajib memanggil `check-payment` memakai API key server, memeriksa invoice tercatat, status `paid`, serta nominal yang cocok sebelum kredit diberikan. Callback ganda tetap idempoten. Pastikan waktu server benar untuk callback bertanda tangan.
+**Tagihan bayar.gg lama:** pertahankan `BAYAR_GG_API_KEY` dan `BAYAR_GG_WEBHOOK_SECRET` yang sudah terpasang, serta endpoint `/api/payment-webhook`. `BAYAR_GG_CHECKOUT_URL` tetap default `https://www.bayar.gg/pay` dan konfigurasi metode lama tetap hanya berlaku pada bayar.gg. Record lama tanpa `provider` dianggap berasal dari bayar.gg. Ini tidak membuat pembelian baru melalui bayar.gg ketika provider default DOKU digunakan.
 
 ### 3. Deployment Vercel
 
@@ -190,7 +187,7 @@ Gunakan proyek Vercel aplikasi yang sama. Source frontend, `api/`, `server/`, da
 
 1. Masuk dengan Google dan pastikan saldo akun terbaca.
 2. Pilih 10 kredit, lalu buat tagihan. Nominal harus 10 × harga satuan aktif (Rp7.500 bila masih default); biaya/kode unik penyedia, jika ada, ditampilkan terpisah pada total tagihan. Untuk paket bernama, cocokkan dengan harga paket aktif.
-3. Pastikan checkout bayar.gg terbuka dengan invoice dan nominal yang benar.
+3. Pastikan checkout DOKU terbuka pada QRIS dengan invoice dan nominal yang benar.
 4. Selesaikan pembayaran melalui metode merchant yang aktif.
 5. Kembali ke aplikasi. Kredit bertambah **10**, hanya setelah status diverifikasi server.
 6. Gunakan **Saya sudah membayar, cek status** bila diperlukan. Pembukaan kembali dialog menggunakan invoice terakhir yang tersimpan pada browser dan akun tersebut.
@@ -259,7 +256,7 @@ Transaksi database diuji dengan adapter database dalam memori yang menjalankan t
 | `ACCOUNT_BLOCKED`, `SESSION_REVOKED` | Periksa status akun di panel admin; sesi yang dicabut memerlukan login ulang. |
 | Riwayat/saldo tidak tersinkron | Pastikan akun dan proyek benar, rules terpasang, serta request `POST /api/profile` berhasil. |
 
-Request pembayaran yang sudah dikirim tetapi berakhir timeout disimpan sebagai `paymentRequests.state=unknown` dan tidak otomatis dibuat ulang. Rekonsiliasi melalui dashboard merchant diperlukan bila invoice dibuat di penyedia tetapi respons tidak berhasil disimpan. Jangan menghapus penanda tersebut dan membuat invoice pengganti sebelum memastikan transaksi sebelumnya. Gunakan menu **Panel Admin → Rekonsiliasi** untuk menelusuri dan menghubungkan invoice yang sudah diverifikasi pada dashboard merchant. Nominal dan status diperiksa ulang ke bayar.gg sebelum tersimpan. Refund uang, pembatalan invoice pada penyedia, email transaksi, dan sengketa ditangani lewat layanan merchant; penyesuaian kredit admin tidak memindahkan uang.
+Request pembayaran yang sudah dikirim tetapi berakhir timeout disimpan sebagai `paymentRequests.state=unknown` dan tidak otomatis dibuat ulang. Rekonsiliasi melalui dashboard merchant diperlukan bila invoice dibuat di penyedia tetapi respons tidak berhasil disimpan. Jangan menghapus penanda tersebut dan membuat invoice pengganti sebelum memastikan transaksi sebelumnya. Gunakan menu **Panel Admin → Rekonsiliasi** untuk menelusuri dan menghubungkan invoice yang sudah diverifikasi pada dashboard merchant. Nominal dan status diperiksa ulang ke penyedia asli tagihan sebelum tersimpan. Refund uang, pembatalan invoice pada penyedia, email transaksi, dan sengketa ditangani lewat layanan merchant; penyesuaian kredit admin tidak memindahkan uang.
 
 ## Susunan source
 
@@ -281,13 +278,17 @@ tests/              Pengujian perilaku dan keamanan
 
 ## Referensi integrasi
 
-- [Dokumentasi resmi bayar.gg](https://www.bayar.gg/api-docs)
+- [DOKU Checkout: Backend Integration](https://developers.doku.com/accept-payments/doku-checkout/integration-guide/backend-integration)
+- [DOKU: Signature Non-SNAP](https://developers.doku.com/get-started-with-doku-api/signature-component/non-snap/signature-component-from-request-header)
+- [DOKU: HTTP Notification Non-SNAP](https://developers.doku.com/get-started-with-doku-api/notification/http-notification-sample-non-snap)
+- [DOKU: Check Status](https://developers.doku.com/get-started-with-doku-api/check-status-api/non-snap)
+- [Dokumentasi resmi bayar.gg untuk invoice lama](https://www.bayar.gg/api-docs)
 - [Firebase Admin setup](https://firebase.google.com/docs/admin/setup)
 - [Firebase ID token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens)
 - [Firestore transactions](https://firebase.google.com/docs/firestore/manage-data/transactions)
 - [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js)
 
-Dokumentasi bayar.gg diperiksa pada 18 Oktober 2026. Ketentuan merchant dan akses metode dapat berubah; cek dashboard akun yang digunakan.
+Dokumentasi DOKU diperiksa pada 26 Oktober 2026. Dokumentasi bayar.gg lama diperiksa pada 18 Oktober 2026. Ketentuan merchant dan akses metode dapat berubah; cek dashboard akun yang digunakan.
 
 ## Halaman publik dan SEO
 
@@ -342,10 +343,14 @@ Hanya metadata publik yang disimpan sementara dalam memori selama maksimal 60 de
 
 Deployment memasang dependensi dari lockfile dengan npm ci, lalu menjalankan npm run check. Uji meliputi PDF riil yang dibuat dari fixture kecil, metadata JSON-LD/OJS/DataCite, sumber rusak/pindai, pencocokan DOI, DNS/redirect privat, dekompresi berbatas, dan transaksi kredit. Pengujian tidak menulis database produksi atau membuat pembayaran.
 
-### Status metode pembayaran
+### Status metode pembayaran bayar.gg lama
 
-Pengaturan top up aplikasi dan ketersediaan metode di bayar.gg merupakan pemeriksaan terpisah. API `/api/payment-options` menyertakan status umum `available`, `provider_unavailable`, atau `method_restricted`, tanpa mengirim data akun penyedia. Daftar metode kosong tidak lagi dianggap sebagai bukti bahwa pengelola lupa mengaktifkan pembayaran.
+Untuk provider bayar.gg lama, pengaturan top up aplikasi dan ketersediaan metode di bayar.gg merupakan pemeriksaan terpisah. API `/api/payment-options` menyertakan status umum `available`, `provider_unavailable`, atau `method_restricted`, tanpa mengirim data akun penyedia. Daftar metode kosong tidak lagi dianggap sebagai bukti bahwa pengelola lupa mengaktifkan pembayaran.
 
 Harga paket dan harga satuan tetap tampil. Pembelian satuan maupun paket dinonaktifkan bila tidak ada metode yang mendukung nominal; pengguna dapat mengecek ulang. Status yang belum tersedia diperiksa kembali setiap 30 detik saat halaman terlihat, serta saat kembali online atau fokus.
 
 Respons tanpa metode aktif disimpan maksimal 15 detik agar pemulihan penyedia cepat terbaca; status sehat disimpan 60 detik. Diagnostik server hanya mencatat ID metode beserta flag enabled/available yang sudah disaring. Kunci API, status akun, detail persyaratan, dan payload penyedia tidak dicatat. Pembatas metode yang dikonfigurasi tetap dihormati; sistem tidak memaksa kanal nonaktif atau membuat invoice saat metode belum tersedia.
+
+### Pengujian migrasi DOKU
+
+Pengujian lokal mencakup kontrak signature POST/GET Non-SNAP, QRIS-only, harga admin, tiga paket, pembatasan URL checkout, respons palsu, timeout/409, byte body notifikasi, nominal/channel salah, callback berulang, polling pemulihan, pembayaran sandbox tanpa kredit, invoice bayar.gg lama, dan rekonsiliasi admin. Pengujian memakai respons fixture berdasarkan dokumentasi resmi; ini bukan bukti bahwa akun merchant DOKU produksi sudah aktif. Uji layanan nyata dilakukan setelah kredensial dan QRIS merchant terpasang.

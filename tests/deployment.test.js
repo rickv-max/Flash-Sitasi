@@ -15,13 +15,14 @@ test('new server payment key takes priority over the legacy variable', () => {
 });
 test('Vite exposes Firebase client configuration and excludes payment/Admin credentials', async () => {
   const fixture = { VITE_FIREBASE_PROJECT_ID: 'public-test-project', VITE_BAYAR_GG_API_KEY: 'private-test-merchant-key',
-    BAYAR_GG_API_KEY: 'private-test-server-key', FIREBASE_PRIVATE_KEY: 'private-test-admin-key' };
+    BAYAR_GG_API_KEY: 'private-test-server-key', FIREBASE_PRIVATE_KEY: 'private-test-admin-key',
+    DOKU_CLIENT_ID: 'private-test-client-id', DOKU_SECRET_KEY: 'private-test-doku-key', VITE_DOKU_SECRET_KEY: 'private-test-wrong-prefix' };
   const previous = Object.fromEntries(Object.keys(fixture).map((key) => [key, process.env[key]]));
   Object.assign(process.env, fixture);
   try {
     const config = await resolveConfig({ mode: 'test', logLevel: 'silent' }, 'build');
     assert.equal(config.env.VITE_FIREBASE_PROJECT_ID, fixture.VITE_FIREBASE_PROJECT_ID);
-    for (const key of ['VITE_BAYAR_GG_API_KEY', 'BAYAR_GG_API_KEY', 'FIREBASE_PRIVATE_KEY']) assert.equal(config.env[key], undefined);
+    for (const key of ['VITE_BAYAR_GG_API_KEY', 'BAYAR_GG_API_KEY', 'FIREBASE_PRIVATE_KEY', 'DOKU_CLIENT_ID', 'DOKU_SECRET_KEY', 'VITE_DOKU_SECRET_KEY']) assert.equal(config.env[key], undefined);
   } finally {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;

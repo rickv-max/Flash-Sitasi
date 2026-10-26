@@ -163,7 +163,7 @@ test('payment dialog retains original packages, slate action and bounded scroll 
   const $ = load(renderToStaticMarkup(React.createElement(PaymentModal, { user: { uid: 'test', email: 'writer@test.invalid' }, notify() {}, onClose() {}, onLogin() {} })));
   assert.equal($('.classic-topup-modal h2').text(), 'Top Up Kredit');
   assert.deepEqual($('.btn-package').map((_, node) => $(node).text()).get(), ['50 Kredit', '75 Kredit', '100 Kredit', '125 Kredit']);
-  assert.ok($('.btn-primary').text().includes('Bayar via Bayar.gg'));
+  assert.ok($('.btn-primary').text().includes('Bayar QRIS via DOKU'));
   assert.equal($('input[type="number"]').attr('min'), '10');
   const dialog = styleOf($, '.modal', 320, 500);
   assert.equal(dialog['max-height'], 'calc(100dvh - 32px)');

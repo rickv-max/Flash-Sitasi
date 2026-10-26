@@ -3,19 +3,22 @@ import { purchaseQuote, samePurchase, CREDIT_CATALOG_REVISION } from '../shared/
 import { buildCitations } from '../shared/citations.js';
 import { canGenerateWithCredits } from '../shared/credits.js';
 import { AppError, errorResponse } from './errors.js';
-import { appURL, paymentConfig, paymentMethodsConfig } from './config.js';
+import { appURL, paymentConfig, dokuConfig, paymentProvider } from './config.js';
 import { adminServices, authenticate } from './firebase.js';
 import { createGateway, verifyWebhook } from './gateway.js';
+import { checkoutOptions, gatewayForPayment } from './payment-providers.js';
+import { dokuInvoice, verifyDokuNotification } from './doku.js';
 import { createRepository } from './repository.js';
 import { resolveMetadata } from './metadata.js';
-import { bodyOf, requestKey } from './http.js';
+import { bodyOf, rawBodyOf, requestKey } from './http.js';
 import { allowOperation, assertActive, assertSession, isOwner } from './access.js';
 import { DEFAULT_SETTINGS } from '../shared/settings.js';
 import { enrichCity } from './city.js';
 
-const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', paymentOptions: 'GET', members: 'GET', webhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
-const publicPayment = ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited }) =>
-  ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited: !!credited });
+const METHODS = { profile: 'POST', createPayment: 'POST', paymentStatus: 'GET', paymentOptions: 'GET', members: 'GET', webhook: 'POST', dokuWebhook: 'POST', citations: 'POST', config: 'GET', city: 'POST' };
+const publicPayment = ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited, provider, environment, testPayment }) =>
+  ({ invoice, amount, finalAmount, credits, packageId, packageName, paymentURL, status, expiresAt, credited: !!credited,
+    provider: provider || 'bayar_gg', ...(environment ? { environment } : {}), ...(testPayment ? { testPayment: true } : {}) });
 
 export function makeHandler(action, overrides = {}) {
   return async function handler(req, res) {
@@ -27,12 +30,26 @@ export function makeHandler(action, overrides = {}) {
     }
     const env = overrides.env || process.env;
     try {
-      if (action !== 'webhook' && req.headers.origin && env.APP_URL && req.headers.origin !== appURL(env)) {
+      if (!['webhook', 'dokuWebhook'].includes(action) && req.headers.origin && env.APP_URL && req.headers.origin !== appURL(env)) {
         throw new AppError(403, 'ORIGIN_DENIED', 'Asal permintaan tidak diizinkan.');
       }
       if (action === 'paymentOptions') {
-        const gateway = overrides.gateway || createGateway(paymentMethodsConfig(env));
-        return res.status(200).json({ success: true, data: gateway.options ? await gateway.options() : { methods: await gateway.methods() } });
+        const gateway = overrides.gateway;
+        const data = gateway ? gateway.options ? await gateway.options() : { methods: await gateway.methods() } : await checkoutOptions(env);
+        return res.status(200).json({ success: true, data });
+      }
+      if (action === 'dokuWebhook') {
+        const raw = await rawBodyOf(req);
+        const verified = verifyDokuNotification(raw, req.headers, dokuConfig(env, false));
+        const repo = overrides.repo || createRepository(adminServices(env).db);
+        const payment = await repo.getPayment(verified.invoice_id);
+        if (payment.provider !== 'doku' || payment.environment !== verified.environment || payment.merchantId !== verified.merchantId) {
+          throw new AppError(409, 'PAYMENT_ACCOUNT_MISMATCH', 'Notifikasi tidak cocok dengan penyedia tagihan.');
+        }
+        if (payment.credited || payment.testPayment) return res.status(200).json({ success: true });
+        // A signed SUCCESS with the saved amount is authoritative. Never credit a redirect or a browser claim.
+        if (verified.status === 'paid') await repo.settlePayment(verified.invoice_id, verified);
+        return res.status(200).json({ success: true });
       }
       if (action === 'members') {
         const repo = overrides.repo || createRepository(adminServices(env).db);
@@ -58,7 +75,6 @@ export function makeHandler(action, overrides = {}) {
       if (action === 'createPayment') {
         const body = bodyOf(req);
         const key = requestKey(req);
-        const config = paymentConfig(env);
         const previous = await repo.getPaymentRequest?.(user.uid, key);
         if (previous) {
           if (!samePurchase(previous, body)) {
@@ -75,12 +91,17 @@ export function makeHandler(action, overrides = {}) {
         if (body.expectedCredits !== undefined && body.expectedCredits !== selection.credits) throw new AppError(409, 'PACKAGE_CHANGED', 'Jumlah kredit paket telah diperbarui. Muat ulang halaman sebelum melanjutkan pembayaran.');
         if (body.expectedAmount !== undefined && body.expectedAmount !== selection.amount) throw new AppError(409, 'PRICE_CHANGED', 'Harga telah diperbarui admin. Periksa harga terbaru sebelum melanjutkan pembayaran.');
         const { credits, amount } = selection;
-        const reservation = await repo.reservePayment(user.uid, key, credits, amount, selection);
+        const provider = paymentProvider(env);
+        const config = provider === 'doku' ? dokuConfig(env) : paymentConfig(env);
+        const gateway = overrides.gateway || gatewayForPayment(env);
+        const identity = provider === 'doku' ? { provider, environment: config.environment, merchantId: config.clientId,
+          providerInvoice: dokuInvoice(user.uid, key) } : { provider };
+        const reservation = await repo.reservePayment(user.uid, key, credits, amount, { ...selection, ...identity });
         if (reservation.existing) return res.status(200).json({ success: true, data: publicPayment({ ...reservation.existing, credits }) });
         try {
-          const gateway = overrides.gateway || createGateway(config);
-          const created = await gateway.create({ amount, credits, user, packageName: selection.packageName });
-          const payment = { ...created, packageId: selection.packageId, packageName: selection.packageName };
+          const created = await gateway.create({ amount, credits, user, packageName: selection.packageName, invoice: identity.providerInvoice });
+          const payment = { ...created, provider, ...(provider === 'doku' ? { environment: config.environment, merchantId: config.clientId } : {}),
+            packageId: selection.packageId, packageName: selection.packageName };
           await repo.finishPayment(reservation.ref, user.uid, credits, payment);
           return res.status(201).json({ success: true, data: publicPayment({ ...payment, credits }) });
         } catch (error) {
@@ -94,11 +115,12 @@ export function makeHandler(action, overrides = {}) {
         const invoice = query.invoice;
         if (typeof invoice !== 'string' || !/^[A-Za-z0-9_-]{3,160}$/.test(invoice)) throw new AppError(400, 'INVALID_INVOICE', 'Nomor tagihan tidak valid.');
         const payment = await repo.getPayment(invoice, user.uid);
-        if (payment.credited || Date.now() - payment.lastChecked < 5000 || ['expired', 'cancelled'].includes(payment.status)) {
+        const interval = payment.provider === 'doku' ? 60000 : 5000;
+        if (payment.credited || payment.testPayment || Date.now() - Math.max(payment.lastChecked || 0, payment.provider === 'doku' ? payment.createdAt || 0 : 0) < interval || ['expired', 'cancelled'].includes(payment.status)) {
           return res.status(200).json({ success: true, data: publicPayment(payment) });
         }
-        const gateway = overrides.gateway || createGateway(paymentConfig(env));
-        const verified = await gateway.check(invoice);
+        const gateway = overrides.gateway || gatewayForPayment(env, payment);
+        const verified = await gateway.check(invoice, payment);
         const updated = await repo.settlePayment(invoice, verified);
         return res.status(200).json({ success: true, data: publicPayment(updated) });
       }
@@ -115,6 +137,7 @@ export function makeHandler(action, overrides = {}) {
           verifyWebhook(body, req.headers, config.secret);
         }
         const payment = await repo.getPayment(body.invoice_id);
+        if (payment.provider && payment.provider !== 'bayar_gg') throw new AppError(409, 'PAYMENT_ACCOUNT_MISMATCH', 'Penyedia callback tidak cocok dengan tagihan.');
         if (payment.credited) return res.status(200).json({ success: true });
         const gateway = overrides.gateway || createGateway(config);
         const verified = await gateway.check(body.invoice_id);

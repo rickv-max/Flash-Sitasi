@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
 export function usePaymentMethods(enabled = true) {
-  const [state, setState] = useState({ methods: [], availability: null, ready: false, loading: false, error: '' });
+  const [state, setState] = useState({ methods: [], availability: null, provider: 'doku', environment: '', ready: false, loading: false, error: '' });
   const refresh = useCallback(async () => {
     setState((value) => ({ ...value, loading: true }));
-    try { const data = await api('payment-options', { method: 'GET' }); setState({ methods: data.methods, availability: data.availability || null, ready: true, loading: false, error: '' }); }
+    try { const data = await api('payment-options', { method: 'GET' }); setState({ methods: data.methods, availability: data.availability || null, provider: data.provider || 'doku', environment: data.environment || '', ready: true, loading: false, error: '' }); }
     catch (error) { setState((value) => ({ ...value, ready: false, loading: false, error: error.message })); }
   }, []);
   useEffect(() => {

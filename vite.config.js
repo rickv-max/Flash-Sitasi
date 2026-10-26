@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // Run the same API handlers in local development; no separate API process needed.
 function localAPI() {
   const routes = { 'create-payment': 'createPayment', 'payment-status': 'paymentStatus',
-    'payment-webhook': 'webhook', 'payment-options': 'paymentOptions', profile: 'profile', members: 'members', citations: 'citations', config: 'config', city: 'city', admin: 'admin' };
+    'payment-webhook': 'webhook', 'doku-webhook': 'dokuWebhook', 'payment-options': 'paymentOptions', profile: 'profile', members: 'members', citations: 'citations', config: 'config', city: 'city', admin: 'admin' };
   return { name: 'flashcite-local-api', configureServer(server) {
     server.middlewares.use('/api', async (req, res) => {
       res.setHeader('Content-Type', 'application/json');
@@ -15,12 +15,14 @@ function localAPI() {
         const action = routes[url.pathname.replace(/^\//, '')];
         if (!action) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint tidak ditemukan.' } });
         req.query = Object.fromEntries(url.searchParams);
-        let raw = '';
+        const chunks = []; let length = 0;
         for await (const chunk of req) {
-          raw += chunk;
-          if (Buffer.byteLength(raw) > 16000) return res.status(413).json({ success: false, error: { code: 'TOO_LARGE', message: 'Permintaan terlalu panjang.' } });
+          const buffer = Buffer.from(chunk); length += buffer.length;
+          if (length > 16000) return res.status(413).json({ success: false, error: { code: 'TOO_LARGE', message: 'Permintaan terlalu panjang.' } });
+          chunks.push(buffer);
         }
-        req.body = raw || '{}';
+        req.rawBody = Buffer.concat(chunks);
+        req.body = req.rawBody.toString('utf8') || '{}';
         if (action === 'admin') {
           const { makeAdminHandler } = await import('./server/admin-handlers.js');
           await makeAdminHandler()(req, res);

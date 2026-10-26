@@ -24,6 +24,7 @@ export function usePayment({ user, notify, settings = DEFAULT_SETTINGS, initialP
   const amount = uncertain && savedRequest.current ? savedRequest.current.amount : quote?.amount || 0;
   const invoice = pending?.invoice;
   const status = pending?.status;
+  const pollInterval = pending?.provider === 'doku' ? 60000 : 10000;
   let checkoutURL;
   try {
     const url = new URL(pending?.paymentURL);
@@ -45,10 +46,10 @@ export function usePayment({ user, notify, settings = DEFAULT_SETTINGS, initialP
     if (!invoice || !user || status !== 'pending') return;
     const run = () => { if (document.visibilityState !== 'hidden') checkPayment(); };
     const first = setTimeout(run, 0);
-    const timer = setInterval(run, 10000);
+    const timer = setInterval(run, pollInterval);
     document.addEventListener('visibilitychange', run);
     return () => { clearTimeout(first); clearInterval(timer); document.removeEventListener('visibilitychange', run); };
-  }, [invoice, user, status, checkPayment]);
+  }, [invoice, user, status, pollInterval, checkPayment]);
 
   async function createPayment() {
     if (!valid || payingRef.current) return;
