@@ -59,7 +59,7 @@ class MemoryQuery {
     } };
   }
 }
-export const env = { APP_URL: 'https://flashcite.example', BAYAR_GG_API_KEY: 'test-api-key', BAYAR_GG_WEBHOOK_SECRET: 'test-webhook-secret' };
+export const env = { APP_URL: 'https://flashcite.example', PAYMENT_PROVIDER: 'bayar_gg', BAYAR_GG_API_KEY: 'test-api-key', BAYAR_GG_WEBHOOK_SECRET: 'test-webhook-secret' };
 export const user = { uid: 'writer-one', name: 'Penulis Satu', email: 'writer@example.test' };
 export const headers = { authorization: 'Bearer test-id-token', 'idempotency-key': 'test-request-key-0001' };
 export async function call(handler, { method = 'POST', body = {}, query = {}, customHeaders = {} } = {}) {

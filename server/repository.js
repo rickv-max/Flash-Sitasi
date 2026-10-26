@@ -82,6 +82,12 @@ export function createRepository(db) {
       const snap = await db.doc(`paymentRequests/${hash(`${uid}:${key}`)}`).get();
       return snap.exists ? snap.data() : null;
     },
+    async getPaymentRequestById(id) {
+      if (typeof id !== 'string' || !/^[a-f0-9]{64}$/.test(id)) throw new AppError(400, 'INVALID_RECOVERY', 'ID permintaan tidak valid.');
+      const snap = await db.doc(`paymentRequests/${id}`).get();
+      if (!snap.exists) throw new AppError(404, 'REQUEST_NOT_FOUND', 'Permintaan pembayaran tidak ditemukan.');
+      return snap.data();
+    },
     async reservePayment(uid, key, credits, amount, selection = {}) {
       const ref = db.doc(`paymentRequests/${hash(`${uid}:${key}`)}`);
       return db.runTransaction(async (tx) => {
@@ -91,13 +97,16 @@ export function createRepository(db) {
           if (data.credits !== credits || (data.packageId || '') !== (selection.packageId || '')) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Permintaan ini sudah dipakai untuk pilihan kredit lain.');
           if (data.state === 'ready') return { ref, existing: data.payment };
           const error = new AppError(409, 'PAYMENT_PROCESSING',
-            data.state === 'unknown' ? 'Tagihan mungkin sudah dibuat. Periksa transaksi di bayar.gg atau hubungi pengelola sebelum membuat tagihan baru.' :
+            data.state === 'unknown' ? 'Tagihan mungkin sudah dibuat. Hubungi pengelola untuk memeriksa transaksi sebelum membuat tagihan baru.' :
               'Permintaan sebelumnya masih diproses. Tunggu sebentar lalu periksa kembali.');
           error.paymentPending = true;
           throw error;
         }
         // Persist before contacting the provider: never retry an ambiguous POST.
-        tx.set(ref, { uid, credits, amount, packageId: selection.packageId || '', packageName: selection.packageName || 'Satuan', state: 'creating', createdAt: Date.now() });
+        tx.set(ref, { uid, credits, amount, packageId: selection.packageId || '', packageName: selection.packageName || 'Satuan',
+          ...(selection.provider ? { provider: selection.provider } : {}),
+          ...(selection.provider === 'doku' ? { environment: selection.environment, merchantId: selection.merchantId, providerInvoice: selection.providerInvoice } : {}),
+          state: 'creating', createdAt: Date.now() });
         return { ref };
       });
     },
@@ -126,7 +135,12 @@ export function createRepository(db) {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Tagihan belum tercatat.');
         const payment = snap.data();
-        if (payment.credited) return payment;
+        if (payment.credited || payment.testPayment) return payment;
+        if (payment.provider === 'doku' && (verified.provider !== 'doku' || verified.environment !== payment.environment ||
+            verified.merchantId !== payment.merchantId || verified.invoice_id !== invoice) ||
+            payment.provider !== 'doku' && verified.provider === 'doku') {
+          throw new AppError(409, 'PAYMENT_ACCOUNT_MISMATCH', 'Penyedia atau akun pembayaran tidak cocok dengan tagihan.');
+        }
         if (Number(verified.final_amount) !== payment.finalAmount ||
             (verified.amount != null && Number(verified.amount) !== payment.amount) ||
             (verified.paid_amount != null && Number(verified.paid_amount) < payment.finalAmount)) {
@@ -134,6 +148,11 @@ export function createRepository(db) {
         }
         if (verified.status !== 'paid') {
           const update = { status: verified.status, lastChecked: Date.now() };
+          tx.update(ref, update);
+          return { ...payment, ...update };
+        }
+        if (payment.provider === 'doku' && payment.environment !== 'production') {
+          const update = { status: 'paid', testPayment: true, lastChecked: Date.now() };
           tx.update(ref, update);
           return { ...payment, ...update };
         }
