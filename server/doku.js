@@ -9,7 +9,7 @@ const utc = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 const digest = (body) => createHash('sha256').update(body).digest('base64');
 
 export function dokuInvoice(uid, key) {
-  return `FS${createHash('sha256').update(JSON.stringify([uid, key])).digest('hex').slice(0, 40)}`;
+  return `FS${createHash('sha256').update(JSON.stringify([uid, key])).digest('hex').slice(0, 28)}`;
 }
 
 export function dokuSignature({ clientId, requestId, timestamp, target, body, response = false }, secret) {
@@ -94,6 +94,13 @@ export function createDokuGateway(config, fetcher = fetch) {
         'DOKU belum merespons. Tunggu sebentar lalu periksa tagihan sebelumnya.');
     }
     if (!response.ok) {
+      // Never log provider bodies or customer data. Only recognised diagnostic fields.
+      let detail = '';
+      try { detail = (await response.text()).slice(0, 16000); } catch { /* HTTP status remains available. */ }
+      const fields = ['invoice_number', 'payment_method_types', 'customer.name', 'override_notification_url', 'callback_url'];
+      console.warn(JSON.stringify({ event: 'doku_request_rejected', status: response.status,
+        operation: target === '/checkout/v1/payment' ? 'create' : 'check',
+        fields: fields.filter((field) => detail.includes(field)) }));
       const error = new AppError(response.status === 429 ? 429 : 502, 'GATEWAY_REJECTED',
         [401, 403].includes(response.status) ? 'Koneksi akun DOKU perlu diperiksa pengelola.' :
           response.status === 400 ? 'QRIS atau konfigurasi akun DOKU perlu diperiksa pengelola.' : 'Tagihan belum dapat diproses DOKU. Silakan coba kembali nanti.');

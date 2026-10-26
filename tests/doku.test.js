@@ -255,3 +255,9 @@ test('checkout URL validation rejects credentials, other origins, mixed environm
   }
   assert.equal(dokuCheckoutURL('https://sandbox.doku.com/checkout/link/x', 'sandbox'), 'https://sandbox.doku.com/checkout/link/x');
 });
+
+test('invoice identifiers fit the 30-character merchant limit and remain deterministic', () => {
+  assert.equal(dokuInvoice(user.uid, 'stable-key').length, 30);
+  assert.equal(dokuInvoice(user.uid, 'stable-key'), dokuInvoice(user.uid, 'stable-key'));
+  assert.notEqual(dokuInvoice(user.uid, 'stable-key'), dokuInvoice('other-user', 'stable-key'));
+});
